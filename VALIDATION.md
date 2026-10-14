@@ -9,6 +9,8 @@ The latest published release remains v1.1.0. The current local build is 1.2.0-de
 - A real package-added test exposed Android's manifest broadcast limits; the owner-only visible foreground monitor and dynamic receiver corrected the later-install case. Managed policy checks pass with accessibility suppressed.
 - Android lint and debug/optimized signed assembly pass. The Android screen-lock recovery flow is implemented but requires manual credential-flow testing; no physical OnePlus test is claimed.
 - The opt-in `ScreenshotGalleryTest` captures real pages with a separate Scroll Test fixture and no fabricated usage statistics. It is limited to emulators and requires `-e gallery true`.
+- Screenshots are visually inspected after capture. The workflow explicitly closes Android's notification panel, foregrounds each page through Android, and reconnects protection before capturing native overlays.
+- The final opt-in gallery run passes. **48 screenshots** cover all principal pages, long-page sections, the three overlays, and three real device-owner comparisons, captured after the application-source commit `572e0d2`. The gallery is available in [docs/screenshots/gallery](docs/screenshots/gallery/README.md).
 - The installed-app accessibility regression also passes with the customizable overlay: Normal visit, Resistant pause/reason, Strict enforcement, transient windows, independent groups, and expiry. Together these runs verify 34 functional/security checks (21 JVM + 11 UI/PIN + 1 accessibility + 1 managed-device).
 
 ## Earlier independent-block validation

@@ -31,6 +31,8 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 ## Screenshots
 
+**[Full development screen gallery](docs/screenshots/gallery/README.md)** · [Searchable local HTML gallery](docs/screenshots/gallery/index.html). Includes onboarding, permission disclosure, all principal editors, settings sections, custom messages, PIN setup, three blocking modes, and managed-device comparisons.
+
 <table>
   <tr>
     <td align="center"><b>Home</b></td>

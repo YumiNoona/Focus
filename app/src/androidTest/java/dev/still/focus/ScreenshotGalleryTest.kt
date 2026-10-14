@@ -5,6 +5,8 @@ import android.graphics.Bitmap
 import android.os.SystemClock
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.*
 import org.junit.Assert.*
@@ -17,16 +19,24 @@ class ScreenshotGalleryTest {
     private lateinit var automation: android.app.UiAutomation
     private fun shell(command: String) = automation.executeShellCommand(command).use { fd -> java.io.FileInputStream(fd.fileDescriptor).bufferedReader().readText() }
     private fun shot(name: String) {
+        shell("cmd statusbar collapse")
         ui.waitForIdle(); Thread.sleep(700)
         val folder = File(ui.activity.getExternalFilesDir(null), "screen-gallery").also { it.mkdirs() }
         val bitmap = automation.takeScreenshot() ?: error("No screenshot")
         File(folder, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }; bitmap.recycle()
     }
     private fun open(route: String) {
-        ui.runOnIdle { ui.activity.startActivity(Intent(ui.activity, MainActivity::class.java).putExtra("screen", route)) }
+        shell("cmd statusbar collapse")
+        shell("am start -n dev.still.focus/.MainActivity --es screen $route")
         ui.waitForIdle(); Thread.sleep(900)
+        scrollPage(-100_000f)
     }
-    private fun lower(name: String) { ui.onRoot().performTouchInput { swipeUp() }; Thread.sleep(400); shot(name) }
+    private fun scrollPage(pixels: Float) {
+        val pages = ui.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
+        if (pages.fetchSemanticsNodes().isNotEmpty()) pages.onFirst().performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, pixels) }
+        ui.waitForIdle(); Thread.sleep(250)
+    }
+    private fun lower(name: String) { scrollPage(ui.activity.resources.displayMetrics.heightPixels * .65f); shot(name) }
     @Test fun captureAllPages() {
         Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
         automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
@@ -78,16 +88,22 @@ class ScreenshotGalleryTest {
             open("rules"); ui.onNodeWithText("Apps", useUnmergedTree = true).performClick(); ui.onNodeWithText("Block selected apps").performClick(); shot("25-block-apps"); lower("25b-block-app-modes")
             ui.runOnIdle { Repository.update { demo.copy(blocks = listOf(BlockPlan(kind = BlockKind.APPS, targets = setOf("dev.still.fixture"), mode = FocusMode.GENTLE, start = System.currentTimeMillis(), period = BlockPeriod.MANUAL))) } }
             open("home"); shot("26-active-blocks")
+            automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+            shell("settings put secure enabled_accessibility_services null")
+            shell("settings put secure enabled_accessibility_services dev.still.focus/.FocusAccessibilityService")
+            val connectionDeadline = SystemClock.elapsedRealtime() + 12_000
+            while (!ProtectionRuntime.live() && SystemClock.elapsedRealtime() < connectionDeadline) Thread.sleep(100)
+            assertTrue("Protection must be connected before capturing overlays", ProtectionRuntime.live())
             for ((mode, name) in listOf(FocusMode.GENTLE to "27-normal-popup", FocusMode.STANDARD to "28-resistant-screen", FocusMode.STRICT to "29-strict-screen")) {
                 val now = System.currentTimeMillis()
-                ui.runOnIdle { Repository.update { demo.copy(session = Session(profile = Profile("preview", "Deep work", 1, "Make room for what matters.", mode), start = now, end = now + 8000)) } }
+                ui.runOnIdle { Repository.update { demo.copy(session = Session(profile = Profile("preview", "Deep work", 1, "Make room for what matters.", mode), start = now, end = now + 20_000)) } }
                 open("home"); if (mode == FocusMode.STANDARD) shot("30-active-session")
-                ui.runOnIdle { ui.activity.startActivity(ui.activity.packageManager.getLaunchIntentForPackage("dev.still.fixture")!!) }
-                val deadline = SystemClock.elapsedRealtime() + 5000
+                shell("am start -n dev.still.fixture/.ScrollActivity")
+                val deadline = SystemClock.elapsedRealtime() + 10_000
                 while (ProtectionRuntime.blockedPackage != "dev.still.fixture" && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100)
                 assertEquals("dev.still.fixture", ProtectionRuntime.blockedPackage)
                 shot(name)
-                Thread.sleep((now + 8100 - System.currentTimeMillis()).coerceAtLeast(0))
+                Thread.sleep((now + 20_100 - System.currentTimeMillis()).coerceAtLeast(0))
                 ui.runOnIdle { Repository.reconcile() }; open("home")
             }
             ui.runOnIdle { Repository.update { demo.copy(theme = "Dark") } }; open("home"); shot("31-dark-home")
