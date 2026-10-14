@@ -8,6 +8,20 @@ import org.junit.Assert.*
 class AppTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>()
     @Before fun reset() { ui.runOnIdle { Repository.update { FocusState(onboarding = true) } } }
+    @Test fun onboardingHasFourStepsAndSkipKeepsPermissionChecklist() {
+        ui.runOnIdle { Repository.update { FocusState() } }
+        ui.onNodeWithText("Less scroll.\nMore life.").assertIsDisplayed()
+        ui.onNodeWithText("Next").performClick()
+        ui.onNodeWithText("Find your\nrhythm.").assertIsDisplayed()
+        ui.onNodeWithText("Back").performClick()
+        ui.onNodeWithText("Skip intro").performClick()
+        ui.onNodeWithText("Ready when you are.").assertExists()
+        ui.onNodeWithContentDescription("Onboarding step 4 of 4").assertExists()
+        ui.runOnIdle { assertFalse(Repository.state.onboarding) }
+        ui.onNodeWithText("Continue with timers").performScrollTo().performClick()
+        ui.onNodeWithContentDescription("Home").assertExists()
+        ui.runOnIdle { assertTrue(Repository.state.onboarding) }
+    }
     @Test fun navigationHasExactlyThreeDockDestinationsAndHeaderActions() {
         ui.onNodeWithContentDescription("Home").assertExists()
         ui.onNodeWithContentDescription("Rules").assertExists().performClick()

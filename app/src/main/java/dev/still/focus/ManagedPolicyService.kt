@@ -18,7 +18,7 @@ class ManagedPolicyService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel("managed-policies", "Managed app controls", NotificationManager.IMPORTANCE_LOW))
         val notification = Notification.Builder(this, "managed-policies").setSmallIcon(R.drawable.ic_still)
-            .setContentTitle("Focus app controls are active")
+            .setContentTitle("FocuLY app controls are active")
             .setContentText("Watching installations and policy deadlines on this managed device.")
             .setContentIntent(FocusNotifications.open(this, "managed")).setOngoing(true).build()
         if (Build.VERSION.SDK_INT >= 34) startForeground(3, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)

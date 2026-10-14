@@ -2,6 +2,11 @@
 
 ## Unreleased — 1.2.0 development
 
+- Rename the Android app to FocuLY, using the supplied `public/logo.png` for its adaptive launcher icon and in-app wordmark. Preserve the package, administrator component, stored data, and update signing key.
+- Add four onboarding screens: three pastel story cards with cat doodles followed by the live permission checklist. Include Next, Back, Skip intro, saved progress, and replay from Settings.
+- Add original transparent cat illustrations across Home, active sessions, empty states, insights, protection setup, and native blocking overlays.
+- Refresh the theme with warm paper, blush, lime, peach, lilac, and charcoal buttons; retain JetBrains Mono, dark mode, accessible targets, and the three-icon dock.
+
 - Add final permission onboarding and a reusable live checklist with required/optional states.
 - Add optional salted-hash Focus admin PIN, 90-second control unlock, failed-attempt cooldown, and Android screen-lock recovery outside Strict.
 - Automatically block removing Focus during Strict on managed devices, independent of the persistent uninstall preference.

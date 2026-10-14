@@ -27,8 +27,8 @@ import kotlinx.coroutines.withContext
 @Composable fun ProtectionConsent(close: () -> Unit) {
     AlertDialog(onDismissRequest = close, title = { Text("How protection works", fontFamily = Mono) }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Focus uses Android Accessibility to identify the open app, check supported browser address fields and selected feed controls, and show your blocking screen.")
-            Text("On-screen text is checked in memory, on this device. Focus never records or uploads screen content. Access is optional; timers work without it.")
+            Text("FocuLY uses Android Accessibility to identify the open app, check supported browser address fields and selected feed controls, and show your blocking screen.")
+            Text("On-screen text is checked in memory, on this device. FocuLY never records or uploads screen content. Access is optional; timers work without it.")
             Text("You can turn access off in Android settings at any time. Managed app policies are controlled separately by Android device-owner administration.")
         }
     }, confirmButton = { TextButton({ if (Repository.update { it.copy(disclosure = true) }) { close(); Repository.openAccessibility() } }) { Text("Agree & open settings") } }, dismissButton = { TextButton(close) { Text("Not now") } })
@@ -46,25 +46,27 @@ import kotlinx.coroutines.withContext
     val admin = ManagedProtection.adminEnabled(ctx)
     val notifications = Build.VERSION.SDK_INT < 33 || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     Page {
-        Caption("02 / SET UP YOUR BOUNDARY")
+        Caption("YOUR BOUNDARY, CONNECTED")
         Heading("Ready when you are.", "Grant each permission in Android, then return here.")
         SoftCard {
-            Icon(Icons.Outlined.Shield, null, tint = MaterialTheme.colorScheme.primary)
-            Text(if (ready) "Blocking is ready" else "Connect protection first", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(if (ready) "Blocking is ready" else "Connect protection first", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                CatDoodle(CatArt.GUARD, Modifier.size(80.dp))
+            }
             Caption("${listOf(ready, usage, admin, AdminPin.configured(), notifications).count { it }} / 5 CONNECTED · OPTIONAL ITEMS CAN WAIT")
             LinearProgressIndicator(progress = { listOf(ready, usage, admin, AdminPin.configured(), notifications).count { it } / 5f }, modifier = Modifier.fillMaxWidth())
         }
         ActionCard("App & feed protection", if (ready) "Connected" else "Required for blocking", Icons.Outlined.Shield, ready) { if (Repository.state.disclosure) Repository.openAccessibility() else consent = true }
         ActionCard("Usage access", if (usage) "Connected" else "Optional · limits & app detection fallback", Icons.Outlined.Timer, usage) { Repository.openUsage() }
         ActionCard("Uninstall resistance", if (ManagedProtection.uninstallBlocked(ctx)) "Android removal policy verified" else if (admin) "Active · Android can still deactivate it" else "Optional · adds an Android deactivation step", Icons.Outlined.AdminPanelSettings, admin) { if (!admin) ManagedProtection.requestAdmin(ctx) }
-        ActionCard("Focus admin PIN", if (AdminPin.configured()) "Set · protects Focus device controls" else "Optional · 6–12 digits", Icons.Outlined.Password, AdminPin.configured()) { pin = true }
+        ActionCard("FocuLY admin PIN", if (AdminPin.configured()) "Set · protects FocuLY device controls" else "Optional · 6–12 digits", Icons.Outlined.Password, AdminPin.configured()) { pin = true }
         ActionCard("Notifications", if (notifications) "Allowed" else "Optional · session & completion updates", Icons.Outlined.NotificationsNone, notifications) { if (Build.VERSION.SDK_INT >= 33) notification.launch(Manifest.permission.POST_NOTIFICATIONS) }
         ActionCard("Background activity", "Check your phone's battery restrictions", Icons.Outlined.BatteryChargingFull) { Repository.openBatterySettings() }
         DetailsCard("What Strict can protect", "Regular phone vs managed device", Icons.Outlined.Info) {
-            Text("Strict has no early exit inside Focus. On a regular phone, Android still allows disabling protection or removing this app after deactivating its administrator. Your Focus PIN cannot protect Android settings.")
-            Text("Device-owner setup on a dedicated managed device adds OS app suspension and uninstall blocking. Focus cannot grant itself this role on your personal phone.")
+            Text("Strict has no early exit inside FocuLY. On a regular phone, Android still allows disabling protection or removing this app after deactivating its administrator. Your FocuLY PIN cannot protect Android settings.")
+            Text("Device-owner setup on a dedicated managed device adds OS app suspension and uninstall blocking. FocuLY cannot grant itself this role on your personal phone.")
         }
-        Primary("Start using Focus", enabled = ready, icon = Icons.Outlined.Check) { done() }
+        Primary("Start using FocuLY", enabled = ready, icon = Icons.Outlined.Check) { done() }
         if (!ready) TextButton(done, Modifier.fillMaxWidth()) { Text("Continue with timers") }
     }
     if (consent) ProtectionConsent { consent = false }
@@ -79,10 +81,10 @@ import kotlinx.coroutines.withContext
     var busy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val verify = AdminPin.configured() && !AdminPin.authorized()
-    AlertDialog(onDismissRequest = { if (!busy) close() }, title = { Text(if (verify) "Unlock device controls" else "Set your Focus PIN", fontFamily = Mono) }, text = {
+    AlertDialog(onDismissRequest = { if (!busy) close() }, title = { Text(if (verify) "Unlock device controls" else "Set your FocuLY PIN", fontFamily = Mono) }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(if (verify) "Changes unlock for 90 seconds. Strict still cannot end early." else "6–12 digits. This protects controls inside Focus, not Android's administrator or uninstall screens.")
-            OutlinedTextField(pin, { pin = it.filter(Char::isDigit).take(12); error = "" }, label = { Text("Focus PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), enabled = !busy)
+            Text(if (verify) "Changes unlock for 90 seconds. Strict still cannot end early." else "6–12 digits. This protects controls inside FocuLY, not Android's administrator or uninstall screens.")
+            OutlinedTextField(pin, { pin = it.filter(Char::isDigit).take(12); error = "" }, label = { Text("FocuLY PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), enabled = !busy)
             if (!verify) OutlinedTextField(confirm, { confirm = it.filter(Char::isDigit).take(12) }, label = { Text("Confirm PIN") }, singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), enabled = !busy)
             if (error.isNotEmpty()) Text(error, color = MaterialTheme.colorScheme.error)
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -100,8 +102,8 @@ import kotlinx.coroutines.withContext
     if (pulse.let { AdminPin.authorized() }) content() else {
         Page {
             Heading("Keep your boundary.")
-            SoftCard { Icon(Icons.Outlined.Password, null, tint = MaterialTheme.colorScheme.primary); Text("Device controls are locked", style = MaterialTheme.typography.titleMedium); Text("Enter your Focus PIN to manage Android administration and app policies.") }
-            Primary("Enter Focus PIN", icon = Icons.Outlined.LockOpen) { dialog = true }
+            SoftCard { Icon(Icons.Outlined.Password, null, tint = MaterialTheme.colorScheme.primary); Text("Device controls are locked", style = MaterialTheme.typography.titleMedium); Text("Enter your FocuLY PIN to manage Android administration and app policies.") }
+            Primary("Enter FocuLY PIN", icon = Icons.Outlined.LockOpen) { dialog = true }
         }
     }
     if (dialog) PinDialog { dialog = false; pulse++ }
@@ -120,13 +122,13 @@ import kotlinx.coroutines.withContext
     val strict = RulesEngine.strictActive(s, System.currentTimeMillis())
     Page {
         Heading("A little more resistance.")
-        SoftCard { Icon(Icons.Outlined.Password, null, tint = MaterialTheme.colorScheme.primary); Text(if (configured) "Focus PIN is set" else "Your controls, protected", style = MaterialTheme.typography.titleMedium); Text("Guards device protection, per-app policies, consent withdrawal, and local data deletion. Rules in Strict stay locked even with your PIN.") }
-        Primary(if (configured && !AdminPin.authorized()) "Unlock with PIN" else if (configured) "Change PIN" else "Set Focus PIN", enabled = !strict, icon = Icons.Outlined.Password) { dialog = true }
-        if (configured && AdminPin.authorized()) TextButton({ if (AdminPin.remove()) pulse++ }, enabled = !strict) { Text("Remove Focus PIN") }
+        SoftCard { Icon(Icons.Outlined.Password, null, tint = MaterialTheme.colorScheme.primary); Text(if (configured) "FocuLY PIN is set" else "Your controls, protected", style = MaterialTheme.typography.titleMedium); Text("Guards device protection, per-app policies, consent withdrawal, and local data deletion. Rules in Strict stay locked even with your PIN.") }
+        Primary(if (configured && !AdminPin.authorized()) "Unlock with PIN" else if (configured) "Change PIN" else "Set FocuLY PIN", enabled = !strict, icon = Icons.Outlined.Password) { dialog = true }
+        if (configured && AdminPin.authorized()) TextButton({ if (AdminPin.remove()) pulse++ }, enabled = !strict) { Text("Remove FocuLY PIN") }
         if (configured) DetailsCard("Forgot your PIN?", "Verify Android's screen lock", Icons.Outlined.LockReset) {
             Text("Reset requires your phone's screen-lock credential and is unavailable during Strict. If no screen lock is set, configure one in Android first.")
             TextButton({
-                @Suppress("DEPRECATION") val intent = ctx.getSystemService(KeyguardManager::class.java).createConfirmDeviceCredentialIntent("Recover Focus PIN", "Confirm your phone's screen lock to reset the Focus PIN.")
+                @Suppress("DEPRECATION") val intent = ctx.getSystemService(KeyguardManager::class.java).createConfirmDeviceCredentialIntent("Recover FocuLY PIN", "Confirm your phone's screen lock to reset the FocuLY PIN.")
                 if (intent != null) recovery.launch(intent) else status = "Set an Android screen lock before using PIN recovery."
             }, enabled = !strict) { Text("Verify phone screen lock") }
         }
@@ -179,7 +181,7 @@ import kotlinx.coroutines.withContext
     fun choose(packageName: String, name: String) { pkg = packageName; label = name }
     Page {
         Heading("App boundaries.", "Keep a distracting app paused, or keep a useful app installed.")
-        SoftCard { Icon(Icons.Outlined.AdminPanelSettings, null, tint = MaterialTheme.colorScheme.primary); Text(if (owner) "Managed device connected" else "Managed setup required", style = MaterialTheme.typography.titleMedium); Text(if (owner) "Android enforces these controls. Installed app status is verified below." else "You can prepare rules here. They remain inactive on a regular phone until Focus is a device-owner administrator.", style = MaterialTheme.typography.bodyMedium) }
+        SoftCard { Icon(Icons.Outlined.AdminPanelSettings, null, tint = MaterialTheme.colorScheme.primary); Text(if (owner) "Managed device connected" else "Managed setup required", style = MaterialTheme.typography.titleMedium); Text(if (owner) "Android enforces these controls. Installed app status is verified below." else "You can prepare rules here. They remain inactive on a regular phone until FocuLY is a device-owner administrator.", style = MaterialTheme.typography.bodyMedium) }
         s.lifecycleRules.forEach { rule ->
             SoftCard {
                 Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) { AppBadge(rule.packageName); Column(Modifier.weight(1f)) { Text(rule.label, style = MaterialTheme.typography.titleSmall); Caption(if (!owner) "PREPARED · NOT ENFORCED" else if (!ManagedProtection.installed(ctx, rule.packageName)) "WAITING FOR INSTALLATION" else "INSTALLED") } }
@@ -210,6 +212,6 @@ import kotlinx.coroutines.withContext
             }
         }
         if (status.isNotBlank()) Text(status, style = MaterialTheme.typography.bodyMedium)
-        DetailsCard("Installation coverage", "Play Store & APK installers", Icons.Outlined.Info) { Text("The package-added receiver applies the launch pause after installation from any installer. Android may show its own administrator screen; Focus cannot replace every store or uninstall dialog. Selective prevention before download requires an enterprise managed Play policy.") }
+        DetailsCard("Installation coverage", "Play Store & APK installers", Icons.Outlined.Info) { Text("The package-added receiver applies the launch pause after installation from any installer. Android may show its own administrator screen; FocuLY cannot replace every store or uninstall dialog. Selective prevention before download requires an enterprise managed Play policy.") }
     }
 }

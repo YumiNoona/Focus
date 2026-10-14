@@ -7,7 +7,7 @@ import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
-/** Protects Focus controls only. Android administrator deactivation remains a system action. */
+/** Protects FocuLY controls only. Android administrator deactivation remains a system action. */
 object AdminPin {
     private fun prefs() = Repository.context.getSharedPreferences("focus-credential", 0)
     private var unlockedUntil = 0L

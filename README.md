@@ -1,12 +1,14 @@
 <div align="center">
 
-<img src="docs/brand/focus-mark.svg" alt="Focus" width="104" />
+<img src="public/logo.png" alt="FocuLY" width="104" />
 
-# Focus
+# FocuLY
 
 ### A little less scroll. A little more you.
 
 A calm Android app for intentional screen time, focus sessions, and everyday boundaries.
+
+**FocuLY is the new name for Focus.** The current development app uses your colorful logo, a four-screen pastel onboarding flow, and original cat doodles. Existing installations retain their package, saved rules, and signing identity. [Visual direction and illustration prompts](docs/FOCULY_DESIGN.md).
 
 [![Android CI](https://github.com/YumiNoona/Focus/actions/workflows/android.yml/badge.svg?branch=main)](https://github.com/YumiNoona/Focus/actions/workflows/android.yml)
 [![Latest release](https://img.shields.io/github/v/release/YumiNoona/Focus?style=flat&color=7760BA)](https://github.com/YumiNoona/Focus/releases/latest)
@@ -21,11 +23,11 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ---
 
-## Meet Focus
+## Meet FocuLY
 
-**Development preview:** independent blocks, permission onboarding, Focus admin PIN, custom blocking messages, direct Shorts/Reels actions, and individual managed app controls are implemented on `main` for the next version. The latest published APK is still **v1.1.0**. Build from source to test these changes; no v1.2.0 release has been published.
+**Development preview:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages, direct Shorts/Reels actions, and individual managed app controls are implemented on `main` for the next version. The latest published APK is still **v1.1.0**. Build from source to test these changes; no v1.2.0 release has been published.
 
-Focus helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
+FocuLY helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
 
 The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**. Profile lives at the top left; Settings lives at the top right. No account, advertising, analytics, or subscription is built into this release.
 
@@ -37,11 +39,11 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
   <tr>
     <td align="center"><b>Home</b></td>
     <td align="center"><b>Your rules</b></td>
-    <td align="center"><b>Focus session</b></td>
+    <td align="center"><b>FocuLY session</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/home.png" alt="Focus home with profile, settings, start button, and three-icon dock" width="250" /></td>
-    <td><img src="docs/screenshots/rules.png" alt="Focus app restrictions and always-allowed controls" width="250" /></td>
+    <td><img src="docs/screenshots/home.png" alt="FocuLY home with profile, settings, start button, and three-icon dock" width="250" /></td>
+    <td><img src="docs/screenshots/rules.png" alt="FocuLY app restrictions and always-allowed controls" width="250" /></td>
     <td><img src="docs/screenshots/session.png" alt="Active focus timer and session controls" width="250" /></td>
   </tr>
   <tr>
@@ -50,13 +52,13 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
     <td align="center"><b>Intentional pause</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/dark.png" alt="Focus dark theme" width="250" /></td>
-    <td><img src="docs/screenshots/insights.png" alt="Focus session and usage insights" width="250" /></td>
+    <td><img src="docs/screenshots/dark.png" alt="FocuLY dark theme" width="250" /></td>
+    <td><img src="docs/screenshots/insights.png" alt="FocuLY session and usage insights" width="250" /></td>
     <td><img src="docs/screenshots/blocking.png" alt="Accessibility interruption over a selected test app" width="250" /></td>
   </tr>
 </table>
 
-Screenshots are captured from the actual Android app in an emulator. Scroll Test is a separate test app used to demonstrate blocking; it is not included in the installed Focus app. Usage history is not fabricated.
+Screenshots are captured from the actual Android app in an emulator. Scroll Test is a separate test app used to demonstrate blocking; it is not included in the installed FocuLY app. Usage history is not fabricated.
 
 <details>
 <summary>Development preview: independent blocks and compact setup</summary>
@@ -83,7 +85,7 @@ Personal-phone administration adds a deactivation step. Separately provisioned d
 
 | Area | Features |
 | --- | --- |
-| **Focus sessions** | Custom durations and intentions; reusable presets; open-ended Normal/Resistant sessions; finite Strict sessions |
+| **FocuLY sessions** | Custom durations and intentions; reusable presets; open-ended Normal/Resistant sessions; finite Strict sessions |
 | **Pomodoro** | Configurable work periods, breaks, and rounds in Normal/Resistant; Strict stays locked until its deadline |
 | **App boundaries** | Whole-app blocking during focus; daily usage budgets; time per visit; essential-app exceptions |
 | **Gradual reduction** | Reduce an app’s allowance by five minutes per day toward a chosen target; pause and resume |
@@ -91,7 +93,7 @@ Personal-phone administration adds a deactivation step. Separately provisioned d
 | **Interruption modes** | Normal popup, Resistant waiting period and reason, Strict with no temporary visits or early ending |
 | **Independent blocks** | Apps, websites, and feeds for today, one day, one week, custom minutes, or until manually unblocked; work without a focus session |
 | **Uninstall protection** | Optional administrator deactivation step on personal phones; verified Android uninstall blocking and app suspension on separately provisioned managed devices |
-| **Setup & PIN** | Final onboarding permission checklist, optional 6–12 digit Focus admin PIN, temporary unlock, cooldown, Android screen-lock recovery outside Strict |
+| **Setup & PIN** | Final onboarding permission checklist, optional 6–12 digit FocuLY admin PIN, temporary unlock, cooldown, Android screen-lock recovery outside Strict |
 | **Your blocking screen** | Custom headline, optional supporting text, emoji, presets, and live preview |
 | **Individual app controls** | Managed per-app uninstall policy and launch quarantine after installation, including rules prepared before installation; day/week/manual durations |
 | **Insights** | Logged focus time, completed sessions, personal goals, measured app usage, weekly chart, prior-week comparison when data is available, and session history |
@@ -113,7 +115,7 @@ Strict needs an automatic expiry. “Until I unblock” supports Normal and Resi
 | --- | --- | --- |
 | **Normal** | Compact popup | Continue for the configured visit duration; reason optional |
 | **Resistant** | Full-screen interruption | Wait 30 seconds, give a reason, then get one minute; at least ten minutes between visits |
-| **Strict** | Full-screen lock until the deadline | No temporary visits, early stop, rule weakening, or data deletion within Focus; existing visits are ignored |
+| **Strict** | Full-screen lock until the deadline | No temporary visits, early stop, rule weakening, or data deletion within FocuLY; existing visits are ignored |
 
 Strict requires a live protection service and an automatic ending. Sessions use 1–1,440 minutes; independent blocks can use today, one day, or one week. Home, emergency access, and Android settings remain accessible. Ordinary phones allow Android permission revocation. For Android-enforced whole-app suspension and uninstall blocking, see the opt-in [managed-device guide](docs/MANAGED_DEVICE.md).
 
@@ -122,15 +124,15 @@ Strict requires a live protection service and an automatic ending. Sessions use 
 **Requires Android 9 / API 28 or newer.**
 
 1. Open the [v1.1.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0).
-2. Download **`Focus-v1.1.0.apk`** and open it on your Android phone.
+2. Download **`Focus-v1.1.0.apk`** and open it on your Android phone. This published APK uses the previous name; FocuLY is currently a development preview.
 3. If Android asks, allow installation from the browser or file manager you are using.
-4. Launch **Focus** and choose **Make room**.
-5. Read the protection disclosure and enable **Focus protection** in Android Accessibility settings if you want blocking.
+4. Launch **FocuLY** and choose **Make room**.
+5. Read the protection disclosure and enable **FocuLY protection** in Android Accessibility settings if you want blocking.
 6. Enable **Usage Access** for daily budgets and usage charts. Notifications are optional.
 7. Choose distractions under **Rules**. In **Settings → Protection health**, check that the service is connected, then use **Test selected app for 1 minute**.
 8. Start your preferred session from **Home**. For OnePlus Nord CE 2 background settings, follow [troubleshooting](docs/TROUBLESHOOTING.md).
 
-Some Android versions place additional restrictions on accessibility access for sideloaded apps. If needed, allow restricted settings from Focus’s system App Info screen before enabling protection.
+Some Android versions place additional restrictions on accessibility access for sideloaded apps. If needed, allow restricted settings from FocuLY’s system App Info screen before enabling protection.
 
 The APK is release-signed for GitHub distribution and uses the same certificate as v1.0.0, so it installs as an update and preserves local data. It has not been submitted to Google Play. Debug builds and the earlier Still preview use different certificates. There is no JSON import feature.
 
@@ -138,23 +140,23 @@ The APK is release-signed for GitHub distribution and uses the same certificate 
 
 | Access | Purpose | What happens without it |
 | --- | --- | --- |
-| **Accessibility** | Observe the current app, exposed browser address fields, and selected feed controls; show restrictions you choose | Focus timers work, but blocking is unavailable |
+| **Accessibility** | Observe the current app, exposed browser address fields, and selected feed controls; show restrictions you choose | FocuLY timers work, but blocking is unavailable |
 | **Usage Access** | Read Android foreground activity events for daily budgets and usage insights | Session app blocking and visit limits can work; daily budgets and measured usage are unavailable |
 | **Notifications** | Session status, completion, and optional routine reminders | Sessions and rules still work |
 | **Boot/time broadcasts** | Reconcile saved session deadlines and replan reminders after reboot or time changes | Managed automatically by Android |
-| **Vibration** | Optional haptic feedback on primary actions | Can be disabled in Focus settings |
+| **Vibration** | Optional haptic feedback on primary actions | Can be disabled in FocuLY settings |
 | **Device administrator** | Optional uninstall resistance: Android requires deactivation before uninstalling | No uninstall resistance; no wipe/password/camera/lock policy is requested |
 | **Exact alarms** | Precise release of managed Strict app suspension | Managed Strict cannot start; ordinary sessions do not require this permission |
 
-Focus requests no network permission. Permission setup is progressive, and blocking status uses the service's live heartbeat. Consent withdrawal inside Focus is locked during Strict; Android settings remain available. Device-owner management is a separate provisioning requirement, not a permission a personal-phone app can grant itself.
+FocuLY requests no network permission. Permission setup is progressive, and blocking status uses the service's live heartbeat. Consent withdrawal inside FocuLY is locked during Strict; Android settings remain available. Device-owner management is a separate provisioning requirement, not a permission a personal-phone app can grant itself.
 
 ## Coverage and limitations
 
-- **App blocking:** a user-consented accessibility overlay interrupts selected apps. Phone, emergency access, your launcher, system settings, and Focus remain available.
+- **App blocking:** a user-consented accessibility overlay interrupts selected apps. Phone, emergency access, your launcher, system settings, and FocuLY remain available.
 - **Website rules:** experimental address-field detection in Chrome, Edge, Brave, and Firefox during focus. Hidden fields, private browsing, embedded browsers, and app updates can bypass detection. Whole-browser blocking is the available fallback.
 - **Feed rules:** experimental detection using third-party accessibility controls and view identifiers. Current production versions of YouTube, Instagram, and Facebook have not all been verified. Use whole-app rules when selective detection misses a feed.
 - **Strict mode:** no in-app escape before the deadline. Android settings can still disable accessibility on an ordinary phone. Optional administrator activation adds a deactivation step before uninstalling; actual uninstall blocking requires device-owner provisioning.
-- **Background behavior:** OEM restrictions can stop accessibility protection. Focus rechecks application windows every 500 ms and displays connection failures. Ordinary reminders are inexact. Managed Strict uses exact alarms; reboot recovery may wait for the first unlock.
+- **Background behavior:** OEM restrictions can stop accessibility protection. FocuLY rechecks application windows every 500 ms and displays connection failures. Ordinary reminders are inexact. Managed Strict uses exact alarms; reboot recovery may wait for the first unlock.
 - **Measurements:** Android foreground usage is not a measurement of attention. Split-screen behavior, event availability, and time behind an overlay can affect it. Cross-midnight daily focus totals are apportioned estimates; ongoing sessions enter logged totals when ended.
 
 The [validation record](VALIDATION.md) separates verified behavior from remaining device coverage.
@@ -169,7 +171,7 @@ Warm off-white backgrounds, near-black text, muted violet accents, quiet rounded
 - **Accessibility:** labeled navigation icons, selected states, scrolling content, font scaling, and quiet motion.
 - **Themes:** system, light, and dark, with equivalent screen structure.
 
-Slice’s spacious visual rhythm was an inspiration. Focus contains no Slice assets, code, or branding.
+Slice’s spacious visual rhythm was an inspiration. FocuLY contains no Slice assets, code, or branding.
 
 ## Build from source
 
@@ -226,7 +228,7 @@ The optional `test-fixture` project supplies a local distraction app for the acc
 ## Project structure
 
 ```text
-Focus/
+FocuLY/
 ├── app/
 │   ├── build.gradle.kts              # Android config and optional signing
 │   ├── proguard-rules.pro            # Release diagnostics / R8 rules
@@ -252,13 +254,13 @@ Focus/
 └── VALIDATION.md
 ```
 
-The application ID remains `dev.still.focus` from the initial preview. That internal identifier does not affect the Focus display name.
+The application ID remains `dev.still.focus` from the initial preview. That internal identifier does not affect the FocuLY display name.
 
 ## Privacy
 
 Your chosen rules, profile information, session history, and override reasons stay in local app storage. Screen content is checked in memory and is not recorded or transmitted. Analytics, advertising, account creation, and cloud sync are absent. Android usage events are read locally for budgets and insights.
 
-Export includes personal intentions and override reasons; choose its destination carefully. **Delete my data** clears Focus’s local records and ends its active session, while Android’s system usage history remains managed by Android. Cloud backup and device transfer are excluded by the app’s extraction rules. History and override records retain the latest 1,000 entries each.
+Export includes personal intentions and override reasons; choose its destination carefully. **Delete my data** clears FocuLY’s local records and ends its active session, while Android’s system usage history remains managed by Android. Cloud backup and device transfer are excluded by the app’s extraction rules. History and override records retain the latest 1,000 entries each.
 
 ## Contributing and notices
 

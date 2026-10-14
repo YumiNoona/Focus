@@ -10,13 +10,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 
 val Mono = FontFamily(Font(R.font.jetbrains_mono))
-val Violet = Color(0xFF7760BA)
-private val Light = lightColorScheme(primary = Violet, onPrimary = Color.White, primaryContainer = Color(0xFFEBE5F7), onPrimaryContainer = Color(0xFF4C3884),
-    background = Color(0xFFF9F8F4), onBackground = Color(0xFF25232A), surface = Color(0xFFF9F8F4), onSurface = Color(0xFF25232A),
-    surfaceVariant = Color(0xFFF0EEE8), onSurfaceVariant = Color(0xFF6B6572), outline = Color(0xFFD9D6DE), outlineVariant = Color(0xFFE8E5E0))
-private val Dark = darkColorScheme(primary = Color(0xFFC7B5F2), onPrimary = Color(0xFF30204F), primaryContainer = Color(0xFF3B2C58), onPrimaryContainer = Color(0xFFE9DFFB),
-    background = Color(0xFF19181C), onBackground = Color(0xFFF4F1F6), surface = Color(0xFF19181C), onSurface = Color(0xFFF4F1F6),
-    surfaceVariant = Color(0xFF27252C), onSurfaceVariant = Color(0xFFB3ACBA), outline = Color(0xFF625C69), outlineVariant = Color(0xFF36313D))
+private val Light = lightColorScheme(primary = FoculyBrand.ink, onPrimary = FoculyBrand.paper,
+    primaryContainer = FoculyBrand.lilac, onPrimaryContainer = Color(0xFF352A4C), secondary = Color(0xFF725582),
+    background = FoculyBrand.paper, onBackground = FoculyBrand.ink, surface = FoculyBrand.paper, onSurface = FoculyBrand.ink,
+    surfaceVariant = Color(0xFFF0EEE5), onSurfaceVariant = Color(0xFF66665F), outline = Color(0xFF97978E), outlineVariant = Color(0xFFE2E0D7))
+private val Dark = darkColorScheme(primary = Color(0xFFF2F0E6), onPrimary = Color(0xFF202520),
+    primaryContainer = Color(0xFF41384F), onPrimaryContainer = Color(0xFFEAE3F7), secondary = Color(0xFFD1BDD9),
+    background = Color(0xFF191D19), onBackground = Color(0xFFF2F0E6), surface = Color(0xFF191D19), onSurface = Color(0xFFF2F0E6),
+    surfaceVariant = Color(0xFF292E28), onSurfaceVariant = Color(0xFFC1C3B8), outline = Color(0xFF92968A), outlineVariant = Color(0xFF3F453C))
 @Composable fun StillTheme(theme: String = "System", content: @Composable () -> Unit) {
     val dark = theme == "Dark" || (theme == "System" && isSystemInDarkTheme())
     MaterialTheme(colorScheme = if (dark) Dark else Light, typography = Typography(

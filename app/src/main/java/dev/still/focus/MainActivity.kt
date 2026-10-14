@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); Repository.reconcile(); delay(1000) } }
     LaunchedEffect(route, now / 15_000) { usage = withContext(Dispatchers.IO) { UsageReader.day(Repository.context) }; usageReady = true }
     val mainRoutes = listOf("home", "rules", "insights")
-    val back: () -> Unit = { route = when (route) { "block" -> blockParent; "settings" -> settingsParent; "profile" -> profileParent; "pin" -> pinParent; "profileEdit" -> "profile"; "managed", "messages", "permissions" -> "settings"; "lifecycle" -> "managed"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
+    val back: () -> Unit = { route = when (route) { "block" -> blockParent; "settings" -> settingsParent; "profile" -> profileParent; "pin" -> pinParent; "profileEdit" -> "profile"; "managed", "messages", "permissions", "welcome" -> "settings"; "lifecycle" -> "managed"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
     BackHandler(route !in mainRoutes, onBack = back)
     var appRule by remember { mutableStateOf<AppRule?>(null) }
     var stopDialog by remember { mutableStateOf(false) }
@@ -100,12 +100,10 @@ class MainActivity : ComponentActivity() {
         else -> route = it
     } }
     if (!s.onboarding) {
-        var checklist by rememberSaveable { mutableStateOf(false) }
-        if (checklist) Box(Modifier.fillMaxSize().safeDrawingPadding()) { SetupChecklist { Repository.update { it.copy(onboarding = true) }; route = "home" } }
-        else Onboarding { checklist = true }
-        BackHandler(checklist) { checklist = false }
+        FoculyOnboarding { Repository.update { it.copy(onboarding = true) }; route = "home" }
         return
     }
+    if (route == "welcome") { FoculyOnboarding { route = "settings" }; return }
     Scaffold(containerColor = MaterialTheme.colorScheme.background,
         topBar = { Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) },
         bottomBar = { if (route in mainRoutes) Dock(route, nav) }
@@ -149,7 +147,8 @@ class MainActivity : ComponentActivity() {
                 else Text(name.first().uppercase(), fontFamily = Mono, color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { contentDescription = "Profile" })
             }
         } else IconButton(back) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-        Text(if (root) "focus" else when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontFamily = Mono, fontSize = 18.sp)
+        if (root) BrandWordmark(Modifier.weight(1f))
+        else Text(when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontFamily = Mono, fontSize = 18.sp)
         if (root) IconButton(settings) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) } else Spacer(Modifier.width(48.dp))
     }
 }
@@ -177,40 +176,13 @@ fun clock(millis: Long): String { val sec = (millis.coerceAtLeast(0) + 999) / 10
 fun duration(millis: Long): String { val m = millis / 60_000; return if (m >= 60) "${m / 60}h ${m % 60}m" else "${m}m" }
 fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
 
-@Composable fun Onboarding(done: () -> Unit) {
-    Column(Modifier.fillMaxSize().safeDrawingPadding().padding(28.dp), verticalArrangement = Arrangement.SpaceBetween) {
-        Text("focus / a little more room", fontFamily = Mono, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-        Column(verticalArrangement = Arrangement.spacedBy(28.dp)) {
-            OrbitArt(Modifier.fillMaxWidth().height(210.dp))
-            Text("Your attention.\nBack with you.", style = MaterialTheme.typography.headlineLarge)
-            Text("Pause the scroll. Protect your time. Make space for what you actually want to do.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("No account. No ads. Your usage stays on this device.", style = MaterialTheme.typography.bodyMedium)
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { Primary("Make room", action = done); Text("You choose the rules. You can always recover access.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-    }
-}
-@Composable fun OrbitArt(modifier: Modifier = Modifier) {
-    val accent = MaterialTheme.colorScheme.primary
-    val line = MaterialTheme.colorScheme.outlineVariant
-    Canvas(modifier) {
-        val radius = minOf(size.width, size.height) * .40f
-        drawCircle(line, radius, style = Stroke(1.dp.toPx()))
-        drawCircle(line, radius * .74f, style = Stroke(1.dp.toPx()))
-        drawCircle(accent.copy(alpha = .08f), radius * .49f)
-        val x = center.x
-        listOf(-14f, 0f, 14f).forEachIndexed { i, offset -> drawLine(accent, androidx.compose.ui.geometry.Offset(x + offset.dp.toPx(), center.y - (if (i == 1) 27 else 18).dp.toPx()), androidx.compose.ui.geometry.Offset(x + offset.dp.toPx(), center.y + (if (i == 1) 27 else 18).dp.toPx()), 4.dp.toPx(), StrokeCap.Round) }
-        drawCircle(accent, 5.dp.toPx(), center + androidx.compose.ui.geometry.Offset(radius * .71f, -radius * .71f))
-    }
-}
-
 @Composable fun Home(s: FocusState, now: Long, usage: Map<String, Long>, usageReady: Boolean, nav: (String) -> Unit, start: (Profile) -> Unit, stop: () -> Unit) {
     Page {
         val hour = LocalTime.now().hour
         Caption("${when (hour) { in 5..11 -> "GOOD MORNING"; in 12..17 -> "GOOD AFTERNOON"; else -> "GOOD EVENING" }}${if (s.name.isBlank()) "" else ", ${s.name.uppercase()}"}")
         val session = s.session
         if (session == null) {
-            Heading("A little less scroll.\nA little more you.", "Give the next moment your full attention.")
-            if (s.blocks.isEmpty()) OrbitArt(Modifier.fillMaxWidth().height(120.dp))
+            DoodleCard(CatArt.PAUSE, "A little less scroll.\nA little more you.", "Give the next moment your full attention.", FoculyBrand.blush)
             ActiveBlocks(s, now)
             Primary("Start focus", icon = Icons.Outlined.PlayArrow) { start(s.profiles.firstOrNull() ?: FocusState.defaults().first()) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -235,7 +207,7 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
                 } }
             }
         } else {
-            Caption(if (session.onBreak(now)) "A MOMENT TO RESET" else "ONE THING AT A TIME")
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.weight(1f)) { Caption(if (session.onBreak(now)) "A MOMENT TO RESET" else "ONE THING AT A TIME") }; CatDoodle(if (session.onBreak(now)) CatArt.PAUSE else CatArt.STUDY, Modifier.size(72.dp)) }
             Text(session.intention, style = MaterialTheme.typography.headlineLarge)
             Box(Modifier.fillMaxWidth().height(250.dp), contentAlignment = Alignment.Center) {
                 val accent = MaterialTheme.colorScheme.primary
@@ -275,10 +247,10 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
             "Apps" -> {
                 Primary("Choose distracting apps", icon = Icons.Outlined.Add) { nav("picker") }
                 if (s.apps.isNotEmpty()) Primary("Block selected apps", enabled = s.apps.any { it.enabled && it.packageName !in s.allowlist }, icon = Icons.Outlined.Lock) { block(BlockKind.APPS, null) }
-                if (s.apps.isEmpty()) SoftCard { Icon(Icons.Outlined.Apps, null, tint = MaterialTheme.colorScheme.primary); Text("Choose your first app.", style = MaterialTheme.typography.titleMedium) }
+                if (s.apps.isEmpty()) DoodleCard(CatArt.PAUSE, "Choose your first app.", "A small pause can make a big difference.", FoculyBrand.blush)
                 s.apps.forEach { app -> Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     AppBadge(app.packageName)
-                    Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { editApp(app) }.padding(horizontal = 12.dp, vertical = 10.dp)) { Text(app.label, style = MaterialTheme.typography.titleSmall); Text(buildList { add("Focus selection"); if (app.dailyMinutes > 0) add("${app.allowance(System.currentTimeMillis())}m/day"); if (app.openingMinutes > 0) add("${app.openingMinutes}m/visit") }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { editApp(app) }.padding(horizontal = 12.dp, vertical = 10.dp)) { Text(app.label, style = MaterialTheme.typography.titleSmall); Text(buildList { add("Session selection"); if (app.dailyMinutes > 0) add("${app.allowance(System.currentTimeMillis())}m/day"); if (app.openingMinutes > 0) add("${app.openingMinutes}m/visit") }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton({ block(BlockKind.APPS, setOf(app.packageName)) }, enabled = app.enabled && app.packageName !in s.allowlist) { Icon(Icons.Outlined.LockClock, "Block ${app.label}", Modifier.size(20.dp)) }
                     IconButton({ editApp(app) }) { Icon(Icons.Outlined.Edit, "Edit ${app.label}", Modifier.size(20.dp)) }
                 } } }
@@ -293,6 +265,7 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
                     if (normalized == null) domainError = true else { Repository.update { it.copy(domains = it.domains + normalized) }; domain = "" }
                 }
                 if (s.domains.isNotEmpty()) Primary("Block selected websites", icon = Icons.Outlined.Lock) { block(BlockKind.WEBSITES, null) }
+                else DoodleCard(CatArt.PAUSE, "Less rabbit holes.", "Add a website above to give browsing a boundary.", FoculyBrand.peach)
                 s.domains.sorted().forEach { host -> SoftCard { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.Public, null, tint = MaterialTheme.colorScheme.primary); Text(host, Modifier.weight(1f).padding(start = 14.dp), fontFamily = Mono, fontSize = 14.sp); IconButton({ block(BlockKind.WEBSITES, setOf(host)) }) { Icon(Icons.Outlined.LockClock, "Block $host") }; IconButton({ Repository.update { it.copy(domains = it.domains - host) } }) { Icon(Icons.Outlined.Close, "Remove $host from focus list") } } } }
                 DetailsCard("Browser coverage", "Chrome · Edge · Brave · Firefox", Icons.Outlined.Info) { Text("Experimental address-field detection. Hidden fields, private browsing, embedded browsers, and app updates can miss pages. Add the whole browser for a stronger boundary.", style = MaterialTheme.typography.bodyMedium) }
             }
@@ -309,7 +282,7 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
             }
             "Schedules" -> {
                 Primary("Add a routine", icon = Icons.Outlined.Add) { editSchedule(null) }
-                if (s.schedules.isEmpty()) SoftCard { Text("Give focus a regular place.", style = MaterialTheme.typography.titleMedium); Text("Schedule study hours, a quiet morning, or time to wind down. Overnight schedules are supported.") }
+                if (s.schedules.isEmpty()) DoodleCard(CatArt.STUDY, "Give focus a regular place.", "A quiet morning, study hours, or time to wind down.", FoculyBrand.lime)
                 s.schedules.forEach { schedule -> SoftCard {
                     Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(schedule.name, style = MaterialTheme.typography.titleMedium); Caption("${minuteLabel(schedule.startMinute)}–${minuteLabel(schedule.endMinute)}${if (schedule.endMinute <= schedule.startMinute) " · next day" else ""}") }; Switch(schedule.enabled, { enabled -> Repository.update { it.copy(schedules = it.schedules.map { item -> if (item.id == schedule.id) item.copy(enabled = enabled) else item }) }; FocusNotifications.plan(Repository.context) }, Modifier.semantics { contentDescription = "Enable ${schedule.name}" }) }
                     Text(schedule.days.sorted().joinToString(" · ") { DayOfWeek.of(it).name.take(3).lowercase().replaceFirstChar(Char::uppercase) }, style = MaterialTheme.typography.bodyMedium)
@@ -415,12 +388,12 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         Input("Your intention", intention, { intention = it.take(120) })
         if (!pomo) { ChoiceRow(listOf("25m", "50m", "90m", "Open end"), if (minutes == "0") "Open end" else "${minutes}m") { minutes = if (it == "Open end") "0" else it.removeSuffix("m") }; Input("Duration (minutes)", minutes, { minutes = it.filter(Char::isDigit).take(4) }, true, if (mode == "STRICT") "1–1440 minutes" else "0 = open end · up to 1440") }
         if (mode != "STRICT") ToggleRow("Pomodoro rhythm", "", pomo) { pomo = it }
-        if (pomo) { Input("Focus minutes", work, { work = it.filter(Char::isDigit) }, true, "1–240 minutes"); Input("Break minutes", pause, { pause = it.filter(Char::isDigit) }, true, "1–60 minutes"); Input("Rounds", rounds, { rounds = it.filter(Char::isDigit) }, true, "1–12 rounds · no break after the last round") }
+        if (pomo) { Input("Work minutes", work, { work = it.filter(Char::isDigit) }, true, "1–240 minutes"); Input("Break minutes", pause, { pause = it.filter(Char::isDigit) }, true, "1–60 minutes"); Input("Rounds", rounds, { rounds = it.filter(Char::isDigit) }, true, "1–12 rounds · no break after the last round") }
         Caption("RESISTANCE")
         ModeCards(FocusMode.valueOf(mode), manual = minutes == "0" && !pomo) { mode = it.name }
         if (mode == "STRICT" && !editing) {
-            ToggleRow("Lock until the timer ends", "I understand that Focus has no early end or override in Strict mode.", strictAcknowledged) { strictAcknowledged = it }
-            Caption(if (ManagedProtection.isOwner()) "Android blocks removing Focus during Strict." else "Android can still disable or remove Focus on this phone. Admin access adds a deactivation step.")
+            ToggleRow("Lock until the timer ends", "I understand that FocuLY has no early end or override in Strict mode.", strictAcknowledged) { strictAcknowledged = it }
+            Caption(if (ManagedProtection.isOwner()) "Android blocks removing FocuLY during Strict." else "Android can still disable or remove FocuLY on this phone. Admin access adds a deactivation step.")
         }
         DetailsCard("What gets paused", "${s.apps.count { it.enabled }} apps · ${s.domains.size} websites", Icons.Outlined.Tune) {
         ToggleRow("Use all selected app rules", "Or choose a specific subset below.", allApps) { allApps = it }
@@ -453,7 +426,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { (1..7).forEach { d -> FilterChip(d in days, { days = if (d in days) days - d else days + d }, label = { Text(DayOfWeek.of(d).name.take(3)) }) } }
         Input("Starts (24-hour HH:mm)", start, { start = it.take(5) })
         Input("Ends (24-hour HH:mm)", end, { end = it.take(5) }, supporting = "An earlier end time continues into the following day.")
-        Text("Focus profile", style = MaterialTheme.typography.titleMedium)
+        Text("Session profile", style = MaterialTheme.typography.titleMedium)
         ChoiceRow(s.profiles.map { it.name }, s.profiles.find { it.id == profile }?.name ?: "") { choice -> profile = s.profiles.first { it.name == choice }.id }
         ToggleRow("A gentle heads-up", "Remind me about five minutes before.", reminder) { reminder = it }
         if (!valid) Text("Choose at least one day and two different valid times.", color = MaterialTheme.colorScheme.error)
@@ -502,11 +475,12 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             Caption("PROTECTION HEALTH")
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Icon(if (connected && s.disclosure) Icons.Outlined.VerifiedUser else Icons.Outlined.Shield, null, tint = MaterialTheme.colorScheme.primary)
-                Text(if (connected && s.disclosure) "Protection connected" else "Connect protection", style = MaterialTheme.typography.titleMedium)
+                Text(if (connected && s.disclosure) "Protection connected" else "Connect protection", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                CatDoodle(CatArt.GUARD, Modifier.size(60.dp))
             }
-            if (accessibility && !connected) Text("Service disconnected. Toggle Focus off and on in Android Accessibility settings.", style = MaterialTheme.typography.bodyMedium)
+            if (accessibility && !connected) Text("Service disconnected. Toggle FocuLY off and on in Android Accessibility settings.", style = MaterialTheme.typography.bodyMedium)
             if (ProtectionRuntime.lastError.isNotBlank()) Text(ProtectionRuntime.lastError, color = MaterialTheme.colorScheme.error)
-            ActionCard("Focus protection", if (connected && s.disclosure) "Connected" else "Required for blocking", Icons.Outlined.Shield, connected && s.disclosure) { if (s.disclosure) Repository.openAccessibility() else consent = true }
+            ActionCard("FocuLY protection", if (connected && s.disclosure) "Connected" else "Required for blocking", Icons.Outlined.Shield, connected && s.disclosure) { if (s.disclosure) Repository.openAccessibility() else consent = true }
             ActionCard("Usage access", if (usage) "Connected" else "Daily limits & recovery", Icons.Outlined.Timer, usage) { Repository.openUsage() }
             ActionCard("Background activity", if (batteryExempt) "Unrestricted" else "Check battery settings", Icons.Outlined.BatteryChargingFull, batteryExempt) { Repository.openBatterySettings() }
             Primary("Test selected app for 1 minute", enabled = connected && s.disclosure && s.session == null && !RulesEngine.strictActive(s, System.currentTimeMillis()) && s.apps.any { it.enabled && it.packageName !in s.allowlist }, icon = Icons.Outlined.PlayArrow) {
@@ -521,15 +495,16 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
                 if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 else ctx.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName))
             }
-            if (android.os.Build.MANUFACTURER.equals("OnePlus", true) || android.os.Build.MANUFACTURER.equals("OPPO", true)) Text("OxygenOS: allow background activity in Focus's App Info → Battery settings. Menu names vary.", style = MaterialTheme.typography.bodyMedium)
+            if (android.os.Build.MANUFACTURER.equals("OnePlus", true) || android.os.Build.MANUFACTURER.equals("OPPO", true)) Text("OxygenOS: allow background activity in FocuLY's App Info → Battery settings. Menu names vary.", style = MaterialTheme.typography.bodyMedium)
             if (ProtectionRuntime.observedPackage.isNotBlank()) Caption("LAST APP · ${runCatching { ctx.packageManager.getApplicationLabel(ctx.packageManager.getApplicationInfo(ProtectionRuntime.observedPackage, 0)).toString() }.getOrDefault(ProtectionRuntime.observedPackage)}")
             TextButton({ consent = true }) { Text("Read protection disclosure") }
             if (s.disclosure) TextButton({ if (Repository.update { it.copy(disclosure = false) }) { FocusAccessibilityService.instance?.clearOverlay(); FocusNotifications.session(ctx) } }, enabled = !RulesEngine.strictActive(s, System.currentTimeMillis())) { Text("Withdraw consent") }
         }
         ActionCard("Uninstall & managed protection", "Optional Android administration", Icons.Outlined.Lock) { nav("managed") }
-        ActionCard("Focus admin PIN", if (AdminPin.configured()) "PIN is set" else "Protect device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
+        ActionCard("FocuLY admin PIN", if (AdminPin.configured()) "PIN is set" else "Protect device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
         ActionCard("Your blocking screen", "Message, emoji & live preview", Icons.Outlined.EmojiEmotions) { nav("messages") }
         ActionCard("Setup checklist", "Review all permissions in one place", Icons.Outlined.FactCheck) { nav("permissions") }
+        ActionCard("Welcome to FocuLY", "Meet your little focus companions", Icons.Outlined.AutoAwesome) { nav("welcome") }
         DetailsCard("Appearance", s.theme, Icons.Outlined.Palette) {
             ChoiceRow(listOf("System", "Light", "Dark"), s.theme) { value -> Repository.update { it.copy(theme = value) } }
             ToggleRow("Reduce motion", "", s.reduceMotion) { value -> Repository.update { it.copy(reduceMotion = value) } }
@@ -552,14 +527,14 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             LinkRow("Delete my data", "Available outside Strict", Icons.Outlined.Delete) { delete = true }
         }
         DetailsCard("Essential access", "Phone, home & settings stay available", Icons.Outlined.HealthAndSafety) { Text("Android settings control accessibility on ordinary phones. Device-owner management adds OS app suspension and uninstall policies. Strict has no in-app early exit.", style = MaterialTheme.typography.bodyMedium) }
-        Caption("FOCUS 1.2 · DEVELOPMENT · ANDROID 9+")
+        Caption("FOCULY 1.2 · DEVELOPMENT · ANDROID 9+")
     }
     if (consent) AlertDialog(onDismissRequest = { consent = false }, title = { Text("How protection works", fontFamily = Mono) }, text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Focus uses Android Accessibility access to observe which app is open, check selected feed controls and supported browser address fields, and display a blocking screen for rules you choose.")
-        Text("This access can expose on-screen text. Focus checks it only in memory on your device. It does not store screen content, send it anywhere, or use it for advertising.")
-        Text("Access is optional. You can withdraw consent inside Focus when Strict is inactive, or turn accessibility protection off in Android settings at any time. Without access, focus timers still work. Managed whole-app suspension is controlled separately by Android device-owner policies.")
+        Text("FocuLY uses Android Accessibility access to observe which app is open, check selected feed controls and supported browser address fields, and display a blocking screen for rules you choose.")
+        Text("This access can expose on-screen text. FocuLY checks it only in memory on your device. It does not store screen content, send it anywhere, or use it for advertising.")
+        Text("Access is optional. You can withdraw consent inside FocuLY when Strict is inactive, or turn accessibility protection off in Android settings at any time. Without access, focus timers still work. Managed whole-app suspension is controlled separately by Android device-owner policies.")
     } }, confirmButton = { TextButton({ Repository.update { it.copy(disclosure = true) }; consent = false; Repository.openAccessibility() }) { Text("Agree & open settings") } }, dismissButton = { TextButton({ consent = false }) { Text("Not now") } })
-    if (delete) AlertDialog(onDismissRequest = { delete = false }, title = { Text("Clear your space?", fontFamily = Mono) }, text = { Text("This deletes Focus’s rules, profiles, sessions, and override history and ends any active session. It does not delete Android’s system usage history. This cannot be undone.") }, confirmButton = { TextButton({ Repository.deleteAll(); delete = false; nav("home") }) { Text("Delete local data", color = MaterialTheme.colorScheme.error) } }, dismissButton = { TextButton({ delete = false }) { Text("Keep data") } })
+    if (delete) AlertDialog(onDismissRequest = { delete = false }, title = { Text("Clear your space?", fontFamily = Mono) }, text = { Text("This deletes FocuLY’s rules, profiles, sessions, and override history and ends any active session. It does not delete Android’s system usage history. This cannot be undone.") }, confirmButton = { TextButton({ Repository.deleteAll(); delete = false; nav("home") }) { Text("Delete local data", color = MaterialTheme.colorScheme.error) } }, dismissButton = { TextButton({ delete = false }) { Text("Keep data") } })
 }
 
 @Composable fun Insights(s: FocusState, usage: Map<String, Long>, usageReady: Boolean) {
@@ -587,12 +562,13 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Surface(Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) { Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Caption("FOCUS TODAY"); Text(duration(focused), style = MaterialTheme.typography.headlineMedium); Text("Logged sessions", style = MaterialTheme.typography.bodySmall) } }
-            Surface(Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Caption("COMPLETED"); Text(records.count { it.completed && it.end in dayStart until dayEnd }.toString(), style = MaterialTheme.typography.headlineMedium); Text("Focus sessions", style = MaterialTheme.typography.bodySmall) } }
+            Surface(Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Caption("COMPLETED"); Text(records.count { it.completed && it.end in dayStart until dayEnd }.toString(), style = MaterialTheme.typography.headlineMedium); Text("FocuLY sessions", style = MaterialTheme.typography.bodySmall) } }
         }
         val progress = (focused.toFloat() / (s.goalMinutes * 60_000L)).coerceIn(0f, 1f)
         Caption("YOUR PERSONAL GUIDE · ${s.goalMinutes} MINUTES")
         LinearProgressIndicator(progress = { progress }, Modifier.fillMaxWidth().height(4.dp).clip(CircleShape), trackColor = MaterialTheme.colorScheme.outlineVariant)
-        Text(if (focused == 0L) "Your first session is a good place to begin." else "You made room for ${duration(focused)} today. Keep a rhythm that feels sustainable.", style = MaterialTheme.typography.bodyLarge)
+        if (focused == 0L) DoodleCard(CatArt.STUDY, "Start small. Stay curious.", "Your first session is a good place to begin.", FoculyBrand.lime)
+        else Text("You made room for ${duration(focused)} today. Keep a rhythm that feels sustainable.", style = MaterialTheme.typography.bodyLarge)
         if (!Repository.usageGranted()) SoftCard { Text("See your everyday patterns.", style = MaterialTheme.typography.titleMedium); Text("Usage access enables Android usage measurements and daily allowance enforcement."); TextButton({ Repository.openUsage() }) { Text("Enable usage access") } }
         else if (!usageReady || week.isEmpty()) LinearProgressIndicator(Modifier.fillMaxWidth())
         else {
@@ -629,7 +605,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
 }
 
 @Composable fun EndSessionDialog(mode: FocusMode, dismiss: () -> Unit, stop: () -> Unit) {
-    if (mode == FocusMode.STRICT) { AlertDialog(onDismissRequest = dismiss, title = { Text("Strict stays locked", fontFamily = Mono) }, text = { Text("The timer must finish. There is no early end in Focus. Phone and emergency access stay available.") }, confirmButton = { TextButton(dismiss) { Text("Keep focusing") } }); return }
+    if (mode == FocusMode.STRICT) { AlertDialog(onDismissRequest = dismiss, title = { Text("Strict stays locked", fontFamily = Mono) }, text = { Text("The timer must finish. There is no early end in FocuLY. Phone and emergency access stay available.") }, confirmButton = { TextButton(dismiss) { Text("Keep focusing") } }); return }
     var remaining by remember { mutableIntStateOf(mode.waitSeconds) }
     var reason by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { while (remaining > 0) { delay(1000); remaining-- } }
@@ -661,7 +637,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         Heading("Keep the boundary.")
         SoftCard { Caption(if (owner) "MANAGED DEVICE" else "ORDINARY ANDROID INSTALLATION")
             Text(if (owner) "Android device-owner management is active." else "Android settings still control this app.", style = MaterialTheme.typography.titleMedium)
-            Text(if (owner) "Focus removal is automatically blocked while Strict is active." else "Your Focus PIN protects in-app controls. Android still permits deactivation and removal.", style = MaterialTheme.typography.bodyMedium)
+            Text(if (owner) "FocuLY removal is automatically blocked while Strict is active." else "Your FocuLY PIN protects in-app controls. Android still permits deactivation and removal.", style = MaterialTheme.typography.bodyMedium)
         }
         if (!owner) {
             SoftCard { Icon(Icons.Outlined.AdminPanelSettings, null, tint = MaterialTheme.colorScheme.primary); Text("Uninstall resistance", style = MaterialTheme.typography.titleMedium); Text("Adds an Android administrator deactivation step before removal. No wipe, password, camera, or screen-lock policy is requested.", style = MaterialTheme.typography.bodyMedium) }
@@ -669,7 +645,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             else { Caption("ADMINISTRATOR ACTIVE · DEACTIVATE BEFORE UNINSTALLING"); Primary("Disable uninstall resistance", enabled = !locked, icon = Icons.Outlined.LockOpen) { ManagedProtection.removeAdmin(ctx) } }
         } else {
             SoftCard {
-            ToggleRow("Managed uninstall protection", if (protected) "Verified: Android blocks Focus removal." else "Keep Focus installed outside Strict too.", s.uninstallProtection, enabled = !locked) { enabled -> if (Repository.update { it.copy(uninstallProtection = enabled) }) ManagedProtection.sync(ctx) }
+            ToggleRow("Managed uninstall protection", if (protected) "Verified: Android blocks FocuLY removal." else "Keep FocuLY installed outside Strict too.", s.uninstallProtection, enabled = !locked) { enabled -> if (Repository.update { it.copy(uninstallProtection = enabled) }) ManagedProtection.sync(ctx) }
             ToggleRow("OS-enforced Strict app blocking", "Suspend selected whole apps until Strict ends. Essential apps stay available.", s.managedLockdown, enabled = !locked) { enabled ->
                 if (!enabled || exact) { if (Repository.update { it.copy(managedLockdown = enabled) }) { ManagedProtection.sync(ctx); FocusNotifications.plan(ctx) } }
                 else ManagedProtection.openPreciseEnding(ctx)
@@ -678,11 +654,11 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             }
         }
         ActionCard("Individual app controls", "Pause new installs · keep selected apps installed", Icons.Outlined.AppBlocking) { nav("lifecycle") }
-        ActionCard("Focus admin PIN", if (AdminPin.configured()) "Set · unlock lasts 90 seconds" else "Add a PIN for device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
+        ActionCard("FocuLY admin PIN", if (AdminPin.configured()) "Set · unlock lasts 90 seconds" else "Add a PIN for device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
         DetailsCard("Stronger managed protection", "Device-owner setup & coverage", Icons.Outlined.Info) {
             Text("Android reserves OS uninstall blocking and app suspension for a device-owner administrator. A normal install on your OnePlus cannot grant itself that role. It requires dedicated-device or enterprise setup, typically before personal accounts are configured. See the project's managed-device guide.")
-            Text("Websites and feeds need their browser or social app selected as a whole-app rule for OS enforcement. After reboot, exact ending may wait for Android to unlock app storage. Opening Focus releases expired rules.")
-            Text("Android shows its own administration dialogs. Your custom Focus message is supplied as administrator support text where Android displays it. Device resets and administrator tools remain outside this boundary.")
+            Text("Websites and feeds need their browser or social app selected as a whole-app rule for OS enforcement. After reboot, exact ending may wait for Android to unlock app storage. Opening FocuLY releases expired rules.")
+            Text("Android shows its own administration dialogs. Your custom FocuLY message is supplied as administrator support text where Android displays it. Device resets and administrator tools remain outside this boundary.")
         }
         if (locked) Text("Protection preferences stay locked until Strict ends.", color = MaterialTheme.colorScheme.primary)
     }

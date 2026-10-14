@@ -144,10 +144,10 @@ class FocusAccessibilityService : AccessibilityService() {
         val blockedPackage = foreground
         val state = Repository.state
         val dark = state.theme == "Dark" || (state.theme == "System" && resources.configuration.uiMode and 0x30 == 0x20)
-        val bg = Color.parseColor(if (dark) "#19181C" else "#F9F8F4")
-        val ink = Color.parseColor(if (dark) "#F4F1F6" else "#25232A")
-        val secondary = Color.parseColor(if (dark) "#B3ACBA" else "#77737D")
-        val violet = Color.parseColor(if (dark) "#C7B5F2" else "#7760BA")
+        val bg = Color.parseColor(if (dark) "#191D19" else "#FBFAF5")
+        val ink = Color.parseColor(if (dark) "#F2F0E6" else "#202520")
+        val secondary = Color.parseColor(if (dark) "#C1C3B8" else "#66665F")
+        val violet = ink
         val mono = resources.getFont(R.font.jetbrains_mono)
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(56), dp(28), dp(40)); setBackgroundColor(bg) }
         val scroll = ScrollView(this).apply { isFillViewport = true; addView(container) }
@@ -164,7 +164,11 @@ class FocusAccessibilityService : AccessibilityService() {
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) }
             setPadding(dp(16), dp(16), dp(16), dp(16)); setOnClickListener { if (Repository.state.haptics) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); click() }
         }.also(container::addView)
-        text("focus / ${restriction.mode.label.lowercase()}", 14f, violet, true)
+        text("FocuLY / ${restriction.mode.label.lowercase()}", 14f, violet, true)
+        ImageView(this).apply {
+            setImageResource(R.drawable.cat_pause); scaleType = ImageView.ScaleType.FIT_CENTER
+            layoutParams = LinearLayout.LayoutParams(-1, dp(if (restriction.mode == FocusMode.GENTLE) 86 else 120)).apply { bottomMargin = dp(16) }
+        }.also(container::addView)
         if (state.blockMessage.emoji.isNotBlank()) text(state.blockMessage.emoji, 44f)
         text(state.blockMessage.title.ifBlank { "See you later." }, if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink, true)
         if (state.blockMessage.body.isNotBlank()) text(state.blockMessage.body, 16f, secondary)
@@ -234,7 +238,7 @@ class FocusAccessibilityService : AccessibilityService() {
         overlayKey = "$foreground:${restriction.explanation}:${restriction.mode}:${restriction.until}"
         overlay = scroll
         runCatching { getSystemService(WindowManager::class.java).addView(scroll, params); ProtectionRuntime.blocked(blockedPackage) }
-            .onFailure { overlay = null; overlayKey = ""; ProtectionRuntime.error("Android could not show the blocking screen. Re-enable Focus protection and check background access.") }
+            .onFailure { overlay = null; overlayKey = ""; ProtectionRuntime.error("Android could not show the blocking screen. Re-enable FocuLY protection and check background access.") }
     }
     fun clearOverlay() {
         overlay?.let { runCatching { getSystemService(WindowManager::class.java).removeView(it) } }

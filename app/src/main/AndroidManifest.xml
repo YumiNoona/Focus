@@ -9,18 +9,18 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <queries><intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent></queries>
-    <application android:label="Focus" android:icon="@drawable/ic_still" android:theme="@style/AppTheme" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true">
+    <application android:label="FocuLY" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/AppTheme" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true">
         <service android:name=".ManagedPolicyService" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Device-owner app policy monitoring: package installation, suspension, uninstall restrictions, and deadline reconciliation on a dedicated managed device." />
         </service>
         <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTop">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
-        <service android:name=".FocusAccessibilityService" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true" android:label="Focus protection">
+        <service android:name=".FocusAccessibilityService" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true" android:label="FocuLY protection">
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_service" />
         </service>
-        <service android:name=".FocusTile" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE" android:exported="true" android:icon="@drawable/ic_still" android:label="Focus">
+        <service android:name=".FocusTile" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE" android:exported="true" android:icon="@drawable/ic_still" android:label="FocuLY">
             <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
             <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="true" />
         </service>
@@ -39,7 +39,7 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/focus_widget" />
         </receiver>
-        <receiver android:name=".FocusAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN" android:label="Focus uninstall resistance">
+        <receiver android:name=".FocusAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN" android:label="FocuLY uninstall resistance">
             <meta-data android:name="android.app.device_admin" android:resource="@xml/device_admin" />
             <intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED" /></intent-filter>
         </receiver>

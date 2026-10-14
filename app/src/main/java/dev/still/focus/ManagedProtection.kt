@@ -30,7 +30,7 @@ object ManagedProtection {
     }
     fun requestAdmin(ctx: Context) {
         ctx.startActivity(Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin(ctx))
-            .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Optional uninstall resistance: Android asks you to deactivate this administrator before removing Focus. No camera, password, wipe, or screen-lock policy is requested."))
+            .putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Optional uninstall resistance: Android asks you to deactivate this administrator before removing FocuLY. No camera, password, wipe, or screen-lock policy is requested."))
     }
     fun removeAdmin(ctx: Context): Boolean {
         if (!AdminPin.authorized() || RulesEngine.strictActive(Repository.state, System.currentTimeMillis()) || isOwner(ctx)) return false
@@ -75,7 +75,7 @@ object ManagedProtection {
             }
             if (lastMessage != state.blockMessage) {
                 policy.setShortSupportMessage(component, "${state.blockMessage.emoji} ${state.blockMessage.title}".trim())
-                policy.setLongSupportMessage(component, "${state.blockMessage.body}\nOpen Focus → Device protection to review app controls. Strict rules unlock at their deadline.")
+                policy.setLongSupportMessage(component, "${state.blockMessage.body}\nOpen FocuLY → Device protection to review app controls. Strict rules unlock at their deadline.")
                 lastMessage = state.blockMessage
             }
             if (lastDesired != desired || previous != desired) {
@@ -85,7 +85,7 @@ object ManagedProtection {
                 val releases = (previous - desired).filter { installed(ctx, it) }.toTypedArray()
                 if (releases.isNotEmpty()) {
                     val failed = policy.setPackagesSuspended(component, releases, false)
-                    check(failed.isEmpty()) { "Android could not release ${failed.size} managed app(s). Open Focus to retry." }
+                    check(failed.isEmpty()) { "Android could not release ${failed.size} managed app(s). Open FocuLY to retry." }
                 }
                 if (desired.isNotEmpty()) {
                     val failed = policy.setPackagesSuspended(component, desired.toTypedArray(), true)

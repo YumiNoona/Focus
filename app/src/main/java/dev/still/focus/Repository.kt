@@ -39,7 +39,7 @@ object Repository {
         if (AdminPin.configured() && !AdminPin.authorized() &&
             (next.managedLockdown != state.managedLockdown || next.uninstallProtection != state.uninstallProtection ||
                 next.lifecycleRules != state.lifecycleRules && next.lifecycleRules != state.lifecycleRules.filter { it.alive(System.currentTimeMillis()) } ||
-                state.disclosure && !next.disclosure)) return fail("Unlock device controls with your Focus PIN first.")
+                state.disclosure && !next.disclosure)) return fail("Unlock device controls with your FocuLY PIN first.")
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) {
             val protected = state.copy(name = next.name, intention = next.intention, goalMinutes = next.goalMinutes,
                 theme = next.theme, haptics = next.haptics, reminders = next.reminders, hideInsights = next.hideInsights, reduceMotion = next.reduceMotion,
@@ -55,7 +55,7 @@ object Repository {
     }
     fun block(kind: BlockKind, targets: Set<String>, period: BlockPeriod, mode: FocusMode, minutes: Int = 60): Boolean {
         reconcile()
-        if (!protectionReady()) return fail("Enable Focus protection before blocking.")
+        if (!protectionReady()) return fail("Enable FocuLY protection before blocking.")
         val eligible = when (kind) {
             BlockKind.APPS -> state.apps.filter { it.enabled && it.packageName !in state.allowlist && !FocusAccessibilityService.essential(context, it.packageName) }.map { it.packageName }.toSet()
             BlockKind.WEBSITES -> state.domains

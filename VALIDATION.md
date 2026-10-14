@@ -1,6 +1,14 @@
 # Validation — 1.2 development preview, 14 October 2026
 
-The latest published release remains v1.1.0. The current local build is 1.2.0-dev (version code 120); no new release or tag is published for this work.
+The latest published release remains v1.1.0 under the former Focus name. The current local app is FocuLY 1.2.0-dev (version code 121); no new release or tag is published for this work.
+
+## FocuLY branding and onboarding
+
+- The supplied logo is packaged byte-for-byte unchanged. Three original transparent cat illustrations were created with the built-in imagegen tool; prompts and asset locations are recorded in [the visual guide](docs/FOCULY_DESIGN.md).
+- Four onboarding screens include three pastel story cards and the live permission checklist. Next, Back, Skip intro, and timer-only completion are covered by an Android UI regression.
+- 21 JVM tests and 13 Android checks pass (10 UI/backend, 2 PIN, 1 installed-app accessibility). The native scenario verifies the newly illustrated Normal, Resistant, and Strict overlays.
+- Android lint, debug build, and optimized signed build pass. Existing package, data keys, administrator identity, and release signing certificate are preserved; version code advances to 121 for updates.
+- Physical OnePlus testing and manual screen-reader review remain outside this emulator validation.
 
 ## Latest device-controls iteration
 

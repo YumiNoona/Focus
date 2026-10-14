@@ -47,7 +47,9 @@ class ScreenshotGalleryTest {
         try {
             ui.runOnIdle { Repository.update { FocusState() } }
             shot("01-welcome")
-            ui.onNodeWithText("Make room").performClick(); shot("02-onboarding-permissions")
+            ui.onNodeWithText("Next").performClick(); shot("01b-onboarding-rhythm")
+            ui.onNodeWithText("Next").performClick(); shot("01c-onboarding-boundary")
+            ui.onNodeWithText("Set up protection").performClick(); shot("02-onboarding-permissions")
             ui.onNodeWithText("App & feed protection").performScrollTo().performClick(); shot("03-protection-disclosure")
             ui.onNodeWithText("Not now").performClick()
             shell("settings put secure enabled_accessibility_services dev.still.focus/.FocusAccessibilityService")
@@ -82,7 +84,7 @@ class ScreenshotGalleryTest {
             open("managed"); shot("20-device-protection"); lower("20b-device-controls")
             open("lifecycle"); shot("21-individual-app-controls"); lower("21b-app-policy-editor"); lower("21c-app-policy-options")
             open("pin"); shot("22-admin-pin")
-            ui.onNodeWithText("Set Focus PIN").performClick(); shot("22b-pin-setup"); ui.onNodeWithText("Cancel").performClick()
+            ui.onNodeWithText("Set FocuLY PIN").performClick(); shot("22b-pin-setup"); ui.onNodeWithText("Cancel").performClick()
             open("messages"); shot("23-custom-blocking-screen"); lower("23b-message-editor")
             open("permissions"); shot("24-permissions-checklist"); lower("24b-permissions-options")
             open("rules"); ui.onNodeWithText("Apps", useUnmergedTree = true).performClick(); ui.onNodeWithText("Block selected apps").performClick(); shot("25-block-apps"); lower("25b-block-app-modes")

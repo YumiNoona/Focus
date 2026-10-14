@@ -14,7 +14,7 @@ import java.time.*
 object FocusNotifications {
     private const val CHANNEL = "focus"
     private fun manager(ctx: Context) = ctx.getSystemService(NotificationManager::class.java).also {
-        it.createNotificationChannel(NotificationChannel(CHANNEL, "Focus sessions", NotificationManager.IMPORTANCE_LOW).apply { description = "Session status, completion, and schedule reminders" })
+        it.createNotificationChannel(NotificationChannel(CHANNEL, "FocuLY sessions", NotificationManager.IMPORTANCE_LOW).apply { description = "Session status, completion, and schedule reminders" })
     }
     private fun permitted(ctx: Context) = Build.VERSION.SDK_INT < 33 || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     fun open(ctx: Context, action: String = "home"): PendingIntent = PendingIntent.getActivity(ctx, action.hashCode(), Intent(ctx, MainActivity::class.java).putExtra("screen", action), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -86,7 +86,7 @@ class FocusReceiver : BroadcastReceiver() {
 class FocusTile : TileService() {
     override fun onStartListening() { Repository.init(this); Repository.reconcile(); refresh() }
     private fun refresh() {
-        qsTile?.apply { state = if (Repository.state.session != null) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE; label = "Focus"; if (Build.VERSION.SDK_INT >= 29) subtitle = if (Repository.state.session != null) "View session" else "Start focus"; updateTile() }
+        qsTile?.apply { state = if (Repository.state.session != null) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE; label = "FocuLY"; if (Build.VERSION.SDK_INT >= 29) subtitle = if (Repository.state.session != null) "View session" else "Start focus"; updateTile() }
     }
     @android.annotation.SuppressLint("StartActivityAndCollapseDeprecated") // The Intent overload is required by Android 9–13; the API 34+ branch uses PendingIntent.
     override fun onClick() {
