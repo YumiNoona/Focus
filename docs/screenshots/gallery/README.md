@@ -1,12 +1,20 @@
-# Focus screen gallery
+# FocuLY screen gallery
 
-Actual Android 15 captures after source commit `572e0d2`. Separate Scroll Test fixture; no fabricated usage statistics. The managed comparison uses a dedicated device-owner emulator. No release published.
+Actual Android 15 captures after source commit `c8a9062`. Separate Scroll Test fixture; no fabricated usage statistics. The managed comparison uses a dedicated device-owner emulator. No release published.
 
 [Open the searchable HTML gallery](index.html)
 
 ### welcome
 
 <a href="01-welcome.png"><img src="01-welcome.png" alt="welcome" width="260" /></a>
+
+### onboarding rhythm
+
+<a href="01b-onboarding-rhythm.png"><img src="01b-onboarding-rhythm.png" alt="onboarding rhythm" width="260" /></a>
+
+### onboarding boundary
+
+<a href="01c-onboarding-boundary.png"><img src="01c-onboarding-boundary.png" alt="onboarding boundary" width="260" /></a>
 
 ### onboarding permissions
 

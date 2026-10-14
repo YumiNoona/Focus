@@ -33,6 +33,8 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 ## Screenshots
 
+The current development gallery includes FocuLY's four onboarding screens and cat doodles. The published v1.1.0 APK still uses the previous Focus design.
+
 **[Full development screen gallery](docs/screenshots/gallery/README.md)** · [Searchable local HTML gallery](docs/screenshots/gallery/index.html). Includes onboarding, permission disclosure, all principal editors, settings sections, custom messages, PIN setup, three blocking modes, and managed-device comparisons.
 
 <table>

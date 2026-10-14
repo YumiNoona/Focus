@@ -9,6 +9,7 @@ The latest published release remains v1.1.0 under the former Focus name. The cur
 - 21 JVM tests and 13 Android checks pass (10 UI/backend, 2 PIN, 1 installed-app accessibility). The native scenario verifies the newly illustrated Normal, Resistant, and Strict overlays.
 - Android lint, debug build, and optimized signed build pass. Existing package, data keys, administrator identity, and release signing certificate are preserved; version code advances to 121 for updates.
 - Physical OnePlus testing and manual screen-reader review remain outside this emulator validation.
+- The updated gallery capture passes and contains 50 current screenshots, including all four onboarding screens, long-page sections, native overlays, and refreshed managed-device comparisons. The intro was also reviewed at 130% Android text scaling; its primary action remains visible.
 
 ## Latest device-controls iteration
 

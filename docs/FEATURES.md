@@ -1,4 +1,4 @@
-# Focus for Android
+# FocuLY for Android
 
 An Android focus app built in Kotlin and Jetpack Compose. Version 1.2.0 adds independent day/week/manual blocks and a simpler setup for Android 9 and newer.
 
@@ -7,12 +7,12 @@ An Android focus app built in Kotlin and Jetpack Compose. Version 1.2.0 adds ind
 Build the development APK from source to try version 1.2. The latest published APK remains v1.1.0. On first launch:
 
 1. Choose **Make room**.
-2. Read the focus-protection disclosure. If you agree, enable **Focus protection** in Android Accessibility settings.
+2. Read the focus-protection disclosure. If you agree, enable **FocuLY protection** in Android Accessibility settings.
 3. Enable Usage Access for daily allowances and usage charts. Notifications are optional.
 4. Open **Rules** and choose apps, websites, feeds, and routines.
-5. Start a session from **Home**. If protection is off, Focus explicitly offers a timer-only session.
+5. Start a session from **Home**. If protection is off, FocuLY explicitly offers a timer-only session.
 
-Android may require enabling “Install unknown apps” for the app opening this APK. The GitHub release APK is signed with a dedicated release certificate. It is distributed outside Google Play. On some Android versions, sideloaded accessibility access may require allowing restricted settings from Focus’s system App Info screen.
+Android may require enabling “Install unknown apps” for the app opening this APK. The GitHub release APK is signed with a dedicated release certificate. It is distributed outside Google Play. On some Android versions, sideloaded accessibility access may require allowing restricted settings from FocuLY’s system App Info screen.
 
 ## Navigation and visual system
 
@@ -31,7 +31,7 @@ Setup now uses compact permission action cards, expandable explanations, app ico
 | Capability | Implementation |
 | --- | --- |
 | Instant / open-ended sessions | Start, view time, and recover persisted sessions; Strict requires a finite deadline |
-| Focus profiles | Four presets, custom profiles, explicit all/custom app and website scopes; empty custom scope stays empty |
+| FocuLY profiles | Four presets, custom profiles, explicit all/custom app and website scopes; empty custom scope stays empty |
 | Pomodoro | Custom work/break/round settings in Normal and Resistant; no final break; Strict remains continuous |
 | App blocking | User-consented accessibility overlay for selected foreground apps |
 | Daily budgets | Android usage events; requires Usage Access and focus protection |
@@ -46,10 +46,10 @@ Setup now uses compact permission action cards, expandable explanations, app ico
 | Ending sessions | Normal confirmation; Resistant deliberate pause and reason; Strict no early ending even through backend actions |
 | Strict integrity | Existing visits ignored; no rule weakening, consent withdrawal, data deletion, timer-only, breaks, or open-ended timer |
 | Optional administration | Administrator deactivation step before uninstall; actual uninstall blocking/app suspension only with provisioned device owner |
-| Essential access | Focus, phone, launcher, emergency and system settings are exempt |
+| Essential access | FocuLY, phone, launcher, emergency and system settings are exempt |
 | Insights | Daily logged focus, completed sessions, personal goal, selected-app usage, seven-day chart, prior-week comparison when data exists, override count, recent sessions |
-| Quick Settings | Starts first favorite profile with protection enabled; otherwise opens Focus; active sessions open for review |
-| Home-screen widget | Focus status and Start/View session action |
+| Quick Settings | Starts first favorite profile with protection enabled; otherwise opens FocuLY; active sessions open for review |
+| Home-screen widget | FocuLY status and Start/View session action |
 | Notifications | Session status, View session / Manage protection actions, optional completion and routine reminders |
 | Permission recovery | Live heartbeat, last observed app, failed overlay feedback, battery/app-info links, one-minute selected-app test |
 | Profile | Local name, default intention, goal, custom focus profiles |
@@ -64,13 +64,13 @@ Website blocking is **not a VPN, DNS filter, or system-wide firewall**. It inspe
 
 Selective feed detection depends on third-party view identifiers or selected accessibility controls. It is **experimental and unverified on current Instagram/Facebook/YouTube production builds**. Messaging remains accessible when selective rules are the only rules enabled. Whole-app blocking takes precedence if also selected. Unsupported feeds such as TikTok use whole-app rules.
 
-On an ordinary phone, Android settings can disable accessibility and deactivate the optional administrator. Strict removes in-app escape paths but retains home, emergency, and system access. Separately provisioned device-owner management adds opt-in OS uninstall blocking and selected whole-app suspension. See [managed setup and recovery](MANAGED_DEVICE.md). Focus does not implement kiosk mode.
+On an ordinary phone, Android settings can disable accessibility and deactivate the optional administrator. Strict removes in-app escape paths but retains home, emergency, and system access. Separately provisioned device-owner management adds opt-in OS uninstall blocking and selected whole-app suspension. See [managed setup and recovery](MANAGED_DEVICE.md). FocuLY does not implement kiosk mode.
 
 Schedules evaluate local time and timezone; both start and end boundaries are planned. Saved deadlines survive normal process restarts and reboots, but a user changing the clock can change ordinary-phone timing. Ordinary reminders use inexact alarms. Managed Strict requires precise-ending permission, temporarily restricts clock configuration, journals suspended targets, and releases them at expiry independently of accessibility. Reboot recovery can wait until first unlock. No permanent foreground monitoring service is used.
 
-App-specific daily usage is derived from Android foreground activity events, not a claimed measurement of attention. Split-screen use, OS event availability, and time spent behind a blocking overlay can affect those values. Focus totals record session time excluding Pomodoro breaks; cross-midnight daily totals are apportioned estimates. Ongoing sessions are not included in “logged sessions” until ended. No invented “time saved” metric or sample usage is displayed. Insight comparison is between a rolling seven-day period including the unfinished current day and the preceding seven days, and is shown only when prior usage exists.
+App-specific daily usage is derived from Android foreground activity events, not a claimed measurement of attention. Split-screen use, OS event availability, and time spent behind a blocking overlay can affect those values. FocuLY totals record session time excluding Pomodoro breaks; cross-midnight daily totals are apportioned estimates. Ongoing sessions are not included in “logged sessions” until ended. No invented “time saved” metric or sample usage is displayed. Insight comparison is between a rolling seven-day period including the unfinished current day and the preceding seven days, and is shown only when prior usage exists.
 
-History and override records are capped at the latest 1,000 each. Export contains names, intentions, and override reasons. Local deletion is unavailable during Strict. Android's own usage history is not deleted by Focus.
+History and override records are capped at the latest 1,000 each. Export contains names, intentions, and override reasons. Local deletion is unavailable during Strict. Android's own usage history is not deleted by FocuLY.
 
 ## Screen map
 
@@ -83,7 +83,7 @@ Rules → Websites → Add/remove domain + coverage explanation
 Rules → Feeds → Experimental selectors + app fallback
 Rules → Schedules → Routine editor → Overlap explanation
 Insights → Daily summary / Usage chart / Recent sessions
-Profile → Name / Intention / Goal / Focus profile editor
+Profile → Name / Intention / Goal / FocuLY profile editor
 Settings → Permissions / Appearance / Visits / Privacy / Export / Delete
 Settings → Uninstall & managed protection → Android administration / Device-owner controls
 Restricted app → Blocking screen → Return home / Intentional visit / Emergency access
@@ -117,7 +117,7 @@ Important files:
 - `EngineTest.kt`: rules tests.
 - `AppTest.kt`: connected Android UI and persistence tests.
 - `ProtectionScenarioTest.kt`: real installed-app accessibility regression on isolated emulators.
-- `test-fixture/`: separate local distraction app; never bundled in Focus.
+- `test-fixture/`: separate local distraction app; never bundled in FocuLY.
 
 ## Before distribution
 
