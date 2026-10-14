@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
@@ -34,7 +35,7 @@ import kotlinx.coroutines.withContext
     }, confirmButton = { TextButton({ if (Repository.update { it.copy(disclosure = true) }) { close(); Repository.openAccessibility() } }) { Text("Agree & open settings") } }, dismissButton = { TextButton(close) { Text("Not now") } })
 }
 
-@Composable fun SetupChecklist(done: () -> Unit) {
+@Composable fun SetupChecklist(onboarding: Boolean = false, done: () -> Unit) {
     val ctx = LocalContext.current
     var pulse by remember { mutableIntStateOf(0) }
     var consent by remember { mutableStateOf(false) }
@@ -45,7 +46,33 @@ import kotlinx.coroutines.withContext
     val usage = Repository.usageGranted()
     val admin = ManagedProtection.adminEnabled(ctx)
     val notifications = Build.VERSION.SDK_INT < 33 || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-    Page {
+    if (onboarding) Page {
+        Heading("Make space for focus.")
+        Surface(shape = RoundedCornerShape(28.dp), color = FoculyBrand.lilac, contentColor = FoculyBrand.ink) {
+            Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(if (ready) "You're ready." else "A quieter screen.", style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.fillMaxWidth())
+                CatDoodle(CatArt.GUARD, Modifier.fillMaxWidth().height(210.dp))
+                Text(if (ready) "Protection connected." else "Connect to pause apps and sites.",
+                    style = MaterialTheme.typography.bodyMedium, modifier = Modifier.fillMaxWidth())
+            }
+        }
+        ActionCard("Connect protection", if (ready) "Connected" else "Apps & websites", Icons.Outlined.Shield, ready) {
+            if (Repository.state.disclosure) Repository.openAccessibility() else consent = true
+        }
+        DetailsCard("More options", "", Icons.Outlined.Tune) {
+            ActionCard("Usage access", if (usage) "Connected" else "Daily limits", Icons.Outlined.Timer, usage) { Repository.openUsage() }
+            ActionCard("Notifications", if (notifications) "Allowed" else "Session updates", Icons.Outlined.NotificationsNone, notifications) {
+                if (Build.VERSION.SDK_INT >= 33) notification.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            ActionCard("Background activity", "Battery settings", Icons.Outlined.BatteryChargingFull) { Repository.openBatterySettings() }
+            ActionCard("Uninstall resistance", if (admin) "Active" else "Optional", Icons.Outlined.AdminPanelSettings, admin) {
+                if (!admin) ManagedProtection.requestAdmin(ctx)
+            }
+            ActionCard("Admin PIN", if (AdminPin.configured()) "Set" else "Optional", Icons.Outlined.Password, AdminPin.configured()) { pin = true }
+        }
+    } else Page {
         Caption("YOUR BOUNDARY, CONNECTED")
         Heading("Ready when you are.", "Grant each permission in Android, then return here.")
         SoftCard {
@@ -67,7 +94,6 @@ import kotlinx.coroutines.withContext
             Text("Device-owner setup on a dedicated managed device adds OS app suspension and uninstall blocking. FocuLY cannot grant itself this role on your personal phone.")
         }
         Primary("Start using FocuLY", enabled = ready, icon = Icons.Outlined.Check) { done() }
-        if (!ready) TextButton(done, Modifier.fillMaxWidth()) { Text("Continue with timers") }
     }
     if (consent) ProtectionConsent { consent = false }
     if (pin) PinDialog { pin = false; pulse++ }

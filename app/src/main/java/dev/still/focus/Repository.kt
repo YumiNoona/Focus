@@ -98,13 +98,13 @@ object Repository {
     fun start(profile: Profile, minutes: Int, intention: String, timerOnly: Boolean = false): Boolean {
         reconcile()
         if (state.session != null) return fail("End your existing session first.")
-        if (minutes !in 0..1440) return fail("Choose a duration from 0 to 1440 minutes.")
-        if (profile.mode == FocusMode.STRICT && (minutes == 0 || timerOnly || profile.pomodoro)) return fail("Strict needs a finite timer and has no breaks or timer-only option.")
+        if (minutes !in 0..10_080) return fail("Choose a duration up to one week.")
+        if (profile.mode == FocusMode.STRICT && (minutes == 0 || timerOnly)) return fail("Strict needs a finite timer and cannot run without protection.")
         if (!timerOnly && !protectionReady()) return fail("Protection is not connected. Enable accessibility and allow background activity before starting blocking.")
         if (!timerOnly && RulesEngine.selectedRuleCount(state, profile) == 0) return fail("Choose at least one effective app, website, or feed rule first.")
         if (profile.mode == FocusMode.STRICT && state.managedLockdown && (!ManagedProtection.isOwner() || !ManagedProtection.preciseEnding())) return fail("Managed lockdown needs device-owner setup and reliable ending permission.")
         val now = System.currentTimeMillis()
-        val duration = if (profile.pomodoro) (profile.workMinutes * profile.rounds + profile.breakMinutes * (profile.rounds - 1)) * 60_000L else minutes * 60_000L
+        val duration = minutes * 60_000L
         if (profile.mode == FocusMode.STRICT && state.managedLockdown && RulesEngine.strictPackages(state.copy(session = Session(profile = profile, start = now, end = now + duration)), now).none { !FocusAccessibilityService.essential(context, it) }) return fail("Managed Strict needs at least one whole-app rule. Website and feed detection alone are not OS-enforced.")
         if (!update { it.copy(session = Session(profile = profile, start = now, end = if (duration == 0L) 0 else now + duration, intention = intention.ifBlank { profile.intention }, timerOnly = timerOnly)) }) return false
         if (!ManagedProtection.sync()) {
@@ -174,8 +174,20 @@ object Repository {
     private fun <T> JSONArray.items(parse: (JSONObject) -> T) = (0 until length()).map { parse(getJSONObject(it)) }
     private fun JSONObject.array(key: String) = optJSONArray(key) ?: JSONArray()
     private fun JSONObject.mode() = runCatching { FocusMode.valueOf(optString("mode", "STANDARD")) }.getOrDefault(FocusMode.STANDARD)
-    private fun profile(p: Profile) = JSONObject().put("id", p.id).put("name", p.name).put("minutes", p.minutes).put("intention", p.intention).put("mode", p.mode.name).put("pomodoro", p.pomodoro).put("workMinutes", p.workMinutes).put("breakMinutes", p.breakMinutes).put("rounds", p.rounds).put("apps", JSONArray(p.apps.toList())).put("domains", JSONArray(p.domains.toList())).put("useAllApps", p.useAllApps).put("useAllDomains", p.useAllDomains)
-    private fun parseProfile(j: JSONObject) = Profile(j.getString("id"), j.getString("name"), j.optInt("minutes", 50), j.optString("intention"), j.mode(), j.optBoolean("pomodoro"), j.optInt("workMinutes", 25), j.optInt("breakMinutes", 5), j.optInt("rounds", 4), j.array("apps").strings(), j.array("domains").strings(), j.optBoolean("useAllApps", j.array("apps").length() == 0), j.optBoolean("useAllDomains", j.array("domains").length() == 0))
+    private fun profile(p: Profile) = JSONObject().put("id", p.id).put("name", p.name).put("minutes", p.minutes).put("intention", p.intention).put("mode", p.mode.name).put("apps", JSONArray(p.apps.toList())).put("domains", JSONArray(p.domains.toList())).put("useAllApps", p.useAllApps).put("useAllDomains", p.useAllDomains).put("art", p.art)
+    private fun parseProfile(j: JSONObject): Profile {
+        // Old rhythm profiles become continuous sessions of the same total length.
+        val minutes = if (j.optBoolean("pomodoro")) {
+            val rounds = j.optInt("rounds", 4).coerceIn(1, 12)
+            (j.optInt("workMinutes", 25).coerceIn(1, 240) * rounds + j.optInt("breakMinutes", 5).coerceIn(1, 60) * (rounds - 1)).coerceAtMost(10_080)
+        } else j.optInt("minutes", 50)
+        val art = j.optString("art", "FOCUS").let { saved ->
+            if (saved != "FOCUS") saved else when (j.optString("id")) { "study" -> "STUDY"; "sleep" -> "BREAK"; "personal" -> "PAUSE"; else -> saved }
+        }
+        return Profile(j.getString("id"), j.getString("name"), minutes, j.optString("intention"), j.mode(),
+            j.array("apps").strings(), j.array("domains").strings(), j.optBoolean("useAllApps", j.array("apps").length() == 0),
+            j.optBoolean("useAllDomains", j.array("domains").length() == 0), art)
+    }
     private fun encode(s: FocusState): JSONObject = JSONObject()
         .put("name", s.name).put("intention", s.intention).put("goalMinutes", s.goalMinutes).put("onboarding", s.onboarding).put("disclosure", s.disclosure)
         .put("theme", s.theme).put("haptics", s.haptics).put("reminders", s.reminders).put("hideInsights", s.hideInsights).put("reduceMotion", s.reduceMotion).put("askReason", s.askReason)

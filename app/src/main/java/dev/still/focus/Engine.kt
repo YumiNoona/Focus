@@ -37,10 +37,10 @@ data class AppRule(val packageName: String, val label: String, val enabled: Bool
     }
 }
 data class Profile(val id: String, val name: String, val minutes: Int, val intention: String,
-    val mode: FocusMode = FocusMode.STANDARD, val pomodoro: Boolean = false,
-    val workMinutes: Int = 25, val breakMinutes: Int = 5, val rounds: Int = 4,
+    val mode: FocusMode = FocusMode.STANDARD,
     val apps: Set<String> = emptySet(), val domains: Set<String> = emptySet(),
-    val useAllApps: Boolean = apps.isEmpty(), val useAllDomains: Boolean = domains.isEmpty())
+    val useAllApps: Boolean = apps.isEmpty(), val useAllDomains: Boolean = domains.isEmpty(),
+    val art: String = "FOCUS")
 data class Schedule(val id: String = UUID.randomUUID().toString(), val name: String,
     val profileId: String, val days: Set<Int>, val startMinute: Int, val endMinute: Int,
     val enabled: Boolean = true, val reminder: Boolean = false) {
@@ -72,25 +72,8 @@ data class Schedule(val id: String = UUID.randomUUID().toString(), val name: Str
 data class Session(val id: String = UUID.randomUUID().toString(), val profile: Profile, val start: Long,
     val end: Long = 0, val intention: String = profile.intention, val timerOnly: Boolean = false) {
     fun alive(now: Long) = end == 0L || now < end
-    fun onBreak(now: Long): Boolean {
-        if (profile.mode == FocusMode.STRICT || !profile.pomodoro || !alive(now)) return false
-        val cycle = (profile.workMinutes + profile.breakMinutes) * 60_000L
-        return ((now - start).coerceAtLeast(0) % cycle) >= profile.workMinutes * 60_000L
-    }
-    fun phaseRemaining(now: Long): Long {
-        if (!profile.pomodoro || profile.mode == FocusMode.STRICT) return if (end == 0L) 0 else (end - now).coerceAtLeast(0)
-        val cycle = (profile.workMinutes + profile.breakMinutes) * 60_000L
-        val elapsed = (now - start).coerceAtLeast(0) % cycle
-        val boundary = if (elapsed < profile.workMinutes * 60_000L) profile.workMinutes * 60_000L else cycle
-        return (boundary - elapsed).coerceAtMost((end - now).coerceAtLeast(0))
-    }
-    fun focusedMillis(until: Long): Long {
-        val elapsed = ((if (end > 0) minOf(until, end) else until) - start).coerceAtLeast(0)
-        if (!profile.pomodoro || profile.mode == FocusMode.STRICT) return elapsed
-        val work = profile.workMinutes * 60_000L
-        val cycle = work + profile.breakMinutes * 60_000L
-        return elapsed / cycle * work + minOf(elapsed % cycle, work)
-    }
+    fun remaining(now: Long): Long = if (end == 0L) 0 else (end - now).coerceAtLeast(0)
+    fun focusedMillis(until: Long): Long = ((if (end > 0) minOf(until, end) else until) - start).coerceAtLeast(0)
 }
 data class SessionRecord(val name: String, val start: Long, val end: Long, val focusedMillis: Long, val completed: Boolean)
 data class OverrideRecord(val packageName: String, val at: Long, val until: Long, val reason: String)
@@ -115,15 +98,15 @@ data class FocusState(val name: String = "", val intention: String = "Make room 
     val overrides: List<OverrideRecord> = emptyList()) {
     companion object { fun defaults() = listOf(
         Profile("deep", "Deep work", 50, "One thing at a time."),
-        Profile("study", "Study", 100, "Make space to learn.", pomodoro = true),
-        Profile("sleep", "Wind down", 60, "Let the day settle."),
-        Profile("personal", "Personal time", 30, "Be here, now.", FocusMode.GENTLE)) }
+        Profile("study", "Study", 50, "Make space to learn.", art = "STUDY"),
+        Profile("sleep", "Wind down", 60, "Let the day settle.", art = "BREAK"),
+        Profile("personal", "Personal time", 30, "Be here, now.", FocusMode.GENTLE, art = "PAUSE")) }
 }
 data class Restriction(val label: String, val explanation: String, val mode: FocusMode, val intention: String, val until: Long? = null)
 object RulesEngine {
     private fun profileDeadline(state: FocusState, profile: Profile, now: Long): Long? {
         val ends = mutableListOf<Long>()
-        state.session?.takeIf { !it.timerOnly && it.alive(now) && !it.onBreak(now) && it.profile.id == profile.id && it.profile.mode == profile.mode }?.let { ends += it.end }
+        state.session?.takeIf { !it.timerOnly && it.alive(now) && it.profile.id == profile.id && it.profile.mode == profile.mode }?.let { ends += it.end }
         state.schedules.filter { it.active(now) && it.profileId == profile.id && state.profiles.any { p -> p.id == it.profileId && p.mode == profile.mode } }.forEach { it.nextBoundary(now)?.let(ends::add) }
         return if (0L in ends) 0L else ends.maxOrNull()
     }
@@ -150,7 +133,7 @@ object RulesEngine {
     }.getOrNull()
     fun domainMatches(host: String, blocked: String): Boolean = host == blocked || host.endsWith(".$blocked")
     fun activeProfiles(state: FocusState, now: Long): List<Profile> = buildList {
-        state.session?.takeIf { !it.timerOnly && it.alive(now) && !it.onBreak(now) }?.let { add(it.profile) }
+        state.session?.takeIf { !it.timerOnly && it.alive(now) }?.let { add(it.profile) }
         state.schedules.filter { it.active(now) }.forEach { s -> state.profiles.find { it.id == s.profileId }?.let(::add) }
     }
     fun restriction(state: FocusState, pkg: String, now: Long, usedMillis: Long = 0, openingMillis: Long = 0,

@@ -24,13 +24,12 @@ class EngineTest {
         val s = Schedule(name = "A", profileId = "deep", days = setOf(1), startMinute = 540, endMinute = 600)
         assertEquals(at("2024-01-08", "09:00"), s.nextStart(at("2024-01-01", "09:01"), zone))
     }
-    @Test fun pomodoroBreakDoesNotCountAsFocusAndHasNoFinalBreak() {
-        val p = Profile("p", "Study", 55, "Learn", pomodoro = true, rounds = 2)
+    @Test fun sessionsStayContinuousUntilTheirEnd() {
+        val p = Profile("p", "Study", 55, "Learn")
         val s = Session(profile = p, start = 1000, end = 1000 + 55 * 60_000L)
-        assertFalse(s.onBreak(1000 + 24 * 60_000L))
-        assertTrue(s.onBreak(1000 + 25 * 60_000L))
-        assertFalse(s.onBreak(1000 + 30 * 60_000L))
-        assertEquals(50 * 60_000L, s.focusedMillis(s.end))
+        assertEquals(30 * 60_000L, s.focusedMillis(1000 + 30 * 60_000L))
+        assertEquals(55 * 60_000L, s.focusedMillis(s.end))
+        assertEquals(25 * 60_000L, s.remaining(1000 + 30 * 60_000L))
         assertFalse(s.alive(s.end))
     }
     @Test fun strictestOverlapWinsAndAllowlistAlwaysWins() {
@@ -76,6 +75,18 @@ class EngineTest {
         assertNotNull(RulesEngine.restriction(state, "a", 100))
         assertNull(RulesEngine.restriction(state, "b", 100))
     }
+    @Test fun strictWeekProfileKeepsItsSelectedTargetsUntilDeadline() {
+        val start = at("2024-01-01", "09:00")
+        val end = start + 10_080 * 60_000L
+        val profile = Profile("week", "Week pause", 10_080, "Work", FocusMode.STRICT,
+            apps = setOf("social"), domains = setOf("example.com"), useAllApps = false, useAllDomains = false, art = "GUARD")
+        val state = FocusState(apps = listOf(AppRule("social", "Social"), AppRule("other", "Other")),
+            domains = setOf("example.com"), session = Session(profile = profile, start = start, end = end))
+        assertEquals(FocusMode.STRICT, RulesEngine.restriction(state, "social", end - 1)?.mode)
+        assertNotNull(RulesEngine.restriction(state, "browser", end - 1, website = "example.com"))
+        assertNull(RulesEngine.restriction(state, "other", end - 1))
+        assertNull(RulesEngine.restriction(state, "social", end))
+    }
     @Test fun selectedCountsMatchTheEffectiveProfileScope() {
         val profile = Profile("p", "Work", 50, "Work", apps = setOf("a", "allowed"), domains = setOf("work.example", "missing.example"), useAllApps = false, useAllDomains = false)
         val state = FocusState(
@@ -116,12 +127,6 @@ class EngineTest {
         val schedule = Schedule(name = "Night", profileId = "sleep", days = setOf(1), startMinute = 1320, endMinute = 420)
         assertEquals(at("2024-01-02", "07:00"), schedule.nextBoundary(at("2024-01-02", "06:00"), zone))
         assertEquals(at("2024-01-08", "22:00"), schedule.nextBoundary(at("2024-01-02", "07:00"), zone))
-    }
-    @Test fun strictDoesNotEnterPomodoroBreaks() {
-        val profile = Profile("s", "Strict", 55, "Work", FocusMode.STRICT, pomodoro = true)
-        val session = Session(profile = profile, start = 0, end = 3_300_000)
-        assertFalse(session.onBreak(1_500_000))
-        assertEquals(1_800_000L, session.phaseRemaining(1_500_000))
     }
     @Test fun independentAppBlocksWorkWithoutSessionAndExpireExactly() {
         val plan = BlockPlan(kind = BlockKind.APPS, targets = setOf("social"), start = 0, end = 1000, period = BlockPeriod.DAY)

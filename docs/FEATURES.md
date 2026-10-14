@@ -31,8 +31,7 @@ Setup now uses compact permission action cards, expandable explanations, app ico
 | Capability | Implementation |
 | --- | --- |
 | Instant / open-ended sessions | Start, view time, and recover persisted sessions; Strict requires a finite deadline |
-| FocuLY profiles | Four presets, custom profiles, explicit all/custom app and website scopes; empty custom scope stays empty |
-| Pomodoro | Custom work/break/round settings in Normal and Resistant; no final break; Strict remains continuous |
+| FocuLY profiles | Four presets, illustrated custom profiles, direct app and website scopes, selectable durations up to one week, and deletion with linked-routine cleanup; empty custom scope stays empty |
 | App blocking | User-consented accessibility overlay for selected foreground apps |
 | Daily budgets | Android usage events; requires Usage Access and focus protection |
 | Per-visit limits | Foreground visit duration while screen is interactive |
@@ -44,7 +43,7 @@ Setup now uses compact permission action cards, expandable explanations, app ico
 | Interruptions | Normal compact popup; Resistant full screen and 30-second wait; Strict full screen with no visit option |
 | Intentional visits | Normal configurable visit/reason; Resistant mandatory reason, one-minute visit and minimum ten-minute cooldown; Strict never permits visits |
 | Ending sessions | Normal confirmation; Resistant deliberate pause and reason; Strict no early ending even through backend actions |
-| Strict integrity | Existing visits ignored; no rule weakening, consent withdrawal, data deletion, timer-only, breaks, or open-ended timer |
+| Strict integrity | Existing visits ignored; no rule weakening, consent withdrawal, data deletion, timer-only, or open-ended timer |
 | Optional administration | Administrator deactivation step before uninstall; actual uninstall blocking/app suspension only with provisioned device owner |
 | Essential access | FocuLY, phone, launcher, emergency and system settings are exempt |
 | Insights | Daily logged focus, completed sessions, personal goal, selected-app usage, seven-day chart, prior-week comparison when data exists, override count, recent sessions |
@@ -68,7 +67,7 @@ On an ordinary phone, Android settings can disable accessibility and deactivate 
 
 Schedules evaluate local time and timezone; both start and end boundaries are planned. Saved deadlines survive normal process restarts and reboots, but a user changing the clock can change ordinary-phone timing. Ordinary reminders use inexact alarms. Managed Strict requires precise-ending permission, temporarily restricts clock configuration, journals suspended targets, and releases them at expiry independently of accessibility. Reboot recovery can wait until first unlock. No permanent foreground monitoring service is used.
 
-App-specific daily usage is derived from Android foreground activity events, not a claimed measurement of attention. Split-screen use, OS event availability, and time spent behind a blocking overlay can affect those values. FocuLY totals record session time excluding Pomodoro breaks; cross-midnight daily totals are apportioned estimates. Ongoing sessions are not included in “logged sessions” until ended. No invented “time saved” metric or sample usage is displayed. Insight comparison is between a rolling seven-day period including the unfinished current day and the preceding seven days, and is shown only when prior usage exists.
+App-specific daily usage is derived from Android foreground activity events, not a claimed measurement of attention. Split-screen use, OS event availability, and time spent behind a blocking overlay can affect those values. FocuLY totals record elapsed session time; cross-midnight daily totals are apportioned estimates. Ongoing sessions are not included in “logged sessions” until ended. No invented “time saved” metric or sample usage is displayed. Insight comparison is between a rolling seven-day period including the unfinished current day and the preceding seven days, and is shown only when prior usage exists.
 
 History and override records are capped at the latest 1,000 each. Export contains names, intentions, and override reasons. Local deletion is unavailable during Strict. Android's own usage history is not deleted by FocuLY.
 

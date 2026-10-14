@@ -21,16 +21,20 @@ private val Dark = darkColorScheme(primary = Color(0xFFF2F0E6), onPrimary = Colo
 @Composable fun StillTheme(theme: String = "System", content: @Composable () -> Unit) {
     val dark = theme == "Dark" || (theme == "System" && isSystemInDarkTheme())
     MaterialTheme(colorScheme = if (dark) Dark else Light, typography = Typography(
-        displayLarge = TextStyle(fontFamily = Mono, fontSize = 44.sp, lineHeight = 52.sp),
-        headlineLarge = TextStyle(fontFamily = Mono, fontSize = 28.sp, lineHeight = 38.sp),
-        headlineMedium = TextStyle(fontFamily = Mono, fontSize = 24.sp, lineHeight = 34.sp),
+        displayLarge = TextStyle(fontFamily = Mono, fontSize = 42.sp, lineHeight = 50.sp),
+        displayMedium = TextStyle(fontFamily = Mono, fontSize = 36.sp, lineHeight = 44.sp),
+        displaySmall = TextStyle(fontFamily = Mono, fontSize = 32.sp, lineHeight = 40.sp),
+        headlineLarge = TextStyle(fontFamily = Mono, fontSize = 28.sp, lineHeight = 36.sp),
+        headlineMedium = TextStyle(fontFamily = Mono, fontSize = 24.sp, lineHeight = 32.sp),
+        headlineSmall = TextStyle(fontFamily = Mono, fontSize = 21.sp, lineHeight = 29.sp),
         titleLarge = TextStyle(fontFamily = Mono, fontSize = 20.sp, lineHeight = 28.sp),
-        titleMedium = TextStyle(fontFamily = Mono, fontSize = 18.sp, lineHeight = 26.sp),
-        titleSmall = TextStyle(fontFamily = Mono, fontSize = 14.sp, lineHeight = 22.sp),
-        bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 24.sp),
-        bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 22.sp),
-        bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 18.sp),
-        labelLarge = TextStyle(fontFamily = Mono, fontSize = 14.sp, lineHeight = 20.sp),
-        labelMedium = TextStyle(fontFamily = Mono, fontSize = 12.sp, lineHeight = 18.sp)
-    ), content = content)
+        titleMedium = TextStyle(fontFamily = Mono, fontSize = 17.sp, lineHeight = 25.sp),
+        titleSmall = TextStyle(fontFamily = Mono, fontSize = 15.sp, lineHeight = 22.sp),
+        bodyLarge = TextStyle(fontFamily = Mono, fontSize = 15.sp, lineHeight = 23.sp),
+        bodyMedium = TextStyle(fontFamily = Mono, fontSize = 13.sp, lineHeight = 20.sp),
+        bodySmall = TextStyle(fontFamily = Mono, fontSize = 12.sp, lineHeight = 18.sp),
+        labelLarge = TextStyle(fontFamily = Mono, fontSize = 13.sp, lineHeight = 19.sp),
+        labelMedium = TextStyle(fontFamily = Mono, fontSize = 11.sp, lineHeight = 16.sp),
+        labelSmall = TextStyle(fontFamily = Mono, fontSize = 10.sp, lineHeight = 15.sp)
+    )) { ProvideTextStyle(MaterialTheme.typography.bodyLarge) { content() } }
 }

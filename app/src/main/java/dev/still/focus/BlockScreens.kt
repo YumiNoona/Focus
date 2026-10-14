@@ -95,7 +95,6 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
             }
         }
     }
-    Text(when (mode) { FocusMode.GENTLE -> "Popup · temporary visits allowed"; FocusMode.STANDARD -> "30-second pause · reason required"; FocusMode.STRICT -> "Locked until expiry · no early unblock" }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable fun ActiveBlocks(s: FocusState, now: Long) {
@@ -140,7 +139,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
     }
 }
 
-@Composable fun BlockEditor(s: FocusState, kind: BlockKind, initialTargets: Set<String>?, done: () -> Unit, settings: () -> Unit) {
+@Composable fun BlockEditor(s: FocusState, kind: BlockKind, initialTargets: Set<String>?, done: () -> Unit, settings: () -> Unit, openProfile: (Profile) -> Unit) {
     val available = when (kind) {
         BlockKind.APPS -> s.apps.filter { it.enabled && it.packageName !in s.allowlist }.associate { it.packageName to it.label }
         BlockKind.WEBSITES -> s.domains.sorted().associateWith { it }
@@ -166,6 +165,14 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
             if (available.isEmpty()) Text("Add ${kind.label.lowercase()} in Rules first.")
         }
         Caption("HOW LONG")
+        Text("Or start a saved focus profile", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            s.profiles.forEach { profile -> FilterChip(false, { openProfile(profile) },
+                label = { Text("${profile.name} · ${profileDuration(profile.minutes)}") },
+                leadingIcon = { CatDoodle(profileArt(profile), Modifier.size(28.dp)) }) }
+        }
+        Text("A profile uses its saved apps, websites and resistance settings.", style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
         BlockPeriod.entries.filter { it != BlockPeriod.MANUAL }.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             pair.forEach { choice -> Box(Modifier.weight(1f)) { SelectionCard(choice.label, when (choice) { BlockPeriod.TODAY -> "Until midnight"; BlockPeriod.DAY -> "Same time tomorrow"; BlockPeriod.WEEK -> "Next week"; else -> "Custom timer" }, when (choice) { BlockPeriod.TIMER -> Icons.Outlined.Timer; BlockPeriod.WEEK -> Icons.Outlined.DateRange; else -> Icons.Outlined.Today }, period == choice, tile = true) { period = choice } } }
         } }

@@ -25,7 +25,7 @@ object FocusNotifications {
         if (!permitted(ctx)) return
         val status = if (!s.timerOnly && Repository.protectionReady(ctx)) "${s.profile.mode.label} · protection connected" else "Blocking unavailable · check protection"
         mgr.notify(1, Notification.Builder(ctx, CHANNEL).setSmallIcon(R.drawable.ic_still)
-            .setContentTitle("${s.profile.name} · ${if (s.onBreak(System.currentTimeMillis())) "break" else "in progress"}")
+            .setContentTitle("${s.profile.name} · in progress")
             .setContentText(status).setContentIntent(open(ctx)).setOngoing(true)
             .addAction(Notification.Action.Builder(null, "View session", open(ctx)).build())
             .addAction(Notification.Action.Builder(null, "Manage protection", open(ctx, "settings")).build()).build())
@@ -39,10 +39,7 @@ object FocusNotifications {
         val times = mutableListOf<Long>()
         state.blocks.filter { it.end > now }.forEach { times += it.end }
         state.lifecycleRules.filter { it.end > now }.forEach { times += it.end }
-        state.session?.let { s ->
-            if (s.end > now) times += s.end
-            if (s.profile.pomodoro && s.alive(now)) times += now + s.phaseRemaining(now) + 1000
-        }
+        state.session?.let { s -> if (s.end > now) times += s.end }
         state.schedules.filter { it.enabled }.forEach { schedule ->
             schedule.nextBoundary(now)?.let { times += it }
             schedule.nextStart(now)?.let { next ->

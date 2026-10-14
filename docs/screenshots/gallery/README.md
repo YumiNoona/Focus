@@ -220,10 +220,6 @@ Actual Android 15 captures after source commit `21b297a`. Separate Scroll Test f
 
 <a href="38-protection-warning.png"><img src="38-protection-warning.png" alt="protection warning" width="260" /></a>
 
-### pomodoro break
-
-<a href="39-pomodoro-break.png"><img src="39-pomodoro-break.png" alt="pomodoro break" width="260" /></a>
-
 ### dark focus
 
 <a href="40-dark-focus.png"><img src="40-dark-focus.png" alt="dark focus" width="260" /></a>

@@ -7,9 +7,9 @@ FocuLY uses the user's original `public/logo.png` for its launcher icon and in-a
 1. **Less scroll. More life.** Blush card with a cat putting its phone aside.
 2. **Find your rhythm.** Soft lime card with a cat reading at a little desk.
 3. **Keep your boundary.** Peach card with a cat holding a shield.
-4. **Ready when you are.** The live permission checklist, with consent and the optional timer-only route.
+4. **Make space for focus.** A focused permission checklist, with consent and the optional timer-only route.
 
-Next, Back, system Back, and Skip intro preserve a deliberate flow. Skip leads to the permission checklist. The intro is saveable through activity recreation and can be replayed from Settings → Welcome to FocuLY. Completing a replay does not clear rules or history.
+The first three screens use a circular Next action. Four progress dashes sit beside it at the bottom; the fourth screen offers a circular finish action. System Back can revisit earlier screens, but there is no visible Back or Skip intro control. The intro is saveable through activity recreation and can be replayed from Settings → Welcome to FocuLY. Completing a replay does not clear rules or history.
 
 ## Visual system
 
@@ -34,7 +34,7 @@ Created with the built-in imagegen tool, using the user's provided pastel onboar
 | `cat_patience.png` | A cat waits beside a lilac hourglass. Resistant interruptions and pause dialogs. |
 | `cat_boundary.png` | A cat rests its paws on a closed padlock. Strict interruptions and locked rules. |
 | `cat_focus.png` | A cat waters a sprouting plant. Attention growing during an active focus session. |
-| `cat_break.png` | A cat stretches on a lilac cushion beside a cup of tea. Actual Pomodoro breaks. |
+| `cat_break.png` | A cat stretches on a lilac cushion beside a cup of tea. Retained for legacy artwork compatibility. |
 | `cat_complete.png` | A cat hugs a peach star with small confetti. Completed sessions only. |
 
 Shared prompt: “Transparent raster doodle for FocuLY. Confident slightly wobbly black ink, simple white-filled forms, sparse black solid patches, and tiny motion lines. A charming white cat with triangular ears, dot eyes, whiskers, rounded body, and curled tail. Tiny lilac and peach accent patches. Complete centered illustration, generous transparent margins, square canvas. No text, logo, UI panel, paper background, gradients, 3D rendering, or watermark.”

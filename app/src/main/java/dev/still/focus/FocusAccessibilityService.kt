@@ -6,6 +6,8 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.view.*
@@ -36,6 +38,15 @@ class FocusAccessibilityService : AccessibilityService() {
     private var eventPackage: String? = null
     private var fallbackAt = 0L
     private var fallbackReading = false
+    private var pendingInspection: Runnable? = null
+    private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { }
+    private val feedAudioFocus by lazy { AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+        .setOnAudioFocusChangeListener(audioFocusListener).build() }
+    private var pausedFeedAudio = false
+    private var feedOverlayOnHome = false
+    private val launcherPackage by lazy {
+        packageManager.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0)?.activityInfo?.packageName
+    }
     private fun refreshForeground(event: AccessibilityEvent? = null) {
         val eventPkg = event?.packageName?.toString()
         val imePackages = windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }
@@ -55,6 +66,9 @@ class FocusAccessibilityService : AccessibilityService() {
             }.start()
         }
         val resolved = ForegroundResolver.choose(appWindows, rootPackage ?: eventPackage) ?: return
+        // A feed block parks the video app behind Home but keeps the accessibility overlay visible.
+        // Calls and Android settings still replace the overlay normally.
+        if (feedOverlayOnHome && overlay != null && resolved == launcherPackage) return
         if (resolved != foreground) {
             clearOverlay(); foreground = resolved; openedAt = System.currentTimeMillis(); openingElapsed = 0L
             website = null; feed = null
@@ -72,7 +86,7 @@ class FocusAccessibilityService : AccessibilityService() {
             ProtectionRuntime.tick()
             Repository.reconcile()
             val s = Repository.state.session
-            val phase = "${s?.id}:${s?.onBreak(System.currentTimeMillis())}"
+            val phase = s?.id.orEmpty()
             if (phase != lastPhase) { lastPhase = phase; FocusNotifications.session(this@FocusAccessibilityService); FocusNotifications.plan(this@FocusAccessibilityService) }
             if (Repository.state.apps.any { it.enabled && it.dailyMinutes > 0 } && System.currentTimeMillis() - usageAt > 10_000 && !readingUsage && Repository.usageGranted(this@FocusAccessibilityService)) {
                 readingUsage = true
@@ -82,7 +96,7 @@ class FocusAccessibilityService : AccessibilityService() {
                 }.start()
             }
             evaluate()
-            handler.postDelayed(this, 500)
+            handler.postDelayed(this, 250)
         }
     }
     override fun onServiceConnected() {
@@ -94,19 +108,29 @@ class FocusAccessibilityService : AccessibilityService() {
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        refreshForeground(event)
+        // Content events are frequent on video feeds; their package is already known.
+        // Window transitions still take the full resolver path.
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || event.packageName?.toString() != foreground) refreshForeground(event)
         val pkg = foreground
         if (pkg.isBlank() || essential(this, pkg)) { clearOverlay(); return }
         val now = System.currentTimeMillis()
         val state = Repository.state
         val needsScreen = (pkg in browserIds && (state.domains.isNotEmpty() || state.profiles.any { it.domains.isNotEmpty() } || state.blocks.any { it.kind == BlockKind.WEBSITES && it.alive(now) })) ||
             ((state.feeds.isNotEmpty() || state.blocks.any { it.kind == BlockKind.FEEDS && it.alive(now) }) && pkg in setOf("com.google.android.youtube", "com.instagram.android", "com.facebook.katana"))
-        if (needsScreen && now - screenSeenAt > 200 && overlay == null) {
-            screenSeenAt = now
-            val root = windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }.maxByOrNull { it.layer }?.root ?: rootInActiveWindow
-            if (root != null && root.packageName?.toString() == pkg) inspect(root, pkg)
+        if (needsScreen && overlay == null) {
+            if (now - screenSeenAt >= 75 || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) inspectCurrentScreen(pkg)
+            else if (pendingInspection == null) {
+                pendingInspection = Runnable { pendingInspection = null; if (foreground == pkg && overlay == null) { inspectCurrentScreen(pkg); evaluate() } }
+                handler.postDelayed(pendingInspection!!, 75)
+            }
         }
         evaluate()
+    }
+    private fun inspectCurrentScreen(pkg: String) {
+        screenSeenAt = System.currentTimeMillis()
+        val root = rootInActiveWindow ?: windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }
+            .maxByOrNull { it.layer }?.root
+        if (root?.packageName?.toString() == pkg) inspect(root, pkg)
     }
     private fun inspect(root: AccessibilityNodeInfo, pkg: String) {
         var address: String? = null
@@ -129,6 +153,11 @@ class FocusAccessibilityService : AccessibilityService() {
     }
     private fun evaluate() {
         if (!getSystemService(android.os.PowerManager::class.java).isInteractive) { clearOverlay(); return }
+        if (feedOverlayOnHome && overlay != null) {
+            val stillBlocked = RulesEngine.restriction(Repository.state, foreground, System.currentTimeMillis(), website = website, feed = feed)
+            if (stillBlocked == null) clearOverlay()
+            return
+        }
         if (!Repository.state.disclosure || foreground.isBlank() || essential(this, foreground)) { clearOverlay(); return }
         if (usageDate != LocalDate.now()) { usage = emptyMap(); usageAt = 0L }
         val now = System.currentTimeMillis()
@@ -152,8 +181,8 @@ class FocusAccessibilityService : AccessibilityService() {
         val mono = resources.getFont(R.font.jetbrains_mono)
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(56), dp(28), dp(40)); setBackgroundColor(bg) }
         val scroll = ScrollView(this).apply { isFillViewport = true; addView(container) }
-        fun text(value: String, size: Float, color: Int = ink, useMono: Boolean = false): TextView = TextView(this).apply {
-            this.text = value; textSize = size; setTextColor(color); if (useMono) typeface = mono
+        fun text(value: String, size: Float, color: Int = ink): TextView = TextView(this).apply {
+            this.text = value; textSize = size; setTextColor(color); typeface = mono
             setLineSpacing(dp(5).toFloat(), 1f); layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(20) }
         }.also(container::addView)
         fun button(value: String, primary: Boolean = false, click: () -> Unit): Button = Button(this).apply {
@@ -165,7 +194,7 @@ class FocusAccessibilityService : AccessibilityService() {
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) }
             setPadding(dp(16), dp(16), dp(16), dp(16)); setOnClickListener { if (Repository.state.haptics) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); click() }
         }.also(container::addView)
-        text("FocuLY / ${restriction.mode.label.lowercase()}", 14f, violet, true)
+        text("FocuLY / ${restriction.mode.label.lowercase()}", 14f, violet)
         ImageView(this).apply {
             val art = restriction.mode.catArt()
             setImageResource(art.drawable); scaleType = ImageView.ScaleType.FIT_CENTER
@@ -175,14 +204,14 @@ class FocusAccessibilityService : AccessibilityService() {
             layoutParams = LinearLayout.LayoutParams(-1, dp(if (restriction.mode == FocusMode.GENTLE) 86 else 120)).apply { bottomMargin = dp(16) }
         }.also(container::addView)
         if (state.blockMessage.emoji.isNotBlank()) text(state.blockMessage.emoji, 44f)
-        text(state.blockMessage.title.ifBlank { "See you later." }, if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink, true)
+        text(state.blockMessage.title.ifBlank { "See you later." }, if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink)
         if (state.blockMessage.body.isNotBlank()) text(state.blockMessage.body, 16f, secondary)
-        text(restriction.label, 18f, ink, true)
+        text(restriction.label, 18f, ink)
         text(restriction.explanation, 16f, secondary)
         val until = restriction.until
         if (until != null && until > 0) {
-            text("Unlocks ${java.time.Instant.ofEpochMilli(until).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM · HH:mm"))}", 14f, secondary, true)
-            val counter = text("", 14f, secondary, true)
+            text("Unlocks ${java.time.Instant.ofEpochMilli(until).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM · HH:mm"))}", 14f, secondary)
+            val counter = text("", 14f, secondary)
             val myGeneration = generation
             handler.post(object : Runnable {
                 override fun run() {
@@ -192,10 +221,11 @@ class FocusAccessibilityService : AccessibilityService() {
                     handler.postDelayed(this, 1000)
                 }
             })
-        } else if (until == 0L) text("No automatic ending", 14f, secondary, true)
+        } else if (until == 0L) text("No automatic ending", 14f, secondary)
         button("Return to focus", true) { overridePending = false; performGlobalAction(GLOBAL_ACTION_HOME); foreground = ""; clearOverlay() }
         val reason = EditText(this).apply {
             hint = "What are you opening this for?"; setTextColor(ink); setHintTextColor(secondary); textSize = 16f
+            typeface = mono
             setSingleLine(false); maxLines = 3
             setPadding(dp(12), dp(16), dp(12), dp(16)); visibility = View.GONE
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(24) }
@@ -232,7 +262,11 @@ class FocusAccessibilityService : AccessibilityService() {
                     else visit.text = "Cooldown is still active"
                 }
             }
-        } else text(if (restriction.mode == FocusMode.STRICT) "No early unblock. Essential apps stay available." else "Cooldown active. Essential apps stay available.", 14f, secondary)
+        } else TextView(this).apply {
+            text = if (restriction.mode == FocusMode.STRICT) "No early unblock. Essential apps stay available." else "Cooldown active. Essential apps stay available."
+            textSize = 14f; setTextColor(secondary); typeface = mono
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(24); bottomMargin = dp(20) }
+        }.also(container::addView)
         button("Emergency & system access") { overridePending = false; performGlobalAction(GLOBAL_ACTION_HOME); foreground = ""; clearOverlay() }
         val normal = restriction.mode == FocusMode.GENTLE
         val params = WindowManager.LayoutParams(if (normal) (resources.displayMetrics.widthPixels * .92).toInt() else -1, if (normal) -2 else -1, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, 0, android.graphics.PixelFormat.TRANSLUCENT)
@@ -242,12 +276,29 @@ class FocusAccessibilityService : AccessibilityService() {
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         overlayKey = "$foreground:${restriction.explanation}:${restriction.mode}:${restriction.until}"
         overlay = scroll
-        runCatching { getSystemService(WindowManager::class.java).addView(scroll, params); ProtectionRuntime.blocked(blockedPackage) }
+        runCatching { getSystemService(WindowManager::class.java).addView(scroll, params) }
+            .onSuccess {
+                if (feed != null && restriction.label == feed) runCatching {
+                    pauseFeedPlayback()
+                    feedOverlayOnHome = true
+                    if (!performGlobalAction(GLOBAL_ACTION_HOME)) feedOverlayOnHome = false
+                }
+                ProtectionRuntime.blocked(blockedPackage)
+            }
             .onFailure { overlay = null; overlayKey = ""; ProtectionRuntime.error("Android could not show the blocking screen. Re-enable FocuLY protection and check background access.") }
+    }
+    private fun pauseFeedPlayback() {
+        val audio = getSystemService(AudioManager::class.java)
+        if (!pausedFeedAudio) { audio.requestAudioFocus(feedAudioFocus); pausedFeedAudio = true }
+        audio.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE))
+        audio.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE))
     }
     fun clearOverlay() {
         overlay?.let { runCatching { getSystemService(WindowManager::class.java).removeView(it) } }
         overlay = null; overlayKey = ""; generation++; overridePending = false
+        feedOverlayOnHome = false
+        pendingInspection?.let(handler::removeCallbacks); pendingInspection = null
+        if (pausedFeedAudio) { getSystemService(AudioManager::class.java).abandonAudioFocusRequest(feedAudioFocus); pausedFeedAudio = false }
         ProtectionRuntime.cleared()
     }
     override fun onInterrupt() { clearOverlay() }

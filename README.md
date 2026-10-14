@@ -35,7 +35,7 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 The gallery shows FocuLY's four onboarding screens, cat doodles, and actual blocking screens from the v1.2.0 source.
 
-**[Full screen gallery](docs/screenshots/gallery/README.md)** · [Searchable local HTML gallery](docs/screenshots/gallery/index.html). Includes onboarding, permission disclosure, all principal editors, settings sections, custom messages, PIN setup, three blocking modes, warnings, a real Pomodoro break, completion, and managed-device comparisons.
+**[Full screen gallery](docs/screenshots/gallery/README.md)** · [Searchable local HTML gallery](docs/screenshots/gallery/index.html). This gallery documents an earlier build and includes onboarding, permission disclosure, principal editors, settings sections, blocking modes, warnings, completion, and managed-device comparisons.
 
 <table>
   <tr>
@@ -88,7 +88,6 @@ Personal-phone administration adds a deactivation step. Separately provisioned d
 | Area | Features |
 | --- | --- |
 | **FocuLY sessions** | Custom durations and intentions; reusable presets; open-ended Normal/Resistant sessions; finite Strict sessions |
-| **Pomodoro** | Configurable work periods, breaks, and rounds in Normal/Resistant; Strict stays locked until its deadline |
 | **App boundaries** | Whole-app blocking during focus; daily usage budgets; time per visit; essential-app exceptions |
 | **Gradual reduction** | Reduce an app’s allowance by five minutes per day toward a chosen target; pause and resume |
 | **Routines** | Weekdays, weekends, custom days, and overnight schedules; advance reminders; overlap detection |
@@ -119,7 +118,7 @@ Strict needs an automatic expiry. “Until I unblock” supports Normal and Resi
 | **Resistant** | Full-screen interruption | Wait 30 seconds, give a reason, then get one minute; at least ten minutes between visits |
 | **Strict** | Full-screen lock until the deadline | No temporary visits, early stop, rule weakening, or data deletion within FocuLY; existing visits are ignored |
 
-Strict requires a live protection service and an automatic ending. Sessions use 1–1,440 minutes; independent blocks can use today, one day, or one week. Home, emergency access, and Android settings remain accessible. Ordinary phones allow Android permission revocation. For Android-enforced whole-app suspension and uninstall blocking, see the opt-in [managed-device guide](docs/MANAGED_DEVICE.md).
+Strict requires a live protection service and an automatic ending. Sessions can last up to one week; independent blocks can use today, one day, or one week. Home, emergency access, and Android settings remain accessible. Ordinary phones allow Android permission revocation. For Android-enforced whole-app suspension and uninstall blocking, see the opt-in [managed-device guide](docs/MANAGED_DEVICE.md).
 
 ## Installation
 
@@ -131,7 +130,7 @@ Strict requires a live protection service and an automatic ending. Sessions use 
 4. Launch **FocuLY** and follow the four-screen introduction to the permission checklist.
 5. Read the protection disclosure and enable **FocuLY protection** in Android Accessibility settings if you want blocking.
 6. Enable **Usage Access** for daily budgets and usage charts. Notifications are optional.
-7. Choose distractions under **Rules**. In **Settings → Protection health**, check that the service is connected, then use **Test selected app for 1 minute**.
+7. Choose distractions under **Rules**. In **Settings → Protection health**, check that the service is connected, then verify a block by opening a selected app while a rule is active.
 8. Start your preferred session from **Home**. For OnePlus Nord CE 2 background settings, follow [troubleshooting](docs/TROUBLESHOOTING.md).
 
 Some Android versions place additional restrictions on accessibility access for sideloaded apps. If needed, allow restricted settings from FocuLY’s system App Info screen before enabling protection.
@@ -165,7 +164,7 @@ The [validation record](VALIDATION.md) separates verified behavior from remainin
 
 ## Design
 
-Warm off-white backgrounds, near-black text, muted violet accents, quiet rounded surfaces, and generous whitespace. JetBrains Mono is bundled locally for headings, timers, numbers, and controls; Android sans-serif keeps longer copy readable.
+Warm off-white backgrounds, near-black text, muted violet accents, quiet rounded surfaces, and generous whitespace. JetBrains Mono is bundled locally and used throughout the app.
 
 - **Type scale:** 44 / 28 / 24 / 20 / 18 / 16 / 14 / 12 sp.
 - **Spacing:** 4 dp grid; 24 dp page and card padding; 24 dp section gaps.

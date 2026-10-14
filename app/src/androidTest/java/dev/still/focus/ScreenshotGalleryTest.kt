@@ -42,17 +42,9 @@ class ScreenshotGalleryTest {
         scrollPage(800f)
         shot("36-session-complete")
     }
-    private fun captureBreak(demo: FocusState) {
-        val breakProfile = Profile("break-preview", "Quiet rhythm", 3, "Give yourself a little room.", FocusMode.GENTLE, pomodoro = true, workMinutes = 1, breakMinutes = 1, rounds = 2)
-        ui.runOnIdle { Repository.update { demo }; assertTrue(Repository.start(breakProfile, 3, breakProfile.intention, timerOnly = true)) }
-        // Wall time advances while the test clock is idle. Resume its coroutine tick before capture.
-        Thread.sleep(61_000)
-        ui.mainClock.advanceTimeBy(1_100)
-        open("home")
-        ui.onNodeWithText("BREAK TIME").assertIsDisplayed()
-        assertTrue(Repository.state.session!!.onBreak(System.currentTimeMillis()))
-        shot("39-pomodoro-break")
-        ui.runOnIdle { Repository.stop(); Repository.update { demo.copy(theme = "Dark", session = Session(profile = breakProfile.copy(pomodoro = false), start = System.currentTimeMillis(), end = System.currentTimeMillis() + 60_000, timerOnly = true)) } }
+    private fun captureDarkFocus(demo: FocusState) {
+        val profile = Profile("dark-preview", "Quiet focus", 3, "Give yourself a little room.", FocusMode.GENTLE)
+        ui.runOnIdle { Repository.update { demo.copy(theme = "Dark", session = Session(profile = profile, start = System.currentTimeMillis(), end = System.currentTimeMillis() + 60_000, timerOnly = true)) } }
         open("home"); shot("40-dark-focus")
     }
     @Test fun captureSessionMilestones() {
@@ -69,7 +61,7 @@ class ScreenshotGalleryTest {
             ui.mainClock.advanceTimeBy(1_100)
             ui.runOnIdle { Repository.reconcile() }
             open("home"); captureCompletion()
-            captureBreak(demo)
+            captureDarkFocus(demo)
         } finally { ui.runOnIdle { Repository.update { original } }; open("home") }
     }
     @Test fun captureAllPages() {
@@ -82,10 +74,10 @@ class ScreenshotGalleryTest {
         try {
             ui.runOnIdle { Repository.update { FocusState() } }
             shot("01-welcome")
-            ui.onNodeWithText("Next").performClick(); shot("01b-onboarding-rhythm")
-            ui.onNodeWithText("Next").performClick(); shot("01c-onboarding-boundary")
-            ui.onNodeWithText("Set up protection").performClick(); shot("02-onboarding-permissions")
-            ui.onNodeWithText("App & feed protection").performScrollTo().performClick(); shot("03-protection-disclosure")
+            ui.onNodeWithContentDescription("Next").performClick(); shot("01b-onboarding-rhythm")
+            ui.onNodeWithContentDescription("Next").performClick(); shot("01c-onboarding-boundary")
+            ui.onNodeWithContentDescription("Set up protection").performClick(); shot("02-onboarding-permissions")
+            ui.onNodeWithText("Connect protection").performScrollTo().performClick(); shot("03-protection-disclosure")
             ui.onNodeWithText("Not now").performClick()
             shell("settings put secure enabled_accessibility_services dev.still.focus/.FocusAccessibilityService")
             shell("settings put secure accessibility_enabled 1")
@@ -157,7 +149,6 @@ class ScreenshotGalleryTest {
             automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
             ui.runOnIdle { Repository.update { demo } }
             open("home")
-            captureBreak(demo)
             ui.runOnIdle { Repository.update { demo.copy(theme = "Dark") } }; open("home"); shot("31-dark-home")
         } finally { ui.runOnIdle { Repository.update { original } }; open("home") }
     }
