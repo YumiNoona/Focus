@@ -51,11 +51,16 @@ class ProtectionScenarioTest {
             onMain { assertTrue(Repository.state.overrides.any { it.packageName == fixture }); assertTrue(Repository.stop()); Repository.update { it.copy(overrides = emptyList()) } }
 
             onMain { assertTrue(Repository.start(Profile("resistant", "Resistant test", 10, "Work", FocusMode.STANDARD), 10, "Work")) }
+            onMain {
+                assertTrue(Repository.block(BlockKind.APPS, setOf(fixture), BlockPeriod.MANUAL, FocusMode.STANDARD))
+                Repository.beginUnblock(Repository.state.blocks.single().id)
+                assertFalse(Repository.unblock(Repository.state.blocks.single().id, "too fast"))
+            }
             waitFor { ProtectionRuntime.blockedPackage == fixture }
             click("Take an intentional visit")
             waitFor { find("Pause for") != null }
             assertFalse(find("Pause for")!!.isEnabled)
-            waitFor(35_000) { find("Allow for 1 minutes")?.isEnabled == true }
+            waitFor(35_000) { find("Allow for 1 minute")?.isEnabled == true }
             val root = overlayRoot()!!
             fun edit(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
                 if (node.className == "android.widget.EditText") return node
@@ -64,9 +69,9 @@ class ProtectionScenarioTest {
             }
             val input = edit(root)!!
             assertTrue(input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "An intentional reply") }))
-            click("Allow for 1 minutes")
+            click("Allow for 1 minute")
             waitFor { ProtectionRuntime.blockedPackage.isEmpty() }
-            onMain { val visit = Repository.state.overrides.last(); assertEquals(60_000L, visit.until - visit.at) }
+            onMain { val visit = Repository.state.overrides.last(); assertEquals(60_000L, visit.until - visit.at); assertTrue(Repository.unblock(Repository.state.blocks.single().id, "An intentional ending")) }
 
             // Keep that existing visit: Strict must ignore it and must recover after shade/home transitions.
             onMain {
@@ -84,6 +89,23 @@ class ProtectionScenarioTest {
             shell("am start -n $fixture/.ScrollActivity")
             waitFor { ProtectionRuntime.blockedPackage == fixture }
             waitFor(25_000) { Repository.state.session == null && ProtectionRuntime.blockedPackage.isEmpty() }
+            onMain {
+                Repository.update { it.copy(overrides = emptyList()) }
+                assertTrue(Repository.block(BlockKind.APPS, setOf(fixture), BlockPeriod.MANUAL, FocusMode.GENTLE))
+                assertTrue(Repository.block(BlockKind.APPS, setOf(fixture), BlockPeriod.MANUAL, FocusMode.GENTLE))
+                assertEquals(1, Repository.state.blocks.size)
+                assertNull(Repository.state.session)
+            }
+            shell("am start -n $fixture/.ScrollActivity")
+            waitFor { ProtectionRuntime.blockedPackage == fixture }
+            onMain { assertTrue(Repository.unblock(Repository.state.blocks.single().id)) }
+            waitFor { ProtectionRuntime.blockedPackage.isEmpty() }
+            onMain {
+                val now = System.currentTimeMillis()
+                Repository.update { it.copy(blocks = listOf(BlockPlan(kind = BlockKind.APPS, targets = setOf(fixture), mode = FocusMode.STRICT, start = now, end = now + 5000))) }
+            }
+            waitFor { ProtectionRuntime.blockedPackage == fixture }
+            waitFor { Repository.state.blocks.isEmpty() && ProtectionRuntime.blockedPackage.isEmpty() }
         } finally {
             waitFor(25_000) { !RulesEngine.strictActive(Repository.state, System.currentTimeMillis()) }
             onMain { Repository.stop(); Repository.update { FocusState(onboarding = true) } }

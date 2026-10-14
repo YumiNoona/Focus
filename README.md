@@ -23,6 +23,8 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet Focus
 
+**Development preview:** the independent-block and card-based setup changes described below are implemented on `main` for the next version. The latest published APK is still **v1.1.0**. Build from source to test these changes; no v1.2.0 release has been published.
+
 Focus helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
 
 The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**. Profile lives at the top left; Settings lives at the top right. No account, advertising, analytics, or subscription is built into this release.
@@ -55,6 +57,17 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 Screenshots are captured from the actual Android app in an emulator. Scroll Test is a separate test app used to demonstrate blocking; it is not included in the installed Focus app. Usage history is not fabricated.
 
 <details>
+<summary>Development preview: independent blocks and compact setup</summary>
+
+<img src="docs/screenshots/block-setup.png" alt="Card choices for today, a day, a week, minutes, or until manually unblocked, with a persistent action button" width="250" />
+<img src="docs/screenshots/active-blocks.png" alt="Persistent manual app block on Home with an Unblock action" width="250" />
+<img src="docs/screenshots/settings.png" alt="Compact protection setup and expandable settings" width="250" />
+
+These screens are from the local development build; the published APK remains v1.1.0.
+
+</details>
+
+<details>
 <summary>Optional uninstall and managed-device controls</summary>
 
 <img src="docs/screenshots/uninstall.png" alt="Optional administrator active on a personal Android installation" width="250" />
@@ -74,6 +87,7 @@ Personal-phone administration adds a deactivation step. Separately provisioned d
 | **Gradual reduction** | Reduce an app’s allowance by five minutes per day toward a chosen target; pause and resume |
 | **Routines** | Weekdays, weekends, custom days, and overnight schedules; advance reminders; overlap detection |
 | **Interruption modes** | Normal popup, Resistant waiting period and reason, Strict with no temporary visits or early ending |
+| **Independent blocks** | Apps, websites, and feeds for today, one day, one week, custom minutes, or until manually unblocked; work without a focus session |
 | **Uninstall protection** | Optional administrator deactivation step on personal phones; verified Android uninstall blocking and app suspension on separately provisioned managed devices |
 | **Insights** | Logged focus time, completed sessions, personal goals, measured app usage, weekly chart, prior-week comparison when data is available, and session history |
 | **Everyday access** | Home-screen widget, Quick Settings tile, optional notifications, and permission health |
@@ -81,6 +95,12 @@ Personal-phone administration adds a deactivation step. Separately provisioned d
 | **Experimental rules** | Website domains in supported browser address fields; selective YouTube Shorts, Instagram Reels, and Facebook Reels detection |
 
 Read the [full feature and coverage guide](docs/FEATURES.md) for details about rule precedence, timing, and measured usage.
+
+### Block without a session
+
+Choose **Block apps** or **Block websites** on Home, or select a group in Rules. Pick **Today**, **1 day**, **1 week**, **Set minutes**, or **Until I unblock**, then choose a resistance mode and tap **Block now**. Home shows every active group and its ending. Blocks persist across app restarts and remain active when a focus session ends.
+
+Strict needs an automatic expiry. “Until I unblock” supports Normal and Resistant; Resistant unblocking requires a 30-second pause and a reason. The [blocking guide](docs/BLOCKS.md) explains calendar timing, overlaps, and coverage. Permission setup uses compact action cards with expandable details. Draft choices survive navigation to Settings and back.
 
 ### Choose your resistance
 
@@ -90,7 +110,7 @@ Read the [full feature and coverage guide](docs/FEATURES.md) for details about r
 | **Resistant** | Full-screen interruption | Wait 30 seconds, give a reason, then get one minute; at least ten minutes between visits |
 | **Strict** | Full-screen lock until the deadline | No temporary visits, early stop, rule weakening, or data deletion within Focus; existing visits are ignored |
 
-Strict requires a live protection service, selected rules, and a finite timer of 1–1,440 minutes. Home, emergency access, and Android settings remain accessible. Ordinary phones allow Android permission revocation. For Android-enforced whole-app suspension and uninstall blocking, see the opt-in [managed-device guide](docs/MANAGED_DEVICE.md).
+Strict requires a live protection service and an automatic ending. Sessions use 1–1,440 minutes; independent blocks can use today, one day, or one week. Home, emergency access, and Android settings remain accessible. Ordinary phones allow Android permission revocation. For Android-enforced whole-app suspension and uninstall blocking, see the opt-in [managed-device guide](docs/MANAGED_DEVICE.md).
 
 ## Installation
 

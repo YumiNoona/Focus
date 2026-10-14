@@ -1,10 +1,10 @@
 # Focus for Android
 
-An Android focus app built in Kotlin and Jetpack Compose. Version 1.1.0 strengthens blocking and introduces three resistance levels for Android 9 and newer.
+An Android focus app built in Kotlin and Jetpack Compose. Version 1.2.0 adds independent day/week/manual blocks and a simpler setup for Android 9 and newer.
 
 ## Try it
 
-Install the supplied `Focus-v1.1.0.apk` on an Android phone. On first launch:
+Build the development APK from source to try version 1.2. The latest published APK remains v1.1.0. On first launch:
 
 1. Choose **Make room**.
 2. Read the focus-protection disclosure. If you agree, enable **Focus protection** in Android Accessibility settings.
@@ -23,6 +23,10 @@ Warm off-white background, near-black text, muted violet accents, neutral rounde
 Type sizes are 44, 28, 24, 20, 18, 16, 14, and 12 sp. Spacing follows a 4 dp grid with 24 dp page margins, 24 dp card padding, 24 dp section gaps, 48 dp minimum interaction targets, and primary buttons at least 56 dp high. Content scrolls; primary buttons grow with text instead of clipping. No decorative motion is used in this version, including when reduced motion is enabled.
 
 ## Feature coverage
+
+Version 1.2.0 adds independent app, website, and feed groups with today/day/week/manual/custom-minute endings. These work without a session, remain active when a session ends, and appear on Home. Strict requires automatic expiry; Resistant group removal includes a backend-checked pause and reason. See [BLOCKS.md](BLOCKS.md).
+
+Setup now uses compact permission action cards, expandable explanations, app icons, duration/mode cards, and saved drafts when returning from Settings. Existing timers, profiles, routines, budgets, essential access, and the three-icon dock remain available.
 
 | Capability | Implementation |
 | --- | --- |
@@ -108,6 +112,7 @@ Important files:
 - `ManagedProtection.kt`: optional administration and journaled Android device-owner policies.
 - `Integrations.kt`: notification scheduling, reboot receiver, Quick Settings tile, widget.
 - `MainActivity.kt`: app screens, forms, navigation, permission explanations.
+- `BlockScreens.kt`: standalone block setup, active groups, duration/mode cards, and expandable details.
 - `Theme.kt`: colors and typography.
 - `EngineTest.kt`: rules tests.
 - `AppTest.kt`: connected Android UI and persistence tests.

@@ -36,12 +36,51 @@ object Repository {
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) {
             val protected = state.copy(name = next.name, intention = next.intention, goalMinutes = next.goalMinutes,
                 theme = next.theme, haptics = next.haptics, reminders = next.reminders, hideInsights = next.hideInsights, reduceMotion = next.reduceMotion,
-                history = next.history, session = if (state.session?.alive(System.currentTimeMillis()) == false) next.session else state.session)
+                history = next.history, session = if (state.session?.alive(System.currentTimeMillis()) == false) next.session else state.session,
+                blocks = if (next.blocks.filter { it.alive(System.currentTimeMillis()) } == state.blocks.filter { it.alive(System.currentTimeMillis()) }) next.blocks else state.blocks)
             if (protected != next) return fail("Strict rules stay locked until their timer or schedule ends.")
         }
         state = next
         context.getSharedPreferences("still", 0).edit().putString("state", encode(state).toString()).apply()
         FocusWidget.refresh(context)
+        return true
+    }
+    fun block(kind: BlockKind, targets: Set<String>, period: BlockPeriod, mode: FocusMode, minutes: Int = 60): Boolean {
+        reconcile()
+        if (!protectionReady()) return fail("Enable Focus protection before blocking.")
+        val eligible = when (kind) {
+            BlockKind.APPS -> state.apps.filter { it.enabled && it.packageName !in state.allowlist && !FocusAccessibilityService.essential(context, it.packageName) }.map { it.packageName }.toSet()
+            BlockKind.WEBSITES -> state.domains
+            BlockKind.FEEDS -> state.feeds
+        }
+        if (targets.isEmpty() || !eligible.containsAll(targets)) return fail("Choose at least one available target.")
+        if (period == BlockPeriod.TIMER && minutes !in 1..1440) return fail("Choose 1–1440 minutes.")
+        if (mode == FocusMode.STRICT && period == BlockPeriod.MANUAL) return fail("Strict needs an automatic ending. Choose a day, week, or timer.")
+        if (mode == FocusMode.STRICT && state.managedLockdown && (kind != BlockKind.APPS || !ManagedProtection.isOwner() || !ManagedProtection.preciseEnding())) return fail("Managed Strict needs whole-app targets and precise ending permission.")
+        val now = System.currentTimeMillis()
+        val existing = state.blocks.find { it.kind == kind && it.targets == targets && it.mode == mode && it.period == period }
+        if (existing == null && state.blocks.size >= 100) return fail("Unblock an existing group before adding another.")
+        val plan = BlockPlan(id = existing?.id ?: java.util.UUID.randomUUID().toString(), kind = kind, targets = targets.toSet(), mode = mode, start = now, end = period.deadline(now, minutes), period = period)
+        val previousBlocks = state.blocks
+        if (!update { it.copy(blocks = it.blocks.filterNot { item -> item.id == plan.id } + plan) }) return false
+        if (!ManagedProtection.sync()) {
+            state = state.copy(blocks = previousBlocks)
+            context.getSharedPreferences("still", 0).edit().putString("state", encode(state).toString()).commit()
+            ManagedProtection.sync()
+            return fail("Android could not apply managed blocking. Check protection health.")
+        }
+        FocusNotifications.plan(context)
+        return true
+    }
+    private val unblockRequests = mutableMapOf<String, Long>()
+    fun beginUnblock(id: String) { unblockRequests[id] = android.os.SystemClock.elapsedRealtime() }
+    fun unblock(id: String, reason: String = ""): Boolean {
+        val plan = state.blocks.find { it.id == id } ?: return true
+        if (plan.mode == FocusMode.STRICT && plan.alive(System.currentTimeMillis())) return fail("Strict stays locked until its deadline.")
+        if (plan.mode == FocusMode.STANDARD && plan.alive(System.currentTimeMillis()) && (reason.isBlank() || android.os.SystemClock.elapsedRealtime() - (unblockRequests[id] ?: android.os.SystemClock.elapsedRealtime()) < 30_000)) return fail("Pause for 30 seconds and add a reason before unblocking.")
+        if (!update { it.copy(blocks = it.blocks.filterNot { item -> item.id == id }) }) return false
+        unblockRequests.remove(id)
+        ManagedProtection.sync(); FocusNotifications.plan(context)
         return true
     }
     private fun fail(message: String): Boolean { Toast.makeText(context, message, Toast.LENGTH_LONG).show(); return false }
@@ -82,6 +121,11 @@ object Repository {
         return true
     }
     fun reconcile() {
+        val expired = state.blocks.filterNot { it.alive(System.currentTimeMillis()) }
+        if (expired.isNotEmpty() && update { it.copy(blocks = it.blocks - expired.toSet()) }) {
+            expired.forEach { unblockRequests.remove(it.id) }
+            FocusNotifications.plan(context)
+        }
         val s = state.session
         if (s != null && !s.alive(System.currentTimeMillis())) {
             stop(true)
@@ -114,7 +158,7 @@ object Repository {
     }
     fun openAccessibility() { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     fun openUsage() { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    fun export(): String = encode(state).put("formatVersion", 1).put("exportedAt", System.currentTimeMillis()).toString(2)
+    fun export(): String = encode(state).put("formatVersion", 2).put("exportedAt", System.currentTimeMillis()).toString(2)
     private fun JSONArray.strings() = (0 until length()).map { getString(it) }.toSet()
     private fun <T> JSONArray.items(parse: (JSONObject) -> T) = (0 until length()).map { parse(getJSONObject(it)) }
     private fun JSONObject.array(key: String) = optJSONArray(key) ?: JSONArray()
@@ -131,6 +175,7 @@ object Repository {
         .put("profiles", JSONArray(s.profiles.map(::profile)))
         .put("schedules", JSONArray(s.schedules.map { JSONObject().put("id", it.id).put("name", it.name).put("profileId", it.profileId).put("days", JSONArray(it.days.toList())).put("startMinute", it.startMinute).put("endMinute", it.endMinute).put("enabled", it.enabled).put("reminder", it.reminder) }))
         .put("session", s.session?.let { JSONObject().put("id", it.id).put("profile", profile(it.profile)).put("start", it.start).put("end", it.end).put("intention", it.intention).put("timerOnly", it.timerOnly) } ?: JSONObject.NULL)
+        .put("blocks", JSONArray(s.blocks.map { JSONObject().put("id", it.id).put("kind", it.kind.name).put("targets", JSONArray(it.targets.toList())).put("mode", it.mode.name).put("start", it.start).put("end", it.end).put("period", it.period.name) }))
         .put("history", JSONArray(s.history.map { JSONObject().put("name", it.name).put("start", it.start).put("end", it.end).put("focusedMillis", it.focusedMillis).put("completed", it.completed) }))
         .put("overrides", JSONArray(s.overrides.map { JSONObject().put("packageName", it.packageName).put("at", it.at).put("until", it.until).put("reason", it.reason) }))
     private fun decode(raw: String): FocusState {
@@ -140,6 +185,11 @@ object Repository {
             managedLockdown = j.optBoolean("managedLockdown"), uninstallProtection = j.optBoolean("uninstallProtection"),
             apps = j.array("apps").items { AppRule(it.getString("packageName"), it.getString("label"), it.optBoolean("enabled", true), it.optInt("dailyMinutes"), it.optInt("openingMinutes"), it.optInt("gradualTarget"), it.optLong("gradualStart"), it.optBoolean("gradualPaused")) },
             domains = j.array("domains").strings(), feeds = j.array("feeds").strings(), allowlist = j.array("allowlist").strings(),
+            blocks = j.array("blocks").items {
+                val end = it.optLong("end")
+                val mode = it.mode().let { mode -> if (mode == FocusMode.STRICT && end == 0L) FocusMode.STANDARD else mode }
+                BlockPlan(it.getString("id"), BlockKind.valueOf(it.getString("kind")), it.array("targets").strings(), mode, it.getLong("start"), end, BlockPeriod.valueOf(it.optString("period", "MANUAL")))
+            },
             profiles = if (j.has("profiles")) j.array("profiles").items(::parseProfile) else FocusState.defaults(),
             schedules = j.array("schedules").items { Schedule(it.getString("id"), it.getString("name"), it.getString("profileId"), it.array("days").stringsOrInts(), it.getInt("startMinute"), it.getInt("endMinute"), it.optBoolean("enabled", true), it.optBoolean("reminder")) },
             session = j.optJSONObject("session")?.let {

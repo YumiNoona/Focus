@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — 1.2.0 development
+
+- Add independent app, website, and feed blocks for today, one day, one week, custom minutes, or until manually unblocked.
+- Persist blocks across restarts, keep them active independently of sessions, and reconcile automatic expiry.
+- Reject indefinite Strict, preserve Strict integrity, enforce Resistant group-unblocking pauses, and combine overlapping rules by their strongest mode.
+- Add Home shortcuts, active-block cards, app icons, duration/mode cards, bulk target selection, and concise confirmation summaries.
+- Replace long setup/privacy sections with action cards and expandable details. Preserve drafts and scrolling through permission setup and return navigation.
+- Show actual unlock dates and live remaining time in blocking overlays, with shorter copy and corrected minute labels.
+- Extend managed Strict suspension and alarm scheduling to independent whole-app groups.
+- Add calendar/DST, persistence, UI navigation, and installed-app regression checks.
+
+Website/feed detection remains experimental; ordinary-phone Android settings still control accessibility.
+
 ## [1.1.0](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0) — 2026-10-14
 
 - Repair foreground tracking: recheck application windows continuously, ignore keyboards and accessibility overlays, and use usage-event fallback when windows are unavailable.

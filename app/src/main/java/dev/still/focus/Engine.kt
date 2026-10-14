@@ -8,6 +8,25 @@ import java.util.UUID
 enum class FocusMode(val label: String, val waitSeconds: Int) {
     GENTLE("Normal", 0), STANDARD("Resistant", 30), STRICT("Strict", 0)
 }
+enum class BlockKind(val label: String) { APPS("Apps"), WEBSITES("Websites"), FEEDS("Feeds") }
+enum class BlockPeriod(val label: String) {
+    TODAY("Today"), DAY("1 day"), WEEK("1 week"), MANUAL("Until I unblock"), TIMER("Set minutes");
+    fun deadline(now: Long, minutes: Int = 60, zone: ZoneId = ZoneId.systemDefault()): Long {
+        val local = Instant.ofEpochMilli(now).atZone(zone)
+        return when (this) {
+            TODAY -> local.toLocalDate().plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+            DAY -> local.plusDays(1).toInstant().toEpochMilli()
+            WEEK -> local.plusWeeks(1).toInstant().toEpochMilli()
+            MANUAL -> 0L
+            TIMER -> now + minutes.coerceIn(1, 1440) * 60_000L
+        }
+    }
+}
+data class BlockPlan(val id: String = UUID.randomUUID().toString(), val kind: BlockKind,
+    val targets: Set<String>, val mode: FocusMode = FocusMode.STANDARD,
+    val start: Long, val end: Long = 0, val period: BlockPeriod = BlockPeriod.MANUAL) {
+    fun alive(now: Long) = end == 0L || now < end
+}
 data class AppRule(val packageName: String, val label: String, val enabled: Boolean = true,
     val dailyMinutes: Int = 0, val openingMinutes: Int = 0, val gradualTarget: Int = 0,
     val gradualStart: Long = 0, val gradualPaused: Boolean = false) {
@@ -84,7 +103,7 @@ data class FocusState(val name: String = "", val intention: String = "Make room 
     val apps: List<AppRule> = emptyList(), val domains: Set<String> = emptySet(),
     val feeds: Set<String> = emptySet(), val allowlist: Set<String> = emptySet(),
     val profiles: List<Profile> = defaults(), val schedules: List<Schedule> = emptyList(),
-    val session: Session? = null, val history: List<SessionRecord> = emptyList(),
+    val session: Session? = null, val blocks: List<BlockPlan> = emptyList(), val history: List<SessionRecord> = emptyList(),
     val overrides: List<OverrideRecord> = emptyList()) {
     companion object { fun defaults() = listOf(
         Profile("deep", "Deep work", 50, "One thing at a time."),
@@ -92,14 +111,22 @@ data class FocusState(val name: String = "", val intention: String = "Make room 
         Profile("sleep", "Wind down", 60, "Let the day settle."),
         Profile("personal", "Personal time", 30, "Be here, now.", FocusMode.GENTLE)) }
 }
-data class Restriction(val label: String, val explanation: String, val mode: FocusMode, val intention: String)
+data class Restriction(val label: String, val explanation: String, val mode: FocusMode, val intention: String, val until: Long? = null)
 object RulesEngine {
+    private fun profileDeadline(state: FocusState, profile: Profile, now: Long): Long? {
+        val ends = mutableListOf<Long>()
+        state.session?.takeIf { !it.timerOnly && it.alive(now) && !it.onBreak(now) && it.profile.id == profile.id && it.profile.mode == profile.mode }?.let { ends += it.end }
+        state.schedules.filter { it.active(now) && it.profileId == profile.id && state.profiles.any { p -> p.id == it.profileId && p.mode == profile.mode } }.forEach { it.nextBoundary(now)?.let(ends::add) }
+        return if (0L in ends) 0L else ends.maxOrNull()
+    }
     fun strictActive(state: FocusState, now: Long): Boolean =
         state.session?.let { !it.timerOnly && it.alive(now) && it.profile.mode == FocusMode.STRICT } == true ||
+            state.blocks.any { it.mode == FocusMode.STRICT && it.alive(now) } ||
             state.schedules.any { s -> s.active(now) && state.profiles.any { it.id == s.profileId && it.mode == FocusMode.STRICT } }
     fun strictPackages(state: FocusState, now: Long): Set<String> = state.apps.filter { rule ->
         rule.enabled && rule.packageName !in state.allowlist && activeProfiles(state, now).any { it.mode == FocusMode.STRICT && (it.useAllApps || rule.packageName in it.apps) }
-    }.map { it.packageName }.toSet()
+    }.map { it.packageName }.toSet() + state.blocks.filter { it.kind == BlockKind.APPS && it.mode == FocusMode.STRICT && it.alive(now) }
+        .flatMap { it.targets }.filterNot { it in state.allowlist }
     fun selectedRuleCount(state: FocusState, profile: Profile): Int =
         state.apps.count { it.enabled && it.packageName !in state.allowlist && (profile.useAllApps || it.packageName in profile.apps) } +
             (if (profile.useAllDomains) state.domains.size else profile.domains.size) + state.feeds.size
@@ -118,26 +145,34 @@ object RulesEngine {
     fun restriction(state: FocusState, pkg: String, now: Long, usedMillis: Long = 0, openingMillis: Long = 0,
         website: String? = null, feed: String? = null): Restriction? {
         if (pkg in state.allowlist) return null
+        val candidates = mutableListOf<Restriction>()
         val profiles = activeProfiles(state, now)
         val rule = state.apps.find { it.packageName == pkg && it.enabled }
         val eligible = profiles.filter { it.useAllApps || pkg in it.apps }
-        val effective = eligible.maxByOrNull { it.mode.ordinal }
         if (rule != null) {
-            if (effective != null) return overrideAware(state, pkg, now, Restriction(rule.label, "Protected by ${effective.name}", effective.mode, state.session?.intention ?: effective.intention))
+            eligible.forEach { p -> candidates += Restriction(rule.label, "Protected by ${p.name}", p.mode, p.intention, profileDeadline(state, p, now)) }
             val allowance = rule.allowance(now)
-            if (allowance > 0 && usedMillis >= allowance * 60_000L) return overrideAware(state, pkg, now, Restriction(rule.label, "Your $allowance minute daily allowance is complete.", FocusMode.STANDARD, state.intention))
-            if (rule.openingMinutes > 0 && openingMillis >= rule.openingMinutes * 60_000L) return overrideAware(state, pkg, now, Restriction(rule.label, "Your ${rule.openingMinutes} minute visit is complete.", FocusMode.STANDARD, state.intention))
+            if (allowance > 0 && usedMillis >= allowance * 60_000L) candidates += Restriction(rule.label, "Daily allowance reached", FocusMode.STANDARD, state.intention, BlockPeriod.TODAY.deadline(now))
+            if (rule.openingMinutes > 0 && openingMillis >= rule.openingMinutes * 60_000L) candidates += Restriction(rule.label, "Visit limit reached", FocusMode.STANDARD, state.intention)
         }
         if (website != null) {
             val host = normalizeDomain(website)
             val covering = profiles.filter { p -> (if (p.useAllDomains) state.domains else p.domains).any { host != null && domainMatches(host, it) } }
-            covering.maxByOrNull { it.mode.ordinal }?.let { return overrideAware(state, pkg, now, Restriction(host!!, "This website is on your focus blocklist.", it.mode, state.session?.intention ?: it.intention)) }
+            covering.forEach { candidates += Restriction(host!!, "Website paused", it.mode, it.intention, profileDeadline(state, it, now)) }
         }
         if (feed != null && feed in state.feeds && profiles.isNotEmpty()) {
-            val p = profiles.maxBy { it.mode.ordinal }
-            return overrideAware(state, pkg, now, Restriction(feed, "This feed is paused during focus time.", p.mode, state.session?.intention ?: p.intention))
+            profiles.forEach { p -> candidates += Restriction(feed, "Feed paused", p.mode, p.intention, profileDeadline(state, p, now)) }
         }
-        return null
+        val host = website?.let(::normalizeDomain)
+        state.blocks.filter { it.alive(now) }.forEach { plan ->
+            val label = when (plan.kind) {
+                BlockKind.APPS -> if (pkg in plan.targets) rule?.label ?: pkg else null
+                BlockKind.WEBSITES -> host?.takeIf { value -> plan.targets.any { domainMatches(value, it) } }
+                BlockKind.FEEDS -> feed?.takeIf { it in plan.targets }
+            }
+            if (label != null) candidates += Restriction(label, if (plan.end == 0L) "Until you unblock" else "${plan.period.label} block", plan.mode, "Make room for what matters.", plan.end)
+        }
+        return candidates.maxWithOrNull(compareBy<Restriction> { it.mode.ordinal }.thenBy { if (it.until == null || it.until == 0L) Long.MAX_VALUE else it.until })?.let { overrideAware(state, pkg, now, it) }
     }
     private fun overrideAware(state: FocusState, pkg: String, now: Long, restriction: Restriction): Restriction? =
         if (restriction.mode != FocusMode.STRICT && state.overrides.any { it.packageName == pkg && now < it.until }) null else restriction

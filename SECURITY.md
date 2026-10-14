@@ -4,7 +4,7 @@ Focus processes accessibility controls and supported browser address fields on t
 
 Do not post sensitive exports, signing material, passwords, or screen content in public issues. For a suspected security vulnerability, use [GitHub private vulnerability reporting](https://github.com/YumiNoona/Focus/security/advisories/new) if available. If that repository feature is unavailable, request a private reporting channel without disclosing exploit details publicly.
 
-Version 1.1.x is the current release line. No response-time guarantee is currently offered.
+Version 1.1.x is the current published release line. Version 1.2 is in development. No response-time guarantee is currently offered.
 
 Strict rejects early ending, temporary visits, weakening rules, consent withdrawal, and local deletion inside Focus until its finite deadline. Ordinary phones still permit Android permission revocation and administrator deactivation. Home and emergency access remain available.
 

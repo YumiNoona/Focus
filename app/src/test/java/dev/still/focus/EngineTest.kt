@@ -113,4 +113,47 @@ class EngineTest {
         assertFalse(session.onBreak(1_500_000))
         assertEquals(1_800_000L, session.phaseRemaining(1_500_000))
     }
+    @Test fun independentAppBlocksWorkWithoutSessionAndExpireExactly() {
+        val plan = BlockPlan(kind = BlockKind.APPS, targets = setOf("social"), start = 0, end = 1000, period = BlockPeriod.DAY)
+        val state = FocusState(blocks = listOf(plan))
+        assertNotNull(RulesEngine.restriction(state, "social", 999))
+        assertNull(RulesEngine.restriction(state, "social", 1000))
+        assertNull(RulesEngine.restriction(state, "other", 999))
+        assertNotNull(RulesEngine.restriction(state.copy(blocks = listOf(plan.copy(end = 0, period = BlockPeriod.MANUAL))), "social", Long.MAX_VALUE))
+    }
+    @Test fun independentWebsiteAndFeedBlocksHavePreciseScope() {
+        val website = BlockPlan(kind = BlockKind.WEBSITES, targets = setOf("example.com"), start = 0)
+        val feed = BlockPlan(kind = BlockKind.FEEDS, targets = setOf("YouTube Shorts"), start = 0)
+        val state = FocusState(blocks = listOf(website, feed))
+        assertNotNull(RulesEngine.restriction(state, "browser", 100, website = "https://video.example.com/watch"))
+        assertNull(RulesEngine.restriction(state, "browser", 100, website = "notexample.com"))
+        assertNotNull(RulesEngine.restriction(state, "youtube", 100, feed = "YouTube Shorts"))
+        assertNull(RulesEngine.restriction(state, "youtube", 100, feed = "Instagram Reels"))
+    }
+    @Test fun strictIndependentBlockWinsOverSessionAndEarlierVisit() {
+        val plan = BlockPlan(kind = BlockKind.APPS, targets = setOf("social"), mode = FocusMode.STRICT, start = 0, end = 1000)
+        val state = FocusState(apps = listOf(AppRule("social", "Social")), blocks = listOf(plan), session = Session(profile = Profile("normal", "Normal", 10, "Work", FocusMode.GENTLE), start = 0, end = 2000), overrides = listOf(OverrideRecord("social", 0, 1500, "old visit")))
+        assertEquals(FocusMode.STRICT, RulesEngine.restriction(state, "social", 100)?.mode)
+        assertTrue(RulesEngine.strictActive(state, 999))
+        assertFalse(RulesEngine.strictActive(state, 1000))
+        assertEquals(setOf("social"), RulesEngine.strictPackages(state, 999))
+        assertEquals(1000L, RulesEngine.restriction(state, "social", 100)?.until)
+        assertEquals(2000L, RulesEngine.restriction(state.copy(blocks = state.blocks + plan.copy(id = "later", end = 2000)), "social", 100)?.until)
+        assertTrue(RulesEngine.strictPackages(state.copy(allowlist = setOf("social")), 999).isEmpty())
+    }
+    @Test fun periodsFollowCalendarDaysAndDaylightSaving() {
+        val ny = ZoneId.of("America/New_York")
+        val now = ZonedDateTime.of(2024, 3, 9, 12, 0, 0, 0, ny).toInstant().toEpochMilli()
+        assertEquals(23 * 3_600_000L, BlockPeriod.DAY.deadline(now, zone = ny) - now)
+        assertEquals(167 * 3_600_000L, BlockPeriod.WEEK.deadline(now, zone = ny) - now)
+        assertEquals(ZonedDateTime.of(2024, 3, 10, 0, 0, 0, 0, ny).toInstant().toEpochMilli(), BlockPeriod.TODAY.deadline(now, zone = ny))
+        assertEquals(0L, BlockPeriod.MANUAL.deadline(now))
+        assertEquals(now + 15 * 60_000L, BlockPeriod.TIMER.deadline(now, 15))
+    }
+    @Test fun ordinaryBlocksHonorVisitsButCannotWeakenDailyLimit() {
+        val plan = BlockPlan(kind = BlockKind.APPS, targets = setOf("social"), mode = FocusMode.GENTLE, start = 0)
+        val state = FocusState(apps = listOf(AppRule("social", "Social", dailyMinutes = 1)), blocks = listOf(plan))
+        assertEquals(FocusMode.STANDARD, RulesEngine.restriction(state, "social", 100, 60_000)?.mode)
+        assertNull(RulesEngine.restriction(state.copy(overrides = listOf(OverrideRecord("social", 0, 200, "reply"))), "social", 100, 60_000))
+    }
 }

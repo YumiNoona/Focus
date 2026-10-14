@@ -39,12 +39,13 @@ class AppTest {
     }
     @Test fun rulesAndSessionSurviveSerialization() {
         ui.runOnIdle {
-            Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Scroll Test", dailyMinutes = 10)), domains = setOf("reddit.com"), schedules = listOf(Schedule(name = "Night", profileId = "sleep", days = setOf(1, 2), startMinute = 1320, endMinute = 420))) }
+            Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Scroll Test", dailyMinutes = 10)), domains = setOf("reddit.com"), blocks = listOf(BlockPlan(kind = BlockKind.WEBSITES, targets = setOf("reddit.com"), start = 0)), schedules = listOf(Schedule(name = "Night", profileId = "sleep", days = setOf(1, 2), startMinute = 1320, endMinute = 420))) }
             val data = Repository.export()
             val decoded = Repository::class.java.getDeclaredMethod("decode", String::class.java).apply { isAccessible = true }.invoke(Repository, data) as FocusState
             assertEquals(Repository.state.apps, decoded.apps)
             assertEquals(Repository.state.domains, decoded.domains)
             assertEquals(Repository.state.schedules, decoded.schedules)
+            assertEquals(Repository.state.blocks, decoded.blocks)
         }
     }
     @Test fun strictRejectsEarlyStopVisitsDeletionAndRuleWeakening() {
@@ -69,5 +70,33 @@ class AppTest {
             assertFalse(Repository.start(p, 1, "Work", timerOnly = true))
             assertNull(Repository.state.session)
         }
+    }
+    @Test fun blockDraftSurvivesPermissionSetupAndManualCannotBeStrict() {
+        ui.runOnIdle { Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Scroll Test"))) } }
+        ui.onNodeWithContentDescription("Rules").performClick()
+        ui.onNodeWithText("Block selected apps").performClick()
+        ui.onNodeWithText("1 week").performClick().assertIsSelected()
+        ui.onNodeWithText("Choose targets").performClick()
+        ui.onNodeWithText("Clear").performClick()
+        ui.onNodeWithText("Select all").performClick()
+        ui.onNodeWithText("Connect protection").performScrollTo().performClick()
+        ui.onNodeWithText("PROTECTION HEALTH").assertExists()
+        ui.onNodeWithContentDescription("Back").performClick()
+        ui.onNodeWithText("1 week").assertIsSelected()
+        ui.onNodeWithText("Until I unblock").performScrollTo().performClick()
+        ui.onNodeWithText("Strict").performScrollTo().assertIsNotEnabled()
+    }
+    @Test fun strictBlockRejectsDeletionAndRecoversAtDeadline() {
+        ui.runOnIdle {
+            val now = System.currentTimeMillis()
+            val plan = BlockPlan(kind = BlockKind.APPS, targets = setOf("dev.still.fixture"), mode = FocusMode.STRICT, start = now, end = now + 1800)
+            Repository.update { it.copy(blocks = listOf(plan)) }
+            assertFalse(Repository.unblock(plan.id))
+            assertFalse(Repository.deleteAll())
+            assertFalse(Repository.update { it.copy(blocks = emptyList()) })
+            assertFalse(Repository.allow("dev.still.fixture", "escape", FocusMode.STRICT))
+        }
+        Thread.sleep(2000)
+        ui.runOnIdle { Repository.reconcile(); assertTrue(Repository.state.blocks.isEmpty()) }
     }
 }

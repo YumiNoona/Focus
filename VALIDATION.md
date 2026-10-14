@@ -1,33 +1,30 @@
-# Validation — v1.1.0, 14 October 2026
+# Validation — 1.2 development preview, 14 October 2026
 
-Compiled with Android SDK 36. Runtime checks used isolated Android 15 / API 35 Pixel 7 emulators, including a separate fresh device-owner emulator. The user's physical OnePlus Nord CE 2 was not connected.
+The latest published release remains v1.1.0. The current local build is 1.2.0-dev (version code 120); no new release or tag is published for this work.
 
 ## Automated checks
 
-- **16 JVM rules tests passed:** overnight boundaries, cross-week conflicts, next schedule start/end, Pomodoro phases, focus totals, restriction/allowlist precedence, domain normalization, daily limits, visit expiry/cooldown, gradual reduction, custom scope, Strict existing-visit rejection, and foreground window selection.
-- **6 connected UI/backend tests passed:** three-icon navigation and header actions, website normalization/persistence, explicit timer-only startup, JSON round-trip, Strict early-stop/visit/deletion/rule-edit rejection, expiry, and rejection of unbounded/timer-only Strict.
-- **1 installed-app accessibility scenario passed with no skip:** enables protection on an isolated emulator, launches Scroll Test, accepts the Normal popup, waits through Resistant and supplies a reason for a one-minute visit, then verifies Strict ignores that existing visit. Checks notification-shade transitions, home/relaunch recovery, and automatic expiry. The fixture is a separate project, not part of Focus.
-- Android lint passed without errors; debug assembly and signed release assembly passed. Release builds use R8 and resource shrinking.
-- Signed APK metadata: Focus, version **1.1.0**, version code **110**, minimum API **28**, target API **36**. APK signature verification passed. It requests no network permission.
-- The release signing certificate is unchanged from v1.0.0. SHA-256 fingerprint: `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`.
+- **21 JVM tests passed.** New coverage verifies independent app/web/feed scope, exact expiry, persistent manual blocks, calendar midnight/day/week and daylight-saving boundaries, strongest-mode precedence, Strict visit rejection, managed package selection, and latest matching unlock deadlines.
+- **8 Android UI/backend tests passed.** Includes three-icon/header navigation, website persistence, timer-only clarity, JSON round-trip with blocks, Strict rejection/expiry, day/week/manual setup, disabled indefinite Strict, and preservation of drafts through permission settings. Bulk select/clear followed by Settings and Back was explicitly rerun after correcting a nonserializable selection view.
+- **1 installed-app accessibility regression passed.** Exercises Normal, Resistant, and Strict against the separately installed Scroll Test app, transient windows, temporary visits, cooldown rules, Resistant group-unblocking delay/reason validation, independent manual blocking without a session, duplicate-group prevention, and independent Strict expiry.
+- The full connected run completed 9 tests without a skip. The subsequent bulk-selection check reran all 8 UI/backend tests successfully.
+- Android lint, debug assembly, optimized signed APK assembly, and signature verification passed. The development label was compiled and linted after the functional checks.
 
-The installed-app test originally exposed a fallback startup gap when no accessibility window/event identified the foreground package. After moving usage-event recovery before that early return, all seven connected tests passed together. Earlier unsuccessful runs are not counted as passing validation.
+## Local preview checks
 
-## Signed APK and administration checks
+- Installed the signed 1.2.0-dev APK on an isolated Android 15 / API 35 emulator.
+- Reviewed actual duration cards, app icons, active-block cards, compact settings, and a persistent primary button. Adjusted duration-card layout and kept the action visible while scrolling and entering minutes.
+- Created a Normal app block with no session and no automatic ending; the popup appeared over Scroll Test.
+- Restarted the app process and verified the manual block remained present. Reconnected protection afterward and retained the rule.
+- On a separate device-owner emulator, updated the development APK with its matching debug certificate, created an independent finite Strict app group, and verified Android suspension remained when accessibility was disabled.
+- At expiry, Android reported the target unsuspended and the temporary clock policy resolved to null. The managed emulator was then closed; the ordinary emulator remains available for iteration.
+- The local signed preview uses the same release certificate as v1.0.0/v1.1.0: `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`.
 
-- Installed the optimized release APK on the ordinary emulator and completed onboarding/disclosure, app selection, and the real one-minute Strict test. The overlay appeared over Scroll Test with no temporary-access button.
-- Activated optional legacy administration through Android's actual activation screen. A developer uninstall attempt returned `DELETE_FAILED_DEVICE_POLICY_MANAGER`. Focus's disable control deactivated the administrator outside Strict.
-- On a separate fresh device-owner emulator, enabled uninstall protection and verified Android refused removal.
-- Started managed Strict with an eligible whole-app target and precise-ending permission. Android reported the target suspended and clock configuration restricted.
-- Disabled accessibility while managed Strict was active: the target remained suspended.
-- At expiry, Android reported the target unsuspended and Focus's temporary clock restriction removed, while accessibility remained disabled.
-- Focus preserves essential/system access. Managed setup remained isolated from personal devices.
-
-Home, rules, theme, insights, and session screenshots retain the v1.0.0 visual design. The blocking and administrator screenshots show actual v1.1.0 behavior. No fake usage history is presented. Initial v1.0.0 validation also covered light/dark theme and 150% text scaling.
+Home, rules, blocking, setup, and active-group images are actual development screenshots. Older session/theme/insights and administration screenshots retain the earlier design. No fake usage history is presented.
 
 ## Reproduce
 
-Use a disposable emulator; the UI tests reset Focus's local state.
+Use an isolated emulator: connected UI tests reset Focus's local data. Do not run the installer against an uninstall-protected device-owner instance.
 
 ```bash
 ./gradlew testDebugUnitTest lintDebug assembleDebug
@@ -36,8 +33,8 @@ adb install test-fixture/build/outputs/apk/debug/ScrollTest-debug.apk
 ./gradlew connectedDebugAndroidTest
 ```
 
-Set `ANDROID_SERIAL` if multiple devices are connected. The installed-app scenario deliberately skips physical phones and emulators without Scroll Test. A run with a skip does not verify accessibility blocking. Do not run the connected installer against the separate uninstall-protected device-owner emulator.
+Set `ANDROID_SERIAL` if multiple devices are connected. The installed-app scenario skips physical phones and emulators without the fixture. A skipped run does not verify accessibility enforcement. A release-signed app and a debug-signed test APK cannot update each other; use an isolated test installation.
 
-## Outstanding coverage
+## Coverage limits
 
-Physical OnePlus/OxygenOS battery behavior, current third-party feed/browser builds, screen-reader interactions, widget launcher differences, older Android versions, extended Doze timing, and managed reboot recovery before first unlock need further device testing. Selective website/feed detection remains experimental. Ordinary-phone Strict cannot prevent Android permission revocation or administrator deactivation. Exact managed expiry assumes Android can access Focus's credential-protected storage; open Focus after unlock if recovery is delayed. Google Play review has not been completed.
+The physical OnePlus Nord CE 2 was not connected for this preview. Current third-party browser/feed versions, OEM battery behavior, screen-reader operation, widgets/tiles across older Android versions, extended Doze, and managed reboot recovery before first unlock need further device coverage. Website/feed detection remains experimental. Android settings can revoke ordinary-phone accessibility or deactivate legacy administration. Managed recovery depends on credential-protected storage becoming available after unlock. Google Play review has not been completed.

@@ -98,8 +98,8 @@ class FocusAccessibilityService : AccessibilityService() {
         if (pkg.isBlank() || essential(this, pkg)) { clearOverlay(); return }
         val now = System.currentTimeMillis()
         val state = Repository.state
-        val needsScreen = (pkg in browserIds && (state.domains.isNotEmpty() || state.profiles.any { it.domains.isNotEmpty() })) ||
-            (state.feeds.isNotEmpty() && pkg in setOf("com.google.android.youtube", "com.instagram.android", "com.facebook.katana"))
+        val needsScreen = (pkg in browserIds && (state.domains.isNotEmpty() || state.profiles.any { it.domains.isNotEmpty() } || state.blocks.any { it.kind == BlockKind.WEBSITES && it.alive(now) })) ||
+            ((state.feeds.isNotEmpty() || state.blocks.any { it.kind == BlockKind.FEEDS && it.alive(now) }) && pkg in setOf("com.google.android.youtube", "com.instagram.android", "com.facebook.katana"))
         if (needsScreen && now - screenSeenAt > 200 && overlay == null) {
             screenSeenAt = now
             val root = windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }.maxByOrNull { it.layer }?.root ?: rootInActiveWindow
@@ -135,7 +135,7 @@ class FocusAccessibilityService : AccessibilityService() {
         val reason = RulesEngine.restriction(Repository.state, foreground, now, used, openingElapsed, website, feed)
         if (reason == null) { clearOverlay(); return }
         if (overlay == null) showOverlay(reason)
-        else if (overlayKey != "$foreground:${reason.explanation}:${reason.mode}") { clearOverlay(); showOverlay(reason) }
+        else if (overlayKey != "$foreground:${reason.explanation}:${reason.mode}:${reason.until}") { clearOverlay(); showOverlay(reason) }
     }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
     private fun background(color: Int, radius: Int = 18) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat() }
@@ -165,12 +165,23 @@ class FocusAccessibilityService : AccessibilityService() {
             setPadding(dp(16), dp(16), dp(16), dp(16)); setOnClickListener { if (Repository.state.haptics) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); click() }
         }.also(container::addView)
         text("focus / ${restriction.mode.label.lowercase()}", 14f, violet, true)
-        text(if (restriction.mode == FocusMode.STRICT) "This app stays locked." else "Is this what you\nmeant to do?", if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink, true)
+        text(if (restriction.mode == FocusMode.STRICT) "This app stays locked." else "Take a moment.", if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink, true)
         text(restriction.label, 18f, ink, true)
         text(restriction.explanation, 16f, secondary)
-        text(restriction.intention, 20f)
-        val s = state.session
-        if (s != null) text(if (s.end == 0L) "Open-ended focus session" else "${((s.end - System.currentTimeMillis()).coerceAtLeast(0) + 59_999) / 60_000} minutes left in focus", 14f, secondary, true)
+        val until = restriction.until
+        if (until != null && until > 0) {
+            text("Unlocks ${java.time.Instant.ofEpochMilli(until).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("EEE, d MMM · HH:mm"))}", 14f, secondary, true)
+            val counter = text("", 14f, secondary, true)
+            val myGeneration = generation
+            handler.post(object : Runnable {
+                override fun run() {
+                    if (generation != myGeneration || overlay == null) return
+                    val remaining = (until - System.currentTimeMillis()).coerceAtLeast(0)
+                    counter.text = if (remaining >= 86_400_000) "${remaining / 86_400_000}d ${remaining / 3_600_000 % 24}h left" else "${(remaining + 59_999) / 60_000} min left"
+                    handler.postDelayed(this, 1000)
+                }
+            })
+        } else if (until == 0L) text("No automatic ending", 14f, secondary, true)
         button("Return to focus", true) { overridePending = false; performGlobalAction(GLOBAL_ACTION_HOME); foreground = ""; clearOverlay() }
         val reason = EditText(this).apply {
             hint = "What are you opening this for?"; setTextColor(ink); setHintTextColor(secondary); textSize = 16f
@@ -184,8 +195,9 @@ class FocusAccessibilityService : AccessibilityService() {
             var remaining = restriction.mode.waitSeconds
             val ask = restriction.mode == FocusMode.STANDARD || state.askReason
             val visitMinutes = if (restriction.mode == FocusMode.STANDARD) 1 else state.overrideMinutes
+            val visitLabel = "$visitMinutes ${if (visitMinutes == 1) "minute" else "minutes"}"
             lateinit var visit: Button
-            visit = button(if (restriction.mode == FocusMode.GENTLE && !ask) "Continue for $visitMinutes minutes" else "Take an intentional visit") {
+            visit = button(if (restriction.mode == FocusMode.GENTLE && !ask) "Continue for $visitLabel" else "Take an intentional visit") {
                 if (restriction.mode == FocusMode.GENTLE && !ask) {
                     if (Repository.allow(blockedPackage, "", restriction.mode)) clearOverlay()
                     return@button
@@ -197,7 +209,7 @@ class FocusAccessibilityService : AccessibilityService() {
                     val wait = object : Runnable {
                         override fun run() {
                             if (generation != myGeneration || overlay == null) return
-                            visit.text = if (remaining > 0) "Pause for ${remaining}s" else "Allow for $visitMinutes minutes"
+                            visit.text = if (remaining > 0) "Pause for ${remaining}s" else "Allow for $visitLabel"
                             visit.isEnabled = remaining == 0
                             if (remaining > 0) { remaining--; handler.postDelayed(this, 1000) }
                         }
@@ -209,7 +221,7 @@ class FocusAccessibilityService : AccessibilityService() {
                     else visit.text = "Cooldown is still active"
                 }
             }
-        } else text(if (restriction.mode == FocusMode.STRICT) "Strict has no temporary access or early end. Your timer or schedule must finish. Phone and emergency access remain available." else "Your next intentional visit is available after the cooldown. Essential apps remain available.", 14f, secondary)
+        } else text(if (restriction.mode == FocusMode.STRICT) "No early unblock. Essential apps stay available." else "Cooldown active. Essential apps stay available.", 14f, secondary)
         button("Emergency & system access") { overridePending = false; performGlobalAction(GLOBAL_ACTION_HOME); foreground = ""; clearOverlay() }
         val normal = restriction.mode == FocusMode.GENTLE
         val params = WindowManager.LayoutParams(if (normal) (resources.displayMetrics.widthPixels * .92).toInt() else -1, if (normal) -2 else -1, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, 0, android.graphics.PixelFormat.TRANSLUCENT)
@@ -217,7 +229,7 @@ class FocusAccessibilityService : AccessibilityService() {
         if (normal) { params.flags = params.flags or WindowManager.LayoutParams.FLAG_DIM_BEHIND; params.dimAmount = .45f }
         if (normal) { container.setPadding(dp(24), dp(24), dp(24), dp(24)); container.background = background(bg, 24) }
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-        overlayKey = "$foreground:${restriction.explanation}:${restriction.mode}"
+        overlayKey = "$foreground:${restriction.explanation}:${restriction.mode}:${restriction.until}"
         overlay = scroll
         runCatching { getSystemService(WindowManager::class.java).addView(scroll, params); ProtectionRuntime.blocked(blockedPackage) }
             .onFailure { overlay = null; overlayKey = ""; ProtectionRuntime.error("Android could not show the blocking screen. Re-enable Focus protection and check background access.") }
