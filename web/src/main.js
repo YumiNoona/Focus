@@ -25,15 +25,11 @@ document.querySelector('#app').innerHTML = `
   <main id="top">
     <section class="hero shell">
       <div class="hero-copy reveal">
-        <div class="eyebrow"><span class="status-dot"></span> Focus that feels human</div>
         <h1>A little less scroll.<br /><em>A little more you.</em></h1>
         <p class="hero-lede">FocuLY turns screen-time boundaries into a gentle daily rhythm—without accounts, ads, or another feed competing for your attention.</p>
         <div class="hero-actions">
           <a class="button primary" href="${downloadUrl}">Download for Android <span>↗</span></a>
           <a class="button text-button" href="#inside">See how it feels <span>↓</span></a>
-        </div>
-        <div class="trust-row" aria-label="Product highlights">
-          <span>Android 9+</span><i></i><span>Private by design</span><i></i><span>Free & open source</span>
         </div>
       </div>
       <div class="hero-visual reveal delay-1" aria-label="FocuLY app preview">
@@ -52,7 +48,6 @@ document.querySelector('#app').innerHTML = `
       <p class="section-kicker">Not productivity theatre</p>
       <div class="principle-heading">
         <h2>Boundaries that bend<br />without breaking.</h2>
-        <p>Choose a light nudge, add a moment of resistance, or commit to a timer. FocuLY gives every intention the right amount of friction.</p>
       </div>
       <div class="mode-grid">
         <article class="mode-card mode-normal">
@@ -102,7 +97,6 @@ document.querySelector('#app').innerHTML = `
         <div>
           <p class="section-kicker">Built around real life</p>
           <h2>Today, every day,<br />or just for now.</h2>
-          <p>Set a one-off block, plan quiet hours, build a Pomodoro rhythm, or gradually reduce an app’s daily allowance.</p>
         </div>
         <div class="rhythm-visual" aria-hidden="true">
           <div class="rhythm-label"><span>Deep work</span><b>50 min</b></div>
@@ -115,7 +109,6 @@ document.querySelector('#app').innerHTML = `
         <p class="section-kicker">Private by default</p>
         <h3>Your attention is not data.</h3>
         <p>No account. No ads. No analytics. Your settings and focus history stay on your device.</p>
-        <div class="privacy-pills"><span>No network permission</span><span>Local export</span><span>Delete anytime</span></div>
       </article>
       <article class="feature focus-card reveal delay-1">
         <div class="focus-orb"><img src="/assets/cat-pause.png" alt="Resting cat" /></div>
@@ -139,7 +132,6 @@ document.querySelector('#app').innerHTML = `
   <footer class="footer shell">
     <a class="brand" href="#top"><img src="/assets/logo.png" alt="" /><span>FocuLY</span></a>
     <p>A calmer relationship with your screen.</p>
-    <div><a href="https://github.com/YumiNoona/Focus">GitHub</a><a href="https://github.com/YumiNoona/Focus/blob/main/SECURITY.md">Security</a><a href="https://github.com/YumiNoona/Focus/issues">Support</a></div>
   </footer>
 `
 
