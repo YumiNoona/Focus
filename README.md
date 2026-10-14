@@ -1,0 +1,218 @@
+<div align="center">
+
+<img src="docs/brand/focus-mark.svg" alt="Focus" width="104" />
+
+# Focus
+
+### A little less scroll. A little more you.
+
+A calm Android app for intentional screen time, focus sessions, and everyday boundaries.
+
+[![Android CI](https://github.com/YumiNoona/Focus/actions/workflows/android.yml/badge.svg?branch=main)](https://github.com/YumiNoona/Focus/actions/workflows/android.yml)
+[![Latest release](https://img.shields.io/github/v/release/YumiNoona/Focus?style=flat&color=7760BA)](https://github.com/YumiNoona/Focus/releases/latest)
+[![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?logo=android&logoColor=white)](#installation)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?logo=kotlin&logoColor=white)](app/build.gradle.kts)
+[![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](#design)
+[![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](#privacy)
+
+**[Download v1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0)** · **[Features](docs/FEATURES.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)** · **[Build status](https://github.com/YumiNoona/Focus/actions)**
+
+</div>
+
+---
+
+## Meet Focus
+
+Focus helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
+
+The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**. Profile lives at the top left; Settings lives at the top right. No account, advertising, analytics, or subscription is built into this release.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Home</b></td>
+    <td align="center"><b>Your rules</b></td>
+    <td align="center"><b>Focus session</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/home.png" alt="Focus home with profile, settings, start button, and three-icon dock" width="250" /></td>
+    <td><img src="docs/screenshots/rules.png" alt="Focus app restrictions and always-allowed controls" width="250" /></td>
+    <td><img src="docs/screenshots/session.png" alt="Active focus timer and session controls" width="250" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Dark theme</b></td>
+    <td align="center"><b>Insights</b></td>
+    <td align="center"><b>Intentional pause</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/dark.png" alt="Focus dark theme" width="250" /></td>
+    <td><img src="docs/screenshots/insights.png" alt="Focus session and usage insights" width="250" /></td>
+    <td><img src="docs/screenshots/blocking.png" alt="Accessibility interruption over a selected test app" width="250" /></td>
+  </tr>
+</table>
+
+Screenshots are captured from the actual Android app in an emulator. Scroll Test is a separate test app used to demonstrate blocking; it is not included in the installed Focus app. Usage history is not fabricated.
+
+## What’s included
+
+| Area | Features |
+| --- | --- |
+| **Focus sessions** | Instant and open-ended sessions; custom durations and intentions; reusable profiles; Deep Work, Study, Wind Down, and Personal Time presets |
+| **Pomodoro** | Configurable work periods, breaks, and rounds; no extra break after the final round |
+| **App boundaries** | Whole-app blocking during focus; daily usage budgets; time per visit; essential-app exceptions |
+| **Gradual reduction** | Reduce an app’s allowance by five minutes per day toward a chosen target; pause and resume |
+| **Routines** | Weekdays, weekends, custom days, and overnight schedules; advance reminders; overlap detection |
+| **Interruption modes** | Gentle pause, standard waiting period, or strict friction; temporary visits with reasons and cooldowns |
+| **Insights** | Logged focus time, completed sessions, personal goals, measured app usage, weekly chart, prior-week comparison when data is available, and session history |
+| **Everyday access** | Home-screen widget, Quick Settings tile, optional notifications, and permission health |
+| **Privacy & appearance** | Local storage, JSON export, deletion, consent withdrawal, hidden insights, light/dark themes, reduced motion, and optional haptics |
+| **Experimental rules** | Website domains in supported browser address fields; selective YouTube Shorts, Instagram Reels, and Facebook Reels detection |
+
+Read the [full feature and coverage guide](docs/FEATURES.md) for details about rule precedence, timing, and measured usage.
+
+## Installation
+
+**Requires Android 9 / API 28 or newer.**
+
+1. Open the [v1.0.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0).
+2. Download **`Focus-v1.0.0.apk`** and open it on your Android phone.
+3. If Android asks, allow installation from the browser or file manager you are using.
+4. Launch **Focus** and choose **Make room**.
+5. Read the protection disclosure and enable **Focus protection** in Android Accessibility settings if you want blocking.
+6. Enable **Usage Access** for daily budgets and usage charts. Notifications are optional.
+7. Choose distractions under **Rules**, then start a session from **Home**.
+
+Some Android versions place additional restrictions on accessibility access for sideloaded apps. If needed, allow restricted settings from Focus’s system App Info screen before enabling protection.
+
+The APK is release-signed for GitHub distribution. It has not been submitted to Google Play. The earlier Still 0.1.0 preview used a debug certificate; installing v1.0.0 over that preview requires uninstalling the old build first. Uninstalling clears its local data, so export anything you want to keep beforehand. There is no import feature in v1.0.0.
+
+## Permissions, explained
+
+| Access | Purpose | What happens without it |
+| --- | --- | --- |
+| **Accessibility** | Observe the current app, exposed browser address fields, and selected feed controls; show restrictions you choose | Focus timers work, but blocking is unavailable |
+| **Usage Access** | Read Android foreground activity events for daily budgets and usage insights | Session app blocking and visit limits can work; daily budgets and measured usage are unavailable |
+| **Notifications** | Session status, completion, and optional routine reminders | Sessions and rules still work |
+| **Boot/time broadcasts** | Reconcile saved session deadlines and replan reminders after reboot or time changes | Managed automatically by Android |
+| **Vibration** | Optional haptic feedback on primary actions | Can be disabled in Focus settings |
+
+Focus requests no network permission. Permission setup is progressive, and blocking status is displayed explicitly. You can withdraw consent or disable the accessibility service through Android settings.
+
+## Coverage and limitations
+
+- **App blocking:** a user-consented accessibility overlay interrupts selected apps. Phone, emergency access, your launcher, system settings, and Focus remain available.
+- **Website rules:** experimental address-field detection in Chrome, Edge, Brave, and Firefox during focus. Hidden fields, private browsing, embedded browsers, and app updates can bypass detection. Whole-browser blocking is the available fallback.
+- **Feed rules:** experimental detection using third-party accessibility controls and view identifiers. Current production versions of YouTube, Instagram, and Facebook have not all been verified. Use whole-app rules when selective detection misses a feed.
+- **Strict mode:** adds waiting and intentional choices within Focus. Android settings can still disable protection, and the app can be uninstalled.
+- **Background behavior:** OEM restrictions can stop accessibility protection. Reminder alarms are inexact and may be delayed by Doze or battery restrictions.
+- **Measurements:** Android foreground usage is not a measurement of attention. Split-screen behavior, event availability, and time behind an overlay can affect it. Cross-midnight daily focus totals are apportioned estimates; ongoing sessions enter logged totals when ended.
+
+The [validation record](VALIDATION.md) separates verified behavior from remaining device coverage.
+
+## Design
+
+Warm off-white backgrounds, near-black text, muted violet accents, quiet rounded surfaces, and generous whitespace. JetBrains Mono is bundled locally for headings, timers, numbers, and controls; Android sans-serif keeps longer copy readable.
+
+- **Type scale:** 44 / 28 / 24 / 20 / 18 / 16 / 14 / 12 sp.
+- **Spacing:** 4 dp grid; 24 dp page and card padding; 24 dp section gaps.
+- **Interaction:** minimum 48 dp targets; primary buttons at least 56 dp tall and able to grow with text.
+- **Accessibility:** labeled navigation icons, selected states, scrolling content, font scaling, and quiet motion.
+- **Themes:** system, light, and dark, with equivalent screen structure.
+
+Slice’s spacious visual rhythm was an inspiration. Focus contains no Slice assets, code, or branding.
+
+## Build from source
+
+Prerequisites: **JDK 17+**, **Android SDK 36**, and Android Studio or Android command-line tools. The repository includes the Gradle wrapper.
+
+```bash
+git clone https://github.com/YumiNoona/Focus.git
+cd Focus
+./gradlew assembleDebug
+```
+
+On Windows:
+
+```powershell
+git clone https://github.com/YumiNoona/Focus.git
+cd Focus
+.\gradlew.bat assembleDebug
+```
+
+Android Studio can create `local.properties` with your SDK path. Alternatively, set `ANDROID_HOME` to your SDK installation. Do not commit machine-specific SDK paths.
+
+Debug output: `app/build/outputs/apk/debug/app-debug.apk`.
+
+### Signed release builds
+
+The release build enables R8 optimization and resource shrinking. Signing credentials are supplied locally through ignored `keystore.properties`, or with environment variables:
+
+| Property | Environment variable |
+| --- | --- |
+| `storeFile` | `FOCUS_STORE_FILE` |
+| `storePassword` | `FOCUS_STORE_PASSWORD` |
+| `keyAlias` | `FOCUS_KEY_ALIAS` |
+| `keyPassword` | `FOCUS_KEY_PASSWORD` |
+
+Copy [keystore.properties.example](keystore.properties.example) to `keystore.properties` and supply your private keystore details, then run:
+
+```bash
+./gradlew assembleRelease
+```
+
+Without signing configuration, this produces an **unsigned** release APK. The official release’s signing key is deliberately excluded from the repository; only the maintainer can create updates with that same certificate. Keep the key and its credentials backed up privately. Using a different certificate requires uninstalling the previous app.
+
+### Tests and CI
+
+```bash
+./gradlew testDebugUnitTest lintDebug assembleDebug
+./gradlew connectedDebugAndroidTest  # connected device/emulator required
+```
+
+The initial local validation passed **10 JVM tests and 4 connected Android tests**. Android lint passed with no errors. See [VALIDATION.md](VALIDATION.md) for scope and remaining warnings.
+
+[GitHub Actions](.github/workflows/android.yml) runs JVM tests, Android lint, and debug assembly on pushes and pull requests. It uploads debug APKs and available reports as workflow artifacts. It does not contain release signing secrets or run the connected-device suite.
+
+## Project structure
+
+```text
+Focus/
+├── app/
+│   ├── build.gradle.kts              # Android config and optional signing
+│   ├── proguard-rules.pro            # Release diagnostics / R8 rules
+│   └── src/
+│       ├── main/
+│       │   ├── java/dev/still/focus/
+│       │   │   ├── Engine.kt         # Pure rules, schedules, sessions, domains
+│       │   │   ├── Repository.kt     # Persistence, export, usage aggregation
+│       │   │   ├── MainActivity.kt   # Screens, navigation, forms, permissions
+│       │   │   ├── Theme.kt          # Colors and typography
+│       │   │   ├── FocusAccessibilityService.kt
+│       │   │   └── Integrations.kt   # Notifications, alarms, widget, tile
+│       │   └── res/                  # Font, icon, widget, service configuration
+│       ├── test/                     # JVM rules tests
+│       └── androidTest/              # Android UI and JSON round-trip tests
+├── docs/                             # Feature guide, branding, screenshots
+├── .github/workflows/android.yml     # Build automation
+├── gradle/wrapper/                   # Reproducible Gradle entry point
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── SECURITY.md
+├── THIRD_PARTY_NOTICES.md
+└── VALIDATION.md
+```
+
+The application ID remains `dev.still.focus` from the initial preview. That internal identifier does not affect the Focus display name.
+
+## Privacy
+
+Your chosen rules, profile information, session history, and override reasons stay in local app storage. Screen content is checked in memory and is not recorded or transmitted. Analytics, advertising, account creation, and cloud sync are absent. Android usage events are read locally for budgets and insights.
+
+Export includes personal intentions and override reasons; choose its destination carefully. **Delete my data** clears Focus’s local records and ends its active session, while Android’s system usage history remains managed by Android. Cloud backup and device transfer are excluded by the app’s extraction rules. History and override records retain the latest 1,000 entries each.
+
+## Contributing and notices
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development expectations and [SECURITY.md](SECURITY.md) for sensitive reports. Features and fixes are welcome through issues and pull requests.
+
+JetBrains Mono uses the SIL Open Font License; its complete notice is in [FONT-LICENSE.txt](FONT-LICENSE.txt). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled dependencies and brand references.

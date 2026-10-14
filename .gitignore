@@ -1,0 +1,86 @@
+# Gradle / Kotlin caches and generated build products
+.gradle/
+.kotlin/
+**/build/
+out/
+captures/
+.cxx/
+.externalNativeBuild/
+**/.cxx/
+**/.externalNativeBuild/
+
+# Local Android SDK paths and developer machine configuration
+local.properties
+sdk.properties
+local.defaults.properties
+
+# Android Studio / IntelliJ workspace files
+.idea/
+*.iml
+*.iws
+*.ipr
+.navigation/
+
+# VS Code settings, editor history and temporary files
+.vscode/
+.history/
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+*.bak
+
+# Release signing material: never commit keys, passwords, or credentials
+.signing/
+keystore.properties
+signing.properties
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+*.mobileprovision
+credentials.json
+service-account*.json
+google-services.json
+.env
+.env.*
+!.env.example
+
+# APKs and app bundles are distributed through GitHub Releases
+*.apk
+*.aab
+*.ap_
+*.dex
+*.hprof
+*.class
+*.aar
+
+# Archives, local exports, emulator data and debug logs
+*.zip
+*.7z
+*.tar
+*.gz
+*.log
+*.pid
+*.avd/
+*.qcow2
+*.img
+exports/
+release-assets/
+test-results/
+screenshots-local/
+keystore-backups/
+
+# OS metadata
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Keep the Gradle wrapper binary and intentional documentation images tracked.
+!gradle/wrapper/gradle-wrapper.jar
+# docs/screenshots/*.png are product documentation, not generated build files.
