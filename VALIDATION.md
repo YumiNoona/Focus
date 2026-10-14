@@ -31,7 +31,7 @@ The latest published release remains v1.1.0. The current local build is 1.2.0-de
 - At expiry, Android reported the target unsuspended and the temporary clock policy resolved to null. The managed emulator was then closed; the ordinary emulator remains available for iteration.
 - The local signed preview uses the same release certificate as v1.0.0/v1.1.0: `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`.
 
-Home, rules, blocking, setup, and active-group images are actual development screenshots. Older session/theme/insights and administration screenshots retain the earlier design. No fake usage history is presented.
+The complete gallery and README examples now use current development captures, including session, theme, insights, and administration pages. No fake usage history is presented. The ordinary emulator currently runs the matching debug build used for screen capture; the separately signed local preview is available in `outputs/Focus-preview.apk`.
 
 ## Reproduce
 

@@ -72,7 +72,7 @@ These screens are from the local development build; the published APK remains v1
 <details>
 <summary>Optional uninstall and managed-device controls</summary>
 
-<img src="docs/screenshots/uninstall.png" alt="Optional administrator active on a personal Android installation" width="250" />
+<img src="docs/screenshots/uninstall.png" alt="Personal-phone administrator setup and uninstall-resistance limits" width="250" />
 <img src="docs/screenshots/managed.png" alt="Verified device-owner uninstall protection and managed Strict controls" width="250" />
 
 Personal-phone administration adds a deactivation step. Separately provisioned device-owner management can enforce Android uninstall blocking and whole-app suspension.

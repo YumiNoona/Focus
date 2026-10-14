@@ -195,4 +195,3 @@ Actual Android 15 captures after source commit `572e0d2`. Separate Scroll Test f
 ### managed future install
 
 <a href="34-managed-future-install.png"><img src="34-managed-future-install.png" alt="managed future install" width="260" /></a>
-
