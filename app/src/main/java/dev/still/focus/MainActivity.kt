@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.FactCheck
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.automirrored.outlined.TrendingDown
 import androidx.compose.material.icons.outlined.*
@@ -221,7 +222,13 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
                     Caption(if (session.onBreak(now)) "BREAK TIME" else if (session.end == 0L) "TIME IN FOCUS" else "REMAINING")
                 }
             }
-            SoftCard { Caption(session.profile.name.uppercase()); Text(if (s.managedLockdown && ManagedProtection.verifiedSuspendedCount() > 0) "${ManagedProtection.verifiedSuspendedCount()} apps locked by Android" else if (!session.timerOnly && Repository.protectionReady()) "${s.apps.count { it.enabled }} ${if (s.apps.count { it.enabled } == 1) "selected app" else "selected apps"} · ${s.domains.size} ${if (s.domains.size == 1) "website" else "websites"}" else if (session.timerOnly) "Timer only · protection is off" else "Blocking interrupted · check protection health", style = MaterialTheme.typography.bodyLarge); Text(if (session.onBreak(now)) "Session restrictions are paused. Daily limits and schedules still apply." else "${session.profile.mode.label} mode · your essential apps remain available.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            SoftCard {
+                val appCount = RulesEngine.selectedAppCount(s, session.profile)
+                val domainCount = RulesEngine.selectedDomainCount(s, session.profile)
+                Caption(session.profile.name.uppercase())
+                Text(if (s.managedLockdown && ManagedProtection.verifiedSuspendedCount() > 0) "${ManagedProtection.verifiedSuspendedCount()} apps locked by Android" else if (!session.timerOnly && Repository.protectionReady()) "$appCount ${if (appCount == 1) "selected app" else "selected apps"} · $domainCount ${if (domainCount == 1) "website" else "websites"}" else if (session.timerOnly) "Timer only · protection is off" else "Blocking interrupted · check protection health", style = MaterialTheme.typography.bodyLarge)
+                Text(if (session.onBreak(now)) "Session restrictions are paused. Daily limits and schedules still apply." else "${session.profile.mode.label} mode · your essential apps remain available.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             OutlinedButton(stop, Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = session.profile.mode != FocusMode.STRICT, shape = RoundedCornerShape(18.dp)) { Text(if (session.profile.mode == FocusMode.STRICT) "Locked until the timer ends" else "End session") }
             LinkRow("Protection health", if (Repository.protectionReady()) "Service connected and responsive" else "Blocking is unavailable", Icons.Outlined.Shield) { nav("settings") }
         }
@@ -398,11 +405,17 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         if (pomo) { Input("Work minutes", work, { work = it.filter(Char::isDigit) }, true, "1–240 minutes"); Input("Break minutes", pause, { pause = it.filter(Char::isDigit) }, true, "1–60 minutes"); Input("Rounds", rounds, { rounds = it.filter(Char::isDigit) }, true, "1–12 rounds · no break after the last round") }
         Caption("RESISTANCE")
         ModeCards(FocusMode.valueOf(mode), manual = minutes == "0" && !pomo) { mode = it.name }
-        if (mode == "STRICT" && !editing) {
-            ToggleRow("Lock until the timer ends", "I understand that FocuLY has no early end or override in Strict mode.", strictAcknowledged) { strictAcknowledged = it }
+        val strictNeedsAcknowledgement = mode == "STRICT" && (!editing || original?.mode != FocusMode.STRICT)
+        if (mode == "STRICT") {
+            if (strictNeedsAcknowledgement) ToggleRow(
+                if (editing) "Use Strict mode" else "Lock until the timer ends",
+                if (editing) "I understand that active sessions and routines using this profile have no early end or override." else "I understand that FocuLY has no early end or override in Strict mode.",
+                strictAcknowledged
+            ) { strictAcknowledged = it }
             Caption(if (ManagedProtection.isOwner()) "Android blocks removing FocuLY during Strict." else "Android can still disable or remove FocuLY on this phone. Admin access adds a deactivation step.")
         }
-        DetailsCard("What gets paused", "${s.apps.count { it.enabled }} apps · ${s.domains.size} websites", Icons.Outlined.Tune) {
+        val draftProfile = configured()
+        DetailsCard("What gets paused", "${RulesEngine.selectedAppCount(s, draftProfile)} apps · ${RulesEngine.selectedDomainCount(s, draftProfile)} websites", Icons.Outlined.Tune) {
         ToggleRow("Use all selected app rules", "Or choose a specific subset below.", allApps) { allApps = it }
         if (s.apps.isEmpty() && s.domains.isEmpty() && s.feeds.isEmpty()) Text("You haven’t selected distractions yet. Add them in Rules to make blocking useful.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (!allApps) s.apps.filter { it.enabled }.forEach { rule -> ToggleRow(rule.label, "Include in this profile", rule.packageName in scopedApps) { enabled -> scopedApps = if (enabled) scopedApps + rule.packageName else scopedApps - rule.packageName } }
@@ -411,7 +424,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         if (s.feeds.isNotEmpty()) Text("Selected feed rules apply to every focus profile.", style = MaterialTheme.typography.bodyMedium)
         }
         if (!valid) Text(if (duplicateName) "Choose a unique profile name." else "Check the name and minute ranges above.", color = MaterialTheme.colorScheme.error)
-        Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null) && (editing || mode != "STRICT" || strictAcknowledged), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
+        Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null) && (!strictNeedsAcknowledgement || strictAcknowledged), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
         if (!editing && s.session != null) Text("End your current session before starting another.", color = MaterialTheme.colorScheme.error)
     }
 }
@@ -510,7 +523,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         ActionCard("Uninstall & managed protection", "Optional Android administration", Icons.Outlined.Lock) { nav("managed") }
         ActionCard("FocuLY admin PIN", if (AdminPin.configured()) "PIN is set" else "Protect device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
         ActionCard("Your blocking screen", "Message, emoji & live preview", Icons.Outlined.EmojiEmotions) { nav("messages") }
-        ActionCard("Setup checklist", "Review all permissions in one place", Icons.Outlined.FactCheck) { nav("permissions") }
+        ActionCard("Setup checklist", "Review all permissions in one place", Icons.AutoMirrored.Outlined.FactCheck) { nav("permissions") }
         ActionCard("Welcome to FocuLY", "Meet your little focus companions", Icons.Outlined.AutoAwesome) { nav("welcome") }
         DetailsCard("Appearance", s.theme, Icons.Outlined.Palette) {
             ChoiceRow(listOf("System", "Light", "Dark"), s.theme) { value -> Repository.update { it.copy(theme = value) } }

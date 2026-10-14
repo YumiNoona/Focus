@@ -92,11 +92,11 @@ class FocusTile : TileService() {
     override fun onClick() {
         Repository.init(this)
         unlockAndRun {
-            if (Repository.state.session == null && Repository.protectionReady(this) && (Repository.state.apps.any { it.enabled } || Repository.state.domains.isNotEmpty() || Repository.state.feeds.isNotEmpty())) {
-                val p = Repository.state.profiles.firstOrNull() ?: FocusState.defaults().first()
-                Repository.start(p, p.minutes, p.intention)
-                refresh()
-            } else {
+            val profile = Repository.state.profiles.firstOrNull() ?: FocusState.defaults().first()
+            val canStart = Repository.state.session == null && profile.mode != FocusMode.STRICT &&
+                Repository.protectionReady(this) && RulesEngine.selectedRuleCount(Repository.state, profile) > 0
+            if (canStart && Repository.start(profile, profile.minutes, profile.intention)) refresh()
+            else {
                 val pending = FocusNotifications.open(this)
                 if (Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(pending)
                 else { @Suppress("DEPRECATION") startActivityAndCollapse(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }

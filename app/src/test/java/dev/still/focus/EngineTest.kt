@@ -76,6 +76,16 @@ class EngineTest {
         assertNotNull(RulesEngine.restriction(state, "a", 100))
         assertNull(RulesEngine.restriction(state, "b", 100))
     }
+    @Test fun selectedCountsMatchTheEffectiveProfileScope() {
+        val profile = Profile("p", "Work", 50, "Work", apps = setOf("a", "allowed"), domains = setOf("work.example", "missing.example"), useAllApps = false, useAllDomains = false)
+        val state = FocusState(
+            apps = listOf(AppRule("a", "A"), AppRule("disabled", "Disabled", enabled = false), AppRule("allowed", "Allowed")),
+            domains = setOf("work.example", "other.example"), allowlist = setOf("allowed"), feeds = setOf("YouTube Shorts")
+        )
+        assertEquals(1, RulesEngine.selectedAppCount(state, profile))
+        assertEquals(1, RulesEngine.selectedDomainCount(state, profile))
+        assertEquals(3, RulesEngine.selectedRuleCount(state, profile))
+    }
     @Test fun strictIgnoresAnExistingVisitAndNeverOffersAnother() {
         val profile = Profile("strict", "Strict", 10, "Work", FocusMode.STRICT)
         val state = FocusState(apps = listOf(AppRule("social", "Social")), session = Session(profile = profile, start = 0, end = 1000), overrides = listOf(OverrideRecord("social", 0, 900, "earlier visit")))

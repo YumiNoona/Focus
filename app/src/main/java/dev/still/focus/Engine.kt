@@ -136,8 +136,11 @@ object RulesEngine {
     }.map { it.packageName }.toSet() + state.blocks.filter { it.kind == BlockKind.APPS && it.mode == FocusMode.STRICT && it.alive(now) }
         .flatMap { it.targets }.filterNot { it in state.allowlist }
     fun selectedRuleCount(state: FocusState, profile: Profile): Int =
-        state.apps.count { it.enabled && it.packageName !in state.allowlist && (profile.useAllApps || it.packageName in profile.apps) } +
-            (if (profile.useAllDomains) state.domains.size else profile.domains.size) + state.feeds.size
+        selectedAppCount(state, profile) + selectedDomainCount(state, profile) + state.feeds.size
+    fun selectedAppCount(state: FocusState, profile: Profile): Int =
+        state.apps.count { it.enabled && it.packageName !in state.allowlist && (profile.useAllApps || it.packageName in profile.apps) }
+    fun selectedDomainCount(state: FocusState, profile: Profile): Int =
+        if (profile.useAllDomains) state.domains.size else profile.domains.count { it in state.domains }
     fun normalizeDomain(raw: String): String? = runCatching {
         val value = raw.trim().lowercase()
         if (value.isBlank() || value.any { it.isWhitespace() }) return null

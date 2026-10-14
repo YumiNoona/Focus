@@ -84,3 +84,10 @@ $RECYCLE.BIN/
 # Keep the Gradle wrapper binary and intentional documentation images tracked.
 !gradle/wrapper/gradle-wrapper.jar
 # docs/screenshots/*.png are product documentation, not generated build files.
+
+# Standalone Vercel website dependencies and generated output
+web/node_modules/
+web/dist/
+web/.vercel/
+web/.vite/
+web/*.tsbuildinfo
