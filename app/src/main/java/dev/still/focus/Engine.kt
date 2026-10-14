@@ -94,12 +94,20 @@ data class Session(val id: String = UUID.randomUUID().toString(), val profile: P
 }
 data class SessionRecord(val name: String, val start: Long, val end: Long, val focusedMillis: Long, val completed: Boolean)
 data class OverrideRecord(val packageName: String, val at: Long, val until: Long, val reason: String)
+data class AppLifecycleRule(val packageName: String, val label: String,
+    val lockUninstall: Boolean = false, val quarantineInstall: Boolean = false,
+    val end: Long = 0) {
+    fun alive(now: Long) = end == 0L || now < end
+}
+data class BlockMessage(val title: String = "See you later.",
+    val body: String = "Make room for what matters.", val emoji: String = "🌿")
 data class FocusState(val name: String = "", val intention: String = "Make room for what matters.",
     val goalMinutes: Int = 120, val onboarding: Boolean = false, val disclosure: Boolean = false,
     val theme: String = "System", val haptics: Boolean = true, val reminders: Boolean = true,
     val hideInsights: Boolean = false, val reduceMotion: Boolean = false, val askReason: Boolean = false,
     val overrideMinutes: Int = 5, val cooldownMinutes: Int = 10,
     val managedLockdown: Boolean = false, val uninstallProtection: Boolean = false,
+    val blockMessage: BlockMessage = BlockMessage(), val lifecycleRules: List<AppLifecycleRule> = emptyList(),
     val apps: List<AppRule> = emptyList(), val domains: Set<String> = emptySet(),
     val feeds: Set<String> = emptySet(), val allowlist: Set<String> = emptySet(),
     val profiles: List<Profile> = defaults(), val schedules: List<Schedule> = emptyList(),

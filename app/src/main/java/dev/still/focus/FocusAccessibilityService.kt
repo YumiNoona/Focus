@@ -165,7 +165,9 @@ class FocusAccessibilityService : AccessibilityService() {
             setPadding(dp(16), dp(16), dp(16), dp(16)); setOnClickListener { if (Repository.state.haptics) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); click() }
         }.also(container::addView)
         text("focus / ${restriction.mode.label.lowercase()}", 14f, violet, true)
-        text(if (restriction.mode == FocusMode.STRICT) "This app stays locked." else "Take a moment.", if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink, true)
+        if (state.blockMessage.emoji.isNotBlank()) text(state.blockMessage.emoji, 44f)
+        text(state.blockMessage.title.ifBlank { "See you later." }, if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink, true)
+        if (state.blockMessage.body.isNotBlank()) text(state.blockMessage.body, 16f, secondary)
         text(restriction.label, 18f, ink, true)
         text(restriction.explanation, 16f, secondary)
         val until = restriction.until

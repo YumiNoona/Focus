@@ -38,6 +38,7 @@ object FocusNotifications {
         val state = Repository.state
         val times = mutableListOf<Long>()
         state.blocks.filter { it.end > now }.forEach { times += it.end }
+        state.lifecycleRules.filter { it.end > now }.forEach { times += it.end }
         state.session?.let { s ->
             if (s.end > now) times += s.end
             if (s.profile.pomodoro && s.alive(now)) times += now + s.phaseRemaining(now) + 1000

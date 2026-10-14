@@ -30,13 +30,21 @@ object Repository {
             context.getSharedPreferences("still", 0).edit().putString("state", encode(state).toString()).apply()
         }
         ready = true
+        androidx.core.content.ContextCompat.registerReceiver(context, AppLifecycleReceiver(), android.content.IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED); addAction(Intent.ACTION_PACKAGE_REMOVED); addAction(Intent.ACTION_PACKAGE_REPLACED); addDataScheme("package")
+        }, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
     }
     @Synchronized fun update(transform: (FocusState) -> FocusState): Boolean {
         val next = transform(state)
+        if (AdminPin.configured() && !AdminPin.authorized() &&
+            (next.managedLockdown != state.managedLockdown || next.uninstallProtection != state.uninstallProtection ||
+                next.lifecycleRules != state.lifecycleRules && next.lifecycleRules != state.lifecycleRules.filter { it.alive(System.currentTimeMillis()) } ||
+                state.disclosure && !next.disclosure)) return fail("Unlock device controls with your Focus PIN first.")
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) {
             val protected = state.copy(name = next.name, intention = next.intention, goalMinutes = next.goalMinutes,
                 theme = next.theme, haptics = next.haptics, reminders = next.reminders, hideInsights = next.hideInsights, reduceMotion = next.reduceMotion,
                 history = next.history, session = if (state.session?.alive(System.currentTimeMillis()) == false) next.session else state.session,
+                lifecycleRules = if (next.lifecycleRules == state.lifecycleRules.filter { it.alive(System.currentTimeMillis()) }) next.lifecycleRules else state.lifecycleRules,
                 blocks = if (next.blocks.filter { it.alive(System.currentTimeMillis()) } == state.blocks.filter { it.alive(System.currentTimeMillis()) }) next.blocks else state.blocks)
             if (protected != next) return fail("Strict rules stay locked until their timer or schedule ends.")
         }
@@ -83,7 +91,7 @@ object Repository {
         ManagedProtection.sync(); FocusNotifications.plan(context)
         return true
     }
-    private fun fail(message: String): Boolean { Toast.makeText(context, message, Toast.LENGTH_LONG).show(); return false }
+    private fun fail(message: String): Boolean { android.os.Handler(android.os.Looper.getMainLooper()).post { Toast.makeText(context, message, Toast.LENGTH_LONG).show() }; return false }
     fun protectionReady(ctx: Context = context) = state.disclosure && protectionGranted(ctx) && ProtectionRuntime.live()
     fun openAppInfo() { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     fun openBatterySettings() { context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -121,6 +129,8 @@ object Repository {
         return true
     }
     fun reconcile() {
+        val livingPolicies = state.lifecycleRules.filter { it.alive(System.currentTimeMillis()) }
+        if (livingPolicies != state.lifecycleRules && update { it.copy(lifecycleRules = livingPolicies) }) FocusNotifications.plan(context)
         val expired = state.blocks.filterNot { it.alive(System.currentTimeMillis()) }
         if (expired.isNotEmpty() && update { it.copy(blocks = it.blocks - expired.toSet()) }) {
             expired.forEach { unblockRequests.remove(it.id) }
@@ -140,6 +150,7 @@ object Repository {
         return update { it.copy(overrides = (it.overrides + OverrideRecord(pkg, now, now + minutes * 60_000L, reason.trim())).takeLast(1000)) }
     }
     fun deleteAll(): Boolean {
+        if (AdminPin.configured() && !AdminPin.authorized()) return fail("Unlock device controls before deleting data.")
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) return fail("Local rules cannot be cleared during Strict mode.")
         update { FocusState(onboarding = true) }; ManagedProtection.sync()
         FocusAccessibilityService.instance?.clearOverlay()
@@ -170,6 +181,8 @@ object Repository {
         .put("theme", s.theme).put("haptics", s.haptics).put("reminders", s.reminders).put("hideInsights", s.hideInsights).put("reduceMotion", s.reduceMotion).put("askReason", s.askReason)
         .put("overrideMinutes", s.overrideMinutes).put("cooldownMinutes", s.cooldownMinutes)
         .put("managedLockdown", s.managedLockdown).put("uninstallProtection", s.uninstallProtection)
+        .put("blockMessage", JSONObject().put("title", s.blockMessage.title).put("body", s.blockMessage.body).put("emoji", s.blockMessage.emoji))
+        .put("lifecycleRules", JSONArray(s.lifecycleRules.map { JSONObject().put("packageName", it.packageName).put("label", it.label).put("lockUninstall", it.lockUninstall).put("quarantineInstall", it.quarantineInstall).put("end", it.end) }))
         .put("apps", JSONArray(s.apps.map { JSONObject().put("packageName", it.packageName).put("label", it.label).put("enabled", it.enabled).put("dailyMinutes", it.dailyMinutes).put("openingMinutes", it.openingMinutes).put("gradualTarget", it.gradualTarget).put("gradualStart", it.gradualStart).put("gradualPaused", it.gradualPaused) }))
         .put("domains", JSONArray(s.domains.toList())).put("feeds", JSONArray(s.feeds.toList())).put("allowlist", JSONArray(s.allowlist.toList()))
         .put("profiles", JSONArray(s.profiles.map(::profile)))
@@ -183,6 +196,8 @@ object Repository {
         return FocusState(name = j.optString("name"), intention = j.optString("intention", "Make room for what matters."), goalMinutes = j.optInt("goalMinutes", 120), onboarding = j.optBoolean("onboarding"), disclosure = j.optBoolean("disclosure"),
             theme = j.optString("theme", "System"), haptics = j.optBoolean("haptics", true), reminders = j.optBoolean("reminders", true), hideInsights = j.optBoolean("hideInsights"), reduceMotion = j.optBoolean("reduceMotion"), askReason = j.optBoolean("askReason", false), overrideMinutes = j.optInt("overrideMinutes", 5), cooldownMinutes = j.optInt("cooldownMinutes", 10),
             managedLockdown = j.optBoolean("managedLockdown"), uninstallProtection = j.optBoolean("uninstallProtection"),
+            blockMessage = j.optJSONObject("blockMessage")?.let { BlockMessage(it.optString("title", "See you later.").take(80), it.optString("body", "Make room for what matters.").take(180), it.optString("emoji", "🌿").take(16)) } ?: BlockMessage(),
+            lifecycleRules = j.array("lifecycleRules").items { AppLifecycleRule(it.getString("packageName"), it.getString("label"), it.optBoolean("lockUninstall"), it.optBoolean("quarantineInstall"), it.optLong("end")) },
             apps = j.array("apps").items { AppRule(it.getString("packageName"), it.getString("label"), it.optBoolean("enabled", true), it.optInt("dailyMinutes"), it.optInt("openingMinutes"), it.optInt("gradualTarget"), it.optLong("gradualStart"), it.optBoolean("gradualPaused")) },
             domains = j.array("domains").strings(), feeds = j.array("feeds").strings(), allowlist = j.array("allowlist").strings(),
             blocks = j.array("blocks").items {

@@ -2,7 +2,16 @@
 
 The latest published release remains v1.1.0. The current local build is 1.2.0-dev (version code 120); no new release or tag is published for this work.
 
-## Automated checks
+## Latest device-controls iteration
+
+- 21 JVM tests pass. 9 Compose UI/backend checks and 2 PIN security checks pass on the ordinary Android 15 emulator, including direct Shorts setup and message/policy serialization.
+- The device-owner Android 15 regression verifies actual `DELETE_FAILED` refusal for a protected fixture, uninstall after releasing policy, launch suspension following a later installation, release at expiry, and automatic Focus uninstall protection during Strict even with its persistent preference off.
+- A real package-added test exposed Android's manifest broadcast limits; the owner-only visible foreground monitor and dynamic receiver corrected the later-install case. Managed policy checks pass with accessibility suppressed.
+- Android lint and debug/optimized signed assembly pass. The Android screen-lock recovery flow is implemented but requires manual credential-flow testing; no physical OnePlus test is claimed.
+- The opt-in `ScreenshotGalleryTest` captures real pages with a separate Scroll Test fixture and no fabricated usage statistics. It is limited to emulators and requires `-e gallery true`.
+- The installed-app accessibility regression also passes with the customizable overlay: Normal visit, Resistant pause/reason, Strict enforcement, transient windows, independent groups, and expiry. Together these runs verify 34 functional/security checks (21 JVM + 11 UI/PIN + 1 accessibility + 1 managed-device).
+
+## Earlier independent-block validation
 
 - **21 JVM tests passed.** New coverage verifies independent app/web/feed scope, exact expiry, persistent manual blocks, calendar midnight/day/week and daylight-saving boundaries, strongest-mode precedence, Strict visit rejection, managed package selection, and latest matching unlock deadlines.
 - **8 Android UI/backend tests passed.** Includes three-icon/header navigation, website persistence, timer-only clarity, JSON round-trip with blocks, Strict rejection/expiry, day/week/manual setup, disabled indefinite Strict, and preservation of drafts through permission settings. Bulk select/clear followed by Settings and Back was explicitly rerun after correcting a nonserializable selection view.

@@ -39,14 +39,25 @@ class AppTest {
     }
     @Test fun rulesAndSessionSurviveSerialization() {
         ui.runOnIdle {
-            Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Scroll Test", dailyMinutes = 10)), domains = setOf("reddit.com"), blocks = listOf(BlockPlan(kind = BlockKind.WEBSITES, targets = setOf("reddit.com"), start = 0)), schedules = listOf(Schedule(name = "Night", profileId = "sleep", days = setOf(1, 2), startMinute = 1320, endMinute = 420))) }
+            Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Scroll Test", dailyMinutes = 10)), domains = setOf("reddit.com"), blocks = listOf(BlockPlan(kind = BlockKind.WEBSITES, targets = setOf("reddit.com"), start = 0)), schedules = listOf(Schedule(name = "Night", profileId = "sleep", days = setOf(1, 2), startMinute = 1320, endMinute = 420)), blockMessage = BlockMessage("Don't open", "Be here", "✨"), lifecycleRules = listOf(AppLifecycleRule("com.instagram.android", "Instagram", quarantineInstall = true))) }
             val data = Repository.export()
             val decoded = Repository::class.java.getDeclaredMethod("decode", String::class.java).apply { isAccessible = true }.invoke(Repository, data) as FocusState
             assertEquals(Repository.state.apps, decoded.apps)
             assertEquals(Repository.state.domains, decoded.domains)
             assertEquals(Repository.state.schedules, decoded.schedules)
             assertEquals(Repository.state.blocks, decoded.blocks)
+            assertEquals(Repository.state.blockMessage, decoded.blockMessage)
+            assertEquals(Repository.state.lifecycleRules, decoded.lifecycleRules)
         }
+    }
+    @Test fun shortsShortcutOpensSingleFeedWithDurationChoices() {
+        ui.onNodeWithContentDescription("Rules").performClick()
+        ui.onNodeWithText("Feeds").performClick()
+        ui.onNodeWithText("Block Shorts").performScrollTo().performClick()
+        ui.onNodeWithText("YouTube Shorts").assertExists()
+        ui.onNodeWithText("1 week").assertExists()
+        ui.onNodeWithText("Until I unblock").assertExists()
+        ui.runOnIdle { assertEquals(setOf("YouTube Shorts"), Repository.state.feeds) }
     }
     @Test fun strictRejectsEarlyStopVisitsDeletionAndRuleWeakening() {
         ui.runOnIdle {

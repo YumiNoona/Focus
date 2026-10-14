@@ -71,6 +71,7 @@ class MainActivity : ComponentActivity() {
     var blockParent by rememberSaveable { mutableStateOf("rules") }
     var settingsParent by rememberSaveable { mutableStateOf("home") }
     var profileParent by rememberSaveable { mutableStateOf("home") }
+    var pinParent by rememberSaveable { mutableStateOf("settings") }
     val screenState = rememberSaveableStateHolder()
     var editingProfile by remember { mutableStateOf<Profile?>(null) }
     var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
@@ -82,7 +83,7 @@ class MainActivity : ComponentActivity() {
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); Repository.reconcile(); delay(1000) } }
     LaunchedEffect(route, now / 15_000) { usage = withContext(Dispatchers.IO) { UsageReader.day(Repository.context) }; usageReady = true }
     val mainRoutes = listOf("home", "rules", "insights")
-    val back: () -> Unit = { route = when (route) { "block" -> blockParent; "settings" -> settingsParent; "profile" -> profileParent; "managed" -> "settings"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
+    val back: () -> Unit = { route = when (route) { "block" -> blockParent; "settings" -> settingsParent; "profile" -> profileParent; "pin" -> pinParent; "profileEdit" -> "profile"; "managed", "messages", "permissions" -> "settings"; "lifecycle" -> "managed"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
     BackHandler(route !in mainRoutes, onBack = back)
     var appRule by remember { mutableStateOf<AppRule?>(null) }
     var stopDialog by remember { mutableStateOf(false) }
@@ -95,9 +96,16 @@ class MainActivity : ComponentActivity() {
         "blockApps" -> if (s.apps.none { it.enabled && it.packageName !in s.allowlist }) { tab = "Apps"; route = "picker" } else startBlock(BlockKind.APPS, null)
         "blockWebsites" -> if (s.domains.isEmpty()) { tab = "Websites"; route = "rules" } else startBlock(BlockKind.WEBSITES, null)
         "settings" -> { settingsParent = route; route = "settings" }
+        "pin" -> { pinParent = route; route = "pin" }
         else -> route = it
     } }
-    if (!s.onboarding) { Onboarding { Repository.update { it.copy(onboarding = true) }; route = "settings" }; return }
+    if (!s.onboarding) {
+        var checklist by rememberSaveable { mutableStateOf(false) }
+        if (checklist) Box(Modifier.fillMaxSize().safeDrawingPadding()) { SetupChecklist { Repository.update { it.copy(onboarding = true) }; route = "home" } }
+        else Onboarding { checklist = true }
+        BackHandler(checklist) { checklist = false }
+        return
+    }
     Scaffold(containerColor = MaterialTheme.colorScheme.background,
         topBar = { Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) },
         bottomBar = { if (route in mainRoutes) Dock(route, nav) }
@@ -111,7 +119,11 @@ class MainActivity : ComponentActivity() {
                 "insights" -> Insights(s, usage, usageReady)
                 "profile" -> ProfileScreen(s, { screenState.removeState("profileEdit"); editingProfile = it; route = "profileEdit" }, { screenState.removeState("profileEdit"); editingProfile = null; route = "profileEdit" })
                 "settings" -> SettingsScreen(s, nav)
-                "managed" -> ManagedScreen(s)
+                "managed" -> DeviceControlsGate { ManagedScreen(s, nav) }
+                "lifecycle" -> DeviceControlsGate { LifecycleScreen(s) }
+                "pin" -> PinScreen(s)
+                "messages" -> MessageScreen(s)
+                "permissions" -> SetupChecklist { route = "settings" }
                 "picker", "allowlist" -> AppPicker(s, route == "allowlist") { route = "rules" }
                 "appRule" -> appRule?.let { app -> AppRuleEditor(app, { startBlock(BlockKind.APPS, setOf(app.packageName)) }) { updated -> Repository.update { state -> state.copy(apps = state.apps.map { if (it.packageName == updated.packageName) updated else it }) }; route = "rules" } }
                 "schedule" -> ScheduleEditor(s, editingSchedule) { schedule -> Repository.update { state -> state.copy(schedules = state.schedules.filterNot { it.id == schedule.id } + schedule) }; FocusNotifications.plan(Repository.context); route = "rules" }
@@ -137,7 +149,7 @@ class MainActivity : ComponentActivity() {
                 else Text(name.first().uppercase(), fontFamily = Mono, color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { contentDescription = "Profile" })
             }
         } else IconButton(back) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-        Text(if (root) "focus" else when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontFamily = Mono, fontSize = 18.sp)
+        Text(if (root) "focus" else when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontFamily = Mono, fontSize = 18.sp)
         if (root) IconButton(settings) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) } else Spacer(Modifier.width(48.dp))
     }
 }
@@ -286,7 +298,11 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
             }
             "Feeds" -> {
                 Caption("SELECTIVE DETECTION · EXPERIMENTAL")
-                listOf("YouTube Shorts", "Instagram Reels", "Facebook Reels").forEach { feed -> SoftCard { ToggleRow(feed, "", feed in s.feeds) { enabled -> Repository.update { it.copy(feeds = if (enabled) it.feeds + feed else it.feeds - feed) } } } }
+                listOf("YouTube Shorts", "Instagram Reels", "Facebook Reels").forEach { feed -> SoftCard {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) { Icon(if (feed == "YouTube Shorts") Icons.Outlined.SmartDisplay else Icons.Outlined.Movie, null, tint = MaterialTheme.colorScheme.primary); Text(feed, style = MaterialTheme.typography.titleMedium) }
+                    Primary(if (feed == "YouTube Shorts") "Block Shorts" else "Block ${feed.substringBefore(' ')} Reels", icon = Icons.Outlined.Lock) { if (Repository.update { it.copy(feeds = it.feeds + feed) }) block(BlockKind.FEEDS, setOf(feed)) }
+                    ToggleRow("Use in focus sessions", "", feed in s.feeds) { enabled -> Repository.update { it.copy(feeds = if (enabled) it.feeds + feed else it.feeds - feed) } }
+                } }
                 if (s.feeds.isNotEmpty()) Primary("Block selected feeds", icon = Icons.Outlined.Lock) { block(BlockKind.FEEDS, null) }
                 DetailsCard("Feed coverage", "Whole-app fallback available", Icons.Outlined.Info) { Text("Selective detection depends on each app's exposed controls. Use whole-app blocking if a feed is missed. Other screens remain accessible with selective rules.") }
                 Primary("Choose whole-app fallback", icon = Icons.Outlined.Apps) { nav("picker") }
@@ -402,7 +418,10 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         if (pomo) { Input("Focus minutes", work, { work = it.filter(Char::isDigit) }, true, "1–240 minutes"); Input("Break minutes", pause, { pause = it.filter(Char::isDigit) }, true, "1–60 minutes"); Input("Rounds", rounds, { rounds = it.filter(Char::isDigit) }, true, "1–12 rounds · no break after the last round") }
         Caption("RESISTANCE")
         ModeCards(FocusMode.valueOf(mode), manual = minutes == "0" && !pomo) { mode = it.name }
-        if (mode == "STRICT" && !editing) ToggleRow("Lock until the timer ends", "I understand that Focus has no early end or override in Strict mode.", strictAcknowledged) { strictAcknowledged = it }
+        if (mode == "STRICT" && !editing) {
+            ToggleRow("Lock until the timer ends", "I understand that Focus has no early end or override in Strict mode.", strictAcknowledged) { strictAcknowledged = it }
+            Caption(if (ManagedProtection.isOwner()) "Android blocks removing Focus during Strict." else "Android can still disable or remove Focus on this phone. Admin access adds a deactivation step.")
+        }
         DetailsCard("What gets paused", "${s.apps.count { it.enabled }} apps · ${s.domains.size} websites", Icons.Outlined.Tune) {
         ToggleRow("Use all selected app rules", "Or choose a specific subset below.", allApps) { allApps = it }
         if (s.apps.isEmpty() && s.domains.isEmpty() && s.feeds.isEmpty()) Text("You haven’t selected distractions yet. Add them in Rules to make blocking useful.", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -508,6 +527,9 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             if (s.disclosure) TextButton({ if (Repository.update { it.copy(disclosure = false) }) { FocusAccessibilityService.instance?.clearOverlay(); FocusNotifications.session(ctx) } }, enabled = !RulesEngine.strictActive(s, System.currentTimeMillis())) { Text("Withdraw consent") }
         }
         ActionCard("Uninstall & managed protection", "Optional Android administration", Icons.Outlined.Lock) { nav("managed") }
+        ActionCard("Focus admin PIN", if (AdminPin.configured()) "PIN is set" else "Protect device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
+        ActionCard("Your blocking screen", "Message, emoji & live preview", Icons.Outlined.EmojiEmotions) { nav("messages") }
+        ActionCard("Setup checklist", "Review all permissions in one place", Icons.Outlined.FactCheck) { nav("permissions") }
         DetailsCard("Appearance", s.theme, Icons.Outlined.Palette) {
             ChoiceRow(listOf("System", "Light", "Dark"), s.theme) { value -> Repository.update { it.copy(theme = value) } }
             ToggleRow("Reduce motion", "", s.reduceMotion) { value -> Repository.update { it.copy(reduceMotion = value) } }
@@ -627,7 +649,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     }
 }
 
-@Composable fun ManagedScreen(s: FocusState) {
+@Composable fun ManagedScreen(s: FocusState, nav: (String) -> Unit) {
     val ctx = LocalContext.current
     var owner by remember { mutableStateOf(ManagedProtection.isOwner(ctx)) }
     var admin by remember { mutableStateOf(ManagedProtection.adminEnabled(ctx)) }
@@ -636,27 +658,32 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     val locked = RulesEngine.strictActive(s, System.currentTimeMillis())
     LaunchedEffect(Unit) { while (true) { owner = ManagedProtection.isOwner(ctx); admin = ManagedProtection.adminEnabled(ctx); protected = ManagedProtection.uninstallBlocked(ctx); exact = ManagedProtection.preciseEnding(ctx); delay(1000) } }
     Page {
-        Heading("Keep the boundary.", "Choose the protection your Android setup supports.")
+        Heading("Keep the boundary.")
         SoftCard { Caption(if (owner) "MANAGED DEVICE" else "ORDINARY ANDROID INSTALLATION")
             Text(if (owner) "Android device-owner management is active." else "Android settings still control this app.", style = MaterialTheme.typography.titleMedium)
-            Text("Focus never hides its administrator or prevents emergency access. Absolute protection against a device reset, root access, or administrator tools cannot be promised.", style = MaterialTheme.typography.bodyMedium)
+            Text(if (owner) "Focus removal is automatically blocked while Strict is active." else "Your Focus PIN protects in-app controls. Android still permits deactivation and removal.", style = MaterialTheme.typography.bodyMedium)
         }
         if (!owner) {
-            Text("Uninstall resistance", style = MaterialTheme.typography.titleMedium)
-            Text("An optional Android administrator makes you deactivate it in system settings before uninstalling Focus. This adds resistance; it does not make uninstall impossible. No wipe, password, camera, or screen-lock policy is requested.")
+            SoftCard { Icon(Icons.Outlined.AdminPanelSettings, null, tint = MaterialTheme.colorScheme.primary); Text("Uninstall resistance", style = MaterialTheme.typography.titleMedium); Text("Adds an Android administrator deactivation step before removal. No wipe, password, camera, or screen-lock policy is requested.", style = MaterialTheme.typography.bodyMedium) }
             if (!admin) Primary("Enable uninstall resistance", enabled = !locked, icon = Icons.Outlined.Lock) { ManagedProtection.requestAdmin(ctx) }
             else { Caption("ADMINISTRATOR ACTIVE · DEACTIVATE BEFORE UNINSTALLING"); Primary("Disable uninstall resistance", enabled = !locked, icon = Icons.Outlined.LockOpen) { ManagedProtection.removeAdmin(ctx) } }
         } else {
-            ToggleRow("Managed uninstall protection", if (protected) "Verified: Android blocks Focus removal." else "Apply Android's uninstall policy for Focus.", s.uninstallProtection, enabled = !locked) { enabled -> if (Repository.update { it.copy(uninstallProtection = enabled) }) ManagedProtection.sync(ctx) }
-            ToggleRow("OS-enforced Strict app blocking", "Suspend selected whole apps and prevent changing the device clock until Strict ends. Focus and essential apps stay available.", s.managedLockdown, enabled = !locked) { enabled ->
+            SoftCard {
+            ToggleRow("Managed uninstall protection", if (protected) "Verified: Android blocks Focus removal." else "Keep Focus installed outside Strict too.", s.uninstallProtection, enabled = !locked) { enabled -> if (Repository.update { it.copy(uninstallProtection = enabled) }) ManagedProtection.sync(ctx) }
+            ToggleRow("OS-enforced Strict app blocking", "Suspend selected whole apps until Strict ends. Essential apps stay available.", s.managedLockdown, enabled = !locked) { enabled ->
                 if (!enabled || exact) { if (Repository.update { it.copy(managedLockdown = enabled) }) { ManagedProtection.sync(ctx); FocusNotifications.plan(ctx) } }
                 else ManagedProtection.openPreciseEnding(ctx)
             }
             LinkRow("Reliable session ending", if (exact) "Exact deadline alarm available" else "Enable before managed Strict can start") { ManagedProtection.openPreciseEnding(ctx) }
-            Text("Websites and feeds need their browser or social app selected as a whole-app rule for OS enforcement. Exact ending can be delayed across a reboot until Android unlocks app storage; opening Focus reconciles and releases expired rules.", style = MaterialTheme.typography.bodyMedium)
+            }
         }
-        Text("Stronger managed protection", style = MaterialTheme.typography.titleMedium)
-        Text("Android reserves OS uninstall blocking and app suspension for a device-owner administrator. A normal install on your OnePlus cannot grant itself that role. It requires a dedicated-device or enterprise setup, typically before personal accounts are configured. Setup guidance is included in the project's managed-device guide.")
+        ActionCard("Individual app controls", "Pause new installs · keep selected apps installed", Icons.Outlined.AppBlocking) { nav("lifecycle") }
+        ActionCard("Focus admin PIN", if (AdminPin.configured()) "Set · unlock lasts 90 seconds" else "Add a PIN for device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
+        DetailsCard("Stronger managed protection", "Device-owner setup & coverage", Icons.Outlined.Info) {
+            Text("Android reserves OS uninstall blocking and app suspension for a device-owner administrator. A normal install on your OnePlus cannot grant itself that role. It requires dedicated-device or enterprise setup, typically before personal accounts are configured. See the project's managed-device guide.")
+            Text("Websites and feeds need their browser or social app selected as a whole-app rule for OS enforcement. After reboot, exact ending may wait for Android to unlock app storage. Opening Focus releases expired rules.")
+            Text("Android shows its own administration dialogs. Your custom Focus message is supplied as administrator support text where Android displays it. Device resets and administrator tools remain outside this boundary.")
+        }
         if (locked) Text("Protection preferences stay locked until Strict ends.", color = MaterialTheme.colorScheme.primary)
     }
 }

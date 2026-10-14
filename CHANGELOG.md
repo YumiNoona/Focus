@@ -2,6 +2,14 @@
 
 ## Unreleased — 1.2.0 development
 
+- Add final permission onboarding and a reusable live checklist with required/optional states.
+- Add optional salted-hash Focus admin PIN, 90-second control unlock, failed-attempt cooldown, and Android screen-lock recovery outside Strict.
+- Automatically block removing Focus during Strict on managed devices, independent of the persistent uninstall preference.
+- Add individual managed app uninstall policies and launch quarantine after later installation, with day/week/manual durations, verified status, expiry cleanup, and a visible owner-only policy monitor.
+- Add custom blocking headlines, supporting messages, emoji, presets, and preview; supply administrator support text to Android.
+- Add direct Shorts and provider-specific Reels block buttons and compact device-control cards.
+- Add PIN security, managed uninstall/later-install regression coverage, and an opt-in emulator gallery workflow.
+
 - Add independent app, website, and feed blocks for today, one day, one week, custom minutes, or until manually unblocked.
 - Persist blocks across restarts, keep them active independently of sessions, and reconcile automatic expiry.
 - Reject indefinite Strict, preserve Strict integrity, enforce Resistant group-unblocking pauses, and combine overlapping rules by their strongest mode.

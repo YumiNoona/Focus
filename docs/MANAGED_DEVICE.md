@@ -35,12 +35,14 @@ In Focus's **Uninstall protection** screen:
 
 ## Policies and expiry
 
-- `setUninstallBlocked` protects Focus while that preference is enabled. It remains enabled after a session ends; switch it off outside Strict when desired.
+- `setUninstallBlocked` automatically protects Focus during any active Strict rule on a device-owner installation. The separate persistent preference also protects it outside Strict; switch that preference off outside Strict when desired.
 - `setPackagesSuspended` prevents launching selected eligible apps during managed Strict, including when accessibility is off. Websites and selective feeds still depend on accessibility.
-- On Android 11+, Focus user controls are disabled while managed suspension is active to resist force-stop/data clearing through ordinary system UI.
+- On Android 11+, Focus user controls are disabled while managed whole-app Strict or individual app policies are active to resist force-stop/data clearing through ordinary system UI.
 - During managed suspension, Focus adds a date/time configuration restriction if its own administrator does not already hold it. It removes only the restriction it added when suspension ends.
 - Focus journals packages before applying policies. Expiry reconciles the journal, unsuspends its targets, and restores its temporary restrictions. Application restart and boot/time broadcasts also reconcile saved deadlines.
 - Exact-alarm access is required before managed Strict starts. Ordinary routines use inexact alarms. After reboot, credential-protected storage can defer recovery until first unlock; open Focus if release is delayed. Do not suspend essential applications.
+
+Individual uninstall and future-install launch rules are explained in [App controls](APP_CONTROLS.md). A visible foreground monitor keeps a dynamic installation receiver and deadline checks alive while managed policies are active. Launch quarantine applies after installation; it is not a pre-download store filter. Android owns its restriction dialogs; Focus supplies administrator support text where supported.
 
 This is selected-app management, not a kiosk implementation. Device-owner provisioning, root, recovery, factory reset, and another administrator's policies remain outside Focus's in-app guarantees. A personal OnePlus phone receives accessibility protection and optional administrator friction unless it was separately provisioned as a managed device.
 

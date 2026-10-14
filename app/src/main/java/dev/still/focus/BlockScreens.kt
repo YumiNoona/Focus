@@ -159,7 +159,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
     Box(Modifier.weight(1f)) {
     Page {
         Heading("Block ${kind.label.lowercase()}.")
-        DetailsCard("Choose targets", "${targets.size} selected", blockIcon(kind), initiallyOpen = targets.isEmpty()) {
+        DetailsCard("Choose targets", if (targets.size == 1) available[targets.first()] ?: "1 selected" else "${targets.size} selected", blockIcon(kind), initiallyOpen = targets.isEmpty()) {
             Row { TextButton({ targets = available.keys.toSet() }) { Text("Select all") }; TextButton({ targets = emptySet() }) { Text("Clear") } }
             available.forEach { (id, label) -> ToggleRow(label, "", id in targets) { selected -> targets = if (selected) targets + id else targets - id } }
             if (available.isEmpty()) Text("Add ${kind.label.lowercase()} in Rules first.")
@@ -173,7 +173,10 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
         Caption("RESISTANCE")
         ModeCards(mode, period == BlockPeriod.MANUAL) { mode = it }
         if (period == BlockPeriod.MANUAL) Caption("STRICT NEEDS AN AUTOMATIC ENDING")
-        if (mode == FocusMode.STRICT) ToggleRow("Lock until expiry", "No early unblock or rule changes", acknowledged) { acknowledged = it }
+        if (mode == FocusMode.STRICT) {
+            ToggleRow("Lock until expiry", "No early unblock or rule changes", acknowledged) { acknowledged = it }
+            Caption(if (ManagedProtection.isOwner()) "Android blocks removing Focus during Strict." else "Android can still disable or remove Focus on this phone. Admin access adds a deactivation step.")
+        }
         if (!Repository.protectionReady()) ActionCard("Connect protection", "Required before blocking", Icons.Outlined.Shield, action = settings)
         if (kind != BlockKind.APPS) DetailsCard("Detection coverage", "Experimental · whole-app fallback available", Icons.Outlined.Info) { Text("${if (kind == BlockKind.WEBSITES) "Supported browser address fields" else "Selected Shorts/Reels controls"} must be exposed by the app. Hidden controls and app updates can miss a block. Choose the whole app for a stronger boundary.") }
     }

@@ -23,7 +23,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet Focus
 
-**Development preview:** the independent-block and card-based setup changes described below are implemented on `main` for the next version. The latest published APK is still **v1.1.0**. Build from source to test these changes; no v1.2.0 release has been published.
+**Development preview:** independent blocks, permission onboarding, Focus admin PIN, custom blocking messages, direct Shorts/Reels actions, and individual managed app controls are implemented on `main` for the next version. The latest published APK is still **v1.1.0**. Build from source to test these changes; no v1.2.0 release has been published.
 
 Focus helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
 
@@ -89,6 +89,9 @@ Personal-phone administration adds a deactivation step. Separately provisioned d
 | **Interruption modes** | Normal popup, Resistant waiting period and reason, Strict with no temporary visits or early ending |
 | **Independent blocks** | Apps, websites, and feeds for today, one day, one week, custom minutes, or until manually unblocked; work without a focus session |
 | **Uninstall protection** | Optional administrator deactivation step on personal phones; verified Android uninstall blocking and app suspension on separately provisioned managed devices |
+| **Setup & PIN** | Final onboarding permission checklist, optional 6–12 digit Focus admin PIN, temporary unlock, cooldown, Android screen-lock recovery outside Strict |
+| **Your blocking screen** | Custom headline, optional supporting text, emoji, presets, and live preview |
+| **Individual app controls** | Managed per-app uninstall policy and launch quarantine after installation, including rules prepared before installation; day/week/manual durations |
 | **Insights** | Logged focus time, completed sessions, personal goals, measured app usage, weekly chart, prior-week comparison when data is available, and session history |
 | **Everyday access** | Home-screen widget, Quick Settings tile, optional notifications, and permission health |
 | **Privacy & appearance** | Local storage, JSON export, deletion, consent withdrawal, hidden insights, light/dark themes, reduced motion, and optional haptics |
