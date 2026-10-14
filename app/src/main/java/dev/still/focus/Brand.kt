@@ -25,7 +25,30 @@ object FoculyBrand {
 }
 
 enum class CatArt(@param:DrawableRes val drawable: Int) {
-    PAUSE(R.drawable.cat_pause), STUDY(R.drawable.cat_study), GUARD(R.drawable.cat_guard)
+    PAUSE(R.drawable.cat_pause), STUDY(R.drawable.cat_study), GUARD(R.drawable.cat_guard),
+    REMINDER(R.drawable.cat_reminder), PATIENCE(R.drawable.cat_patience), BOUNDARY(R.drawable.cat_boundary),
+    FOCUS(R.drawable.cat_focus), BREAK(R.drawable.cat_break), COMPLETE(R.drawable.cat_complete)
+}
+
+/** Shared by the native blocking overlay and its in-app preview. */
+fun FocusMode.catArt(): CatArt = when (this) {
+    FocusMode.GENTLE -> CatArt.REMINDER
+    FocusMode.STANDARD -> CatArt.PATIENCE
+    FocusMode.STRICT -> CatArt.BOUNDARY
+}
+
+fun CatArt.tint(): Color = when (this) {
+    CatArt.REMINDER -> FoculyBrand.peach
+    CatArt.PATIENCE, CatArt.BREAK -> FoculyBrand.lilac
+    CatArt.BOUNDARY -> FoculyBrand.blush
+    else -> FoculyBrand.lime
+}
+
+/** A light backing keeps black doodle strokes readable with either app theme. */
+@Composable fun DoodleBadge(art: CatArt, modifier: Modifier = Modifier) {
+    Surface(modifier, shape = RoundedCornerShape(24.dp), color = art.tint()) {
+        CatDoodle(art, Modifier.padding(8.dp))
+    }
 }
 
 @Composable fun BrandWordmark(modifier: Modifier = Modifier) {

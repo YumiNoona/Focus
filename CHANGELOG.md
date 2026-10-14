@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased — 1.2.0 development
+## [1.2.0](https://github.com/YumiNoona/Focus/releases/tag/v1.2.0) — 2026-10-14
+
+- Add six distinct transparent cat doodles for reminders, Resistant waiting, Strict boundaries, active focus, Pomodoro breaks, and completion, bringing the illustration set to nine scenes.
+- Use mode-specific artwork in native blocking screens, early-ending and unblocking warnings, locked rules, and the custom-message preview. Keep black ink readable on pastel backings in dark mode.
+- Add Normal/Resistant/Strict preview choices without changing the saved blocking mode or any enforcement policy.
+- Refresh actual emulator screenshots with warnings, completed sessions, a real one-minute Pomodoro work period followed by a break, and dark focus.
+- Publish a signed, optimized APK with version code 122 and the existing release certificate.
 
 - Rename the Android app to FocuLY, using the supplied `public/logo.png` for its adaptive launcher icon and in-app wordmark. Preserve the package, administrator component, stored data, and update signing key.
 - Add four onboarding screens: three pastel story cards with cat doodles followed by the live permission checklist. Include Next, Back, Skip intro, saved progress, and replay from Settings.

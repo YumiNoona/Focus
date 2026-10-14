@@ -8,7 +8,7 @@
 
 A calm Android app for intentional screen time, focus sessions, and everyday boundaries.
 
-**FocuLY is the new name for Focus.** The current development app uses your colorful logo, a four-screen pastel onboarding flow, and original cat doodles. Existing installations retain their package, saved rules, and signing identity. [Visual direction and illustration prompts](docs/FOCULY_DESIGN.md).
+**FocuLY is the new name for Focus.** Version 1.2.0 brings the colorful logo, four-screen pastel onboarding, and nine original cat doodles. Existing installations retain their package, saved rules, and signing identity. [Visual direction and illustration prompts](docs/FOCULY_DESIGN.md).
 
 [![Android CI](https://github.com/YumiNoona/Focus/actions/workflows/android.yml/badge.svg?branch=main)](https://github.com/YumiNoona/Focus/actions/workflows/android.yml)
 [![Latest release](https://img.shields.io/github/v/release/YumiNoona/Focus?style=flat&color=7760BA)](https://github.com/YumiNoona/Focus/releases/latest)
@@ -17,7 +17,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](#design)
 [![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](#privacy)
 
-**[Download v1.1.0](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
+**[Download v1.2.0](https://github.com/YumiNoona/Focus/releases/tag/v1.2.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
 
 </div>
 
@@ -25,7 +25,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet FocuLY
 
-**Development preview:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages, direct Shorts/Reels actions, and individual managed app controls are implemented on `main` for the next version. The latest published APK is still **v1.1.0**. Build from source to test these changes; no v1.2.0 release has been published.
+**New in v1.2.0:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages with mode previews, direct Shorts/Reels actions, and individual managed app controls. Distinct doodles accompany reminders, patience, Strict boundaries, growing focus, breaks, and completion.
 
 FocuLY helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
 
@@ -33,9 +33,9 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 ## Screenshots
 
-The current development gallery includes FocuLY's four onboarding screens and cat doodles. The published v1.1.0 APK still uses the previous Focus design.
+The gallery shows FocuLY's four onboarding screens, cat doodles, and actual blocking screens from the v1.2.0 source.
 
-**[Full development screen gallery](docs/screenshots/gallery/README.md)** · [Searchable local HTML gallery](docs/screenshots/gallery/index.html). Includes onboarding, permission disclosure, all principal editors, settings sections, custom messages, PIN setup, three blocking modes, and managed-device comparisons.
+**[Full screen gallery](docs/screenshots/gallery/README.md)** · [Searchable local HTML gallery](docs/screenshots/gallery/index.html). Includes onboarding, permission disclosure, all principal editors, settings sections, custom messages, PIN setup, three blocking modes, warnings, a real Pomodoro break, completion, and managed-device comparisons.
 
 <table>
   <tr>
@@ -63,13 +63,13 @@ The current development gallery includes FocuLY's four onboarding screens and ca
 Screenshots are captured from the actual Android app in an emulator. Scroll Test is a separate test app used to demonstrate blocking; it is not included in the installed FocuLY app. Usage history is not fabricated.
 
 <details>
-<summary>Development preview: independent blocks and compact setup</summary>
+<summary>Independent blocks and compact setup</summary>
 
 <img src="docs/screenshots/block-setup.png" alt="Card choices for today, a day, a week, minutes, or until manually unblocked, with a persistent action button" width="250" />
 <img src="docs/screenshots/active-blocks.png" alt="Persistent manual app block on Home with an Unblock action" width="250" />
 <img src="docs/screenshots/settings.png" alt="Compact protection setup and expandable settings" width="250" />
 
-These screens are from the local development build; the published APK remains v1.1.0.
+These screens are captured from the Android app; independent blocks also work without a focus session.
 
 </details>
 
@@ -125,10 +125,10 @@ Strict requires a live protection service and an automatic ending. Sessions use 
 
 **Requires Android 9 / API 28 or newer.**
 
-1. Open the [v1.1.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0).
-2. Download **`Focus-v1.1.0.apk`** and open it on your Android phone. This published APK uses the previous name; FocuLY is currently a development preview.
+1. Open the [v1.2.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.2.0).
+2. Download **`FocuLY-v1.2.0.apk`** and open it on your Android phone. The same release certificate supports updating an existing Focus installation.
 3. If Android asks, allow installation from the browser or file manager you are using.
-4. Launch **FocuLY** and choose **Make room**.
+4. Launch **FocuLY** and follow the four-screen introduction to the permission checklist.
 5. Read the protection disclosure and enable **FocuLY protection** in Android Accessibility settings if you want blocking.
 6. Enable **Usage Access** for daily budgets and usage charts. Notifications are optional.
 7. Choose distractions under **Rules**. In **Settings → Protection health**, check that the service is connected, then use **Test selected app for 1 minute**.

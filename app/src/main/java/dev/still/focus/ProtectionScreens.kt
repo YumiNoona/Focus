@@ -139,6 +139,7 @@ import kotlinx.coroutines.withContext
 }
 
 @Composable fun MessageScreen(s: FocusState) {
+    var previewMode by rememberSaveable { mutableStateOf(FocusMode.STANDARD) }
     var title by rememberSaveable { mutableStateOf(s.blockMessage.title) }
     var body by rememberSaveable { mutableStateOf(s.blockMessage.body) }
     var emoji by rememberSaveable { mutableStateOf(s.blockMessage.emoji) }
@@ -146,12 +147,14 @@ import kotlinx.coroutines.withContext
     val locked = RulesEngine.strictActive(s, System.currentTimeMillis())
     Page {
         Heading("Your pause, your words.")
+        ChoiceRow(FocusMode.entries.map { it.label }, previewMode.label) { label -> previewMode = FocusMode.entries.first { it.label == label } }
         SoftCard {
             Caption("BLOCKING SCREEN PREVIEW")
+            DoodleBadge(previewMode.catArt(), Modifier.fillMaxWidth().height(112.dp))
             Text(emoji, style = MaterialTheme.typography.displaySmall)
             Text(title.ifBlank { "See you later." }, style = MaterialTheme.typography.headlineMedium)
             if (body.isNotBlank()) Text(body, style = MaterialTheme.typography.bodyLarge)
-            Caption("APP NAME · MODE · UNLOCK TIME")
+            Caption("APP NAME · ${previewMode.label.uppercase()} · UNLOCK TIME")
             Button({}, enabled = false, modifier = Modifier.fillMaxWidth()) { Text("Return to focus") }
         }
         Caption("QUICK PRESETS")

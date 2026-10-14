@@ -30,9 +30,17 @@ Created with the built-in imagegen tool, using the user's provided pastel onboar
 | `cat_pause.png` | A relaxed white cat gently pushes a smartphone face down with one paw, with a crescent and two small sparkles. |
 | `cat_study.png` | The same rounded white cat sits at a little desk reading an open book, beside a pencil and tiny potted leaf. |
 | `cat_guard.png` | The same cat hugs a simple chunky shield with a heart-shaped keyhole, with two decorative sparkles. |
+| `cat_reminder.png` | A cat raises a gentle paw beside a small warning triangle. Normal interruptions and protection reminders. |
+| `cat_patience.png` | A cat waits beside a lilac hourglass. Resistant interruptions and pause dialogs. |
+| `cat_boundary.png` | A cat rests its paws on a closed padlock. Strict interruptions and locked rules. |
+| `cat_focus.png` | A cat waters a sprouting plant. Attention growing during an active focus session. |
+| `cat_break.png` | A cat stretches on a lilac cushion beside a cup of tea. Actual Pomodoro breaks. |
+| `cat_complete.png` | A cat hugs a peach star with small confetti. Completed sessions only. |
 
 Shared prompt: “Transparent raster doodle for FocuLY. Confident slightly wobbly black ink, simple white-filled forms, sparse black solid patches, and tiny motion lines. A charming white cat with triangular ears, dot eyes, whiskers, rounded body, and curled tail. Tiny lilac and peach accent patches. Complete centered illustration, generous transparent margins, square canvas. No text, logo, UI panel, paper background, gradients, 3D rendering, or watermark.”
 
 The files preserve generated alpha and are packaged locally; no runtime image downloads are used.
 
 The complete prompt set is stored in [illustration-prompts.json](illustration-prompts.json).
+
+The six new scenes use `cat_pause.png` as their character/style reference through built-in imagegen. Original onboarding art and the supplied logo remain unchanged. Art is decorative for accessibility, adds no touch actions, and never replaces the actual mode, expiry, service status, or custom message. Native overlay heights remain 86 dp for Normal and 120 dp for other modes; scrolling retains access to actions and emergency essentials. Pastel badges preserve dark-theme contrast.

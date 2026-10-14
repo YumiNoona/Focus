@@ -121,7 +121,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
                 else TextButton({ unblocking = plan }, enabled = !RulesEngine.strictActive(s, now)) { Icon(Icons.Outlined.LockOpen, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Unblock") }
             }
         } }
-        if (!Repository.protectionReady() && !(s.managedLockdown && ManagedProtection.verifiedSuspendedCount() > 0)) Text("Protection is interrupted. Reconnect in Settings.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        if (!Repository.protectionReady() && !(s.managedLockdown && ManagedProtection.verifiedSuspendedCount() > 0)) DoodleCard(CatArt.REMINDER, "Protection is interrupted.", "Reconnect in Settings to resume blocking.", FoculyBrand.peach)
     }
     unblocking?.let { plan ->
         var reason by remember(plan.id) { mutableStateOf("") }
@@ -131,7 +131,8 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
             val end = android.os.SystemClock.elapsedRealtime() + plan.mode.waitSeconds * 1000
             while (remaining > 0) { delay(250); remaining = ((end - android.os.SystemClock.elapsedRealtime() + 999) / 1000).toInt().coerceAtLeast(0) }
         }
-        AlertDialog(onDismissRequest = { unblocking = null }, title = { Text("Unblock ${plan.kind.label.lowercase()}?", fontFamily = Mono) }, text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AlertDialog(onDismissRequest = { unblocking = null }, title = { Text("Unblock ${plan.kind.label.lowercase()}?", fontFamily = Mono) }, text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            DoodleBadge(plan.mode.catArt(), Modifier.fillMaxWidth().height(88.dp))
             Text(if (plan.mode == FocusMode.STANDARD) "Take a moment before removing this block." else "This block will end now.")
             if (plan.mode == FocusMode.STANDARD) Input("Your reason", reason, { reason = it.take(120) })
             if (remaining > 0) Caption("READY IN ${remaining}s")

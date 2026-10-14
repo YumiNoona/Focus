@@ -99,7 +99,11 @@ class ScreenshotGalleryTest {
             for ((mode, name) in listOf(FocusMode.GENTLE to "27-normal-popup", FocusMode.STANDARD to "28-resistant-screen", FocusMode.STRICT to "29-strict-screen")) {
                 val now = System.currentTimeMillis()
                 ui.runOnIdle { Repository.update { demo.copy(session = Session(profile = Profile("preview", "Deep work", 1, "Make room for what matters.", mode), start = now, end = now + 20_000)) } }
-                open("home"); if (mode == FocusMode.STANDARD) shot("30-active-session")
+                open("home"); if (mode == FocusMode.STANDARD) {
+                    shot("30-active-session")
+                    ui.onNodeWithText("End session").performScrollTo().performClick(); shot("35-end-session-warning")
+                    ui.onNodeWithText("Keep focusing").performClick()
+                }
                 shell("am start -n dev.still.fixture/.ScrollActivity")
                 val deadline = SystemClock.elapsedRealtime() + 10_000
                 while (ProtectionRuntime.blockedPackage != "dev.still.fixture" && SystemClock.elapsedRealtime() < deadline) Thread.sleep(100)
@@ -108,6 +112,24 @@ class ScreenshotGalleryTest {
                 Thread.sleep((now + 20_100 - System.currentTimeMillis()).coerceAtLeast(0))
                 ui.runOnIdle { Repository.reconcile() }; open("home")
             }
+            ui.onNodeWithText("A little win for you.").performScrollTo(); shot("36-session-complete")
+            ui.runOnIdle { Repository.update { demo.copy(blocks = listOf(BlockPlan(kind = BlockKind.APPS, targets = setOf("dev.still.fixture"), mode = FocusMode.STANDARD, start = System.currentTimeMillis(), period = BlockPeriod.MANUAL))) } }
+            open("home"); ui.onNodeWithText("Unblock").performScrollTo().performClick(); shot("37-unblock-warning")
+            ui.onNodeWithText("Keep block").performClick()
+            ui.runOnIdle { Repository.update { demo.copy(disclosure = false) } }
+            open("setup"); ui.onNodeWithText("Start focus").performScrollTo().performClick(); shot("38-protection-warning")
+            ui.onNodeWithText("Timer only").assertExists()
+            automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+            ui.runOnIdle { Repository.update { demo } }
+            open("home")
+            val breakProfile = Profile("break-preview", "Quiet rhythm", 3, "Give yourself a little room.", FocusMode.GENTLE, pomodoro = true, workMinutes = 1, breakMinutes = 1, rounds = 2)
+            ui.runOnIdle { assertTrue(Repository.start(breakProfile, 3, breakProfile.intention, timerOnly = true)) }
+            // Let a real one-minute work period pass; do not manufacture elapsed usage.
+            Thread.sleep(61_000)
+            open("home"); assertTrue(Repository.state.session!!.onBreak(System.currentTimeMillis())); shot("39-pomodoro-break")
+            ui.runOnIdle { Repository.stop() }
+            ui.runOnIdle { Repository.update { demo.copy(theme = "Dark", session = Session(profile = breakProfile.copy(pomodoro = false), start = System.currentTimeMillis(), end = System.currentTimeMillis() + 60_000, timerOnly = true)) } }
+            open("home"); shot("40-dark-focus")
             ui.runOnIdle { Repository.update { demo.copy(theme = "Dark") } }; open("home"); shot("31-dark-home")
         } finally { ui.runOnIdle { Repository.update { original } }; open("home") }
     }

@@ -134,7 +134,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-    if (timerDialog) AlertDialog(onDismissRequest = { timerDialog = false }, title = { Text("Enable protection", fontFamily = Mono) }, text = { Text(if (strictRequested) "Strict requires a connected protection service. Enable it and allow background activity first." else "Blocking needs your consent and a connected Android accessibility service. You can enable it now, or explicitly start a timer without blocking.") }, confirmButton = { TextButton({ timerDialog = false; settingsParent = "setup"; route = "settings" }) { Text("Enable protection") } }, dismissButton = { if (!strictRequested) TextButton({ timerDialog = false; pendingStart?.invoke(true); pendingStart = null }) { Text("Timer only") } })
+    if (timerDialog) AlertDialog(onDismissRequest = { timerDialog = false }, title = { Text("Enable protection", fontFamily = Mono) }, text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        DoodleBadge(CatArt.REMINDER, Modifier.fillMaxWidth().height(88.dp))
+        Text(if (strictRequested) "Strict requires a connected protection service. Enable it and allow background activity first." else "Blocking needs your consent and a connected Android accessibility service. You can enable it now, or explicitly start a timer without blocking.")
+    } }, confirmButton = { TextButton({ timerDialog = false; settingsParent = "setup"; route = "settings" }) { Text("Enable protection") } }, dismissButton = { if (!strictRequested) TextButton({ timerDialog = false; pendingStart?.invoke(true); pendingStart = null }) { Text("Timer only") } })
     if (stopDialog) EndSessionDialog(s.session?.profile?.mode ?: FocusMode.STANDARD, { stopDialog = false }) { Repository.stop(); stopDialog = false }
 }
 
@@ -207,7 +210,7 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
                 } }
             }
         } else {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.weight(1f)) { Caption(if (session.onBreak(now)) "A MOMENT TO RESET" else "ONE THING AT A TIME") }; CatDoodle(if (session.onBreak(now)) CatArt.PAUSE else CatArt.STUDY, Modifier.size(72.dp)) }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.weight(1f)) { Caption(if (session.onBreak(now)) "A MOMENT TO RESET" else "ONE THING AT A TIME") }; DoodleBadge(if (session.onBreak(now)) CatArt.BREAK else CatArt.FOCUS, Modifier.size(88.dp)) }
             Text(session.intention, style = MaterialTheme.typography.headlineLarge)
             Box(Modifier.fillMaxWidth().height(250.dp), contentAlignment = Alignment.Center) {
                 val accent = MaterialTheme.colorScheme.primary
@@ -232,7 +235,11 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
             Text("Room for balance", style = MaterialTheme.typography.titleMedium)
             limited.forEach { rule -> val used = usage[rule.packageName] ?: 0; val limit = rule.allowance(now); Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(rule.label); Caption(if (Repository.usageGranted() && usageReady) "${used / 60_000} / ${limit}m" else "Usage access needed") }; LinearProgressIndicator(progress = { (used.toFloat() / (limit * 60_000L)).coerceIn(0f, 1f) }, Modifier.fillMaxWidth().height(3.dp).clip(CircleShape), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.outlineVariant) }
         }
-        if (session == null && s.history.isNotEmpty()) s.history.last().let { record -> SoftCard { Caption(if (record.completed) "LAST SESSION COMPLETE" else "LAST SESSION"); Text("${record.name} · ${duration(record.focusedMillis)} in focus", style = MaterialTheme.typography.bodyLarge) } }
+        if (session == null && s.history.isNotEmpty()) s.history.last().let { record ->
+            DoodleCard(if (record.completed) CatArt.COMPLETE else CatArt.PAUSE,
+                if (record.completed) "A little win for you." else "Every minute counts.",
+                "${record.name} · ${duration(record.focusedMillis)} in focus", if (record.completed) FoculyBrand.peach else FoculyBrand.lilac)
+        }
     }
 }
 
@@ -605,11 +612,15 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
 }
 
 @Composable fun EndSessionDialog(mode: FocusMode, dismiss: () -> Unit, stop: () -> Unit) {
-    if (mode == FocusMode.STRICT) { AlertDialog(onDismissRequest = dismiss, title = { Text("Strict stays locked", fontFamily = Mono) }, text = { Text("The timer must finish. There is no early end in FocuLY. Phone and emergency access stay available.") }, confirmButton = { TextButton(dismiss) { Text("Keep focusing") } }); return }
+    if (mode == FocusMode.STRICT) { AlertDialog(onDismissRequest = dismiss, title = { Text("Strict stays locked", fontFamily = Mono) }, text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        DoodleBadge(CatArt.BOUNDARY, Modifier.fillMaxWidth().height(88.dp))
+        Text("The timer must finish. There is no early end in FocuLY. Phone and emergency access stay available.")
+    } }, confirmButton = { TextButton(dismiss) { Text("Keep focusing") } }); return }
     var remaining by remember { mutableIntStateOf(mode.waitSeconds) }
     var reason by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { while (remaining > 0) { delay(1000); remaining-- } }
-    AlertDialog(onDismissRequest = dismiss, title = { Text("A conscious pause.", fontFamily = Mono) }, text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    AlertDialog(onDismissRequest = dismiss, title = { Text("A conscious pause.", fontFamily = Mono) }, text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        DoodleBadge(mode.catArt(), Modifier.fillMaxWidth().height(88.dp))
         Text(if (mode == FocusMode.STANDARD) "Resistant mode asks for a pause and a reason before ending early." else "End this session now? The time you spent focusing will still be recorded.")
         if (mode == FocusMode.STANDARD) Input("Why are you ending early?", reason, { reason = it.take(120) })
         if (remaining > 0) Text("Ready in ${remaining}s", fontFamily = Mono)
@@ -618,6 +629,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
 
 @Composable fun LockedRules(s: FocusState) {
     Page { Heading("Rules are locked.", "Available again when Strict ends.")
+        DoodleCard(CatArt.BOUNDARY, "Your boundary is holding.", "These rules become editable when Strict finishes.", FoculyBrand.blush)
         ActiveBlocks(s, System.currentTimeMillis())
         s.session?.let { Text("${it.profile.name} · ${if (it.end > 0) clock(it.end - System.currentTimeMillis()) else "schedule active"}", fontFamily = Mono) }
         s.apps.filter { it.enabled }.forEach { Text(it.label) }

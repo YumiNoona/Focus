@@ -1,6 +1,13 @@
-# Validation — 1.2 development preview, 14 October 2026
+# Validation — FocuLY v1.2.0, 14 October 2026
 
-The latest published release remains v1.1.0 under the former Focus name. The current local app is FocuLY 1.2.0-dev (version code 121); no new release or tag is published for this work.
+## FocuLY v1.2.0 release
+
+- Six additional imagegen scenes preserve transparent alpha and the original mascot style. Nine local cat assets ship with the app; the supplied logo remains unchanged.
+- All 21 JVM tests and 13 Android checks pass (10 UI/backend, 2 PIN, 1 installed-app blocking scenario). The blocking scenario verifies actual Normal visits, Resistant waiting/reasons, Strict restrictions, transient windows, independent blocks, and expiry with the new overlays.
+- Android lint, debug/test APK assembly, and optimized signed release assembly pass. APK metadata is `dev.still.focus`, version `1.2.0`, code `122`, Android 9+, label `FocuLY`.
+- The APK retains release certificate SHA-256 `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`, supporting updates from v1.0.0/v1.1.0.
+- Warnings retain their buttons and gain scrollable content. Native illustration heights are unchanged, and dark mode uses pastel backings for black ink. Artwork does not change rule enforcement or grant extra access.
+- Physical OnePlus Nord CE 2 testing remains outstanding. Earlier functional/device-owner validation is recorded below; managed-policy behavior is unchanged by this illustration update.
 
 ## FocuLY branding and onboarding
 

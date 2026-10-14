@@ -12,6 +12,7 @@ import android.view.*
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.*
+import androidx.compose.ui.graphics.toArgb
 import java.time.LocalDate
 
 class FocusAccessibilityService : AccessibilityService() {
@@ -166,7 +167,11 @@ class FocusAccessibilityService : AccessibilityService() {
         }.also(container::addView)
         text("FocuLY / ${restriction.mode.label.lowercase()}", 14f, violet, true)
         ImageView(this).apply {
-            setImageResource(R.drawable.cat_pause); scaleType = ImageView.ScaleType.FIT_CENTER
+            val art = restriction.mode.catArt()
+            setImageResource(art.drawable); scaleType = ImageView.ScaleType.FIT_CENTER
+            background = background(art.tint().toArgb())
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             layoutParams = LinearLayout.LayoutParams(-1, dp(if (restriction.mode == FocusMode.GENTLE) 86 else 120)).apply { bottomMargin = dp(16) }
         }.also(container::addView)
         if (state.blockMessage.emoji.isNotBlank()) text(state.blockMessage.emoji, 44f)
