@@ -1,30 +1,43 @@
-# Validation — 14 October 2026
+# Validation — v1.1.0, 14 October 2026
 
-Tested using an Android 15 / API 35 Pixel 7 emulator at 1080 × 2400, with Android SDK 36 for compilation.
+Compiled with Android SDK 36. Runtime checks used isolated Android 15 / API 35 Pixel 7 emulators, including a separate fresh device-owner emulator. The user's physical OnePlus Nord CE 2 was not connected.
 
 ## Automated checks
 
-- 10 JVM rules tests passed: overnight boundaries, cross-week schedule conflicts, next-start calculation, Pomodoro breaks and focus totals, restriction/allowlist precedence, domain normalization, daily limits, override expiry and cooldown, gradual reduction, profile app scope.
-- 4 connected Android tests passed: dock and header navigation, website entry and persistence, explicit timer-only warning and session startup, JSON round-trip for rules and schedules.
-- Debug APK assembly passed.
-- Focus v1.0.0 release assembly passed with R8 optimization and resource shrinking. The APK is 2,552,183 bytes (about 2.6 MB).
-- Release APK metadata verified: display name Focus, version 1.0.0, version code 100, minimum API 28, target API 36.
-- APK Signature Scheme v2 verification passed with the dedicated 4096-bit RSA release certificate. No network permission is declared.
-- Android lint passed with no errors. Warnings remain for pinned dependency versions, English string resources, deliberate application-context storage, and platform attributes on older Android versions.
+- **16 JVM rules tests passed:** overnight boundaries, cross-week conflicts, next schedule start/end, Pomodoro phases, focus totals, restriction/allowlist precedence, domain normalization, daily limits, visit expiry/cooldown, gradual reduction, custom scope, Strict existing-visit rejection, and foreground window selection.
+- **6 connected UI/backend tests passed:** three-icon navigation and header actions, website normalization/persistence, explicit timer-only startup, JSON round-trip, Strict early-stop/visit/deletion/rule-edit rejection, expiry, and rejection of unbounded/timer-only Strict.
+- **1 installed-app accessibility scenario passed with no skip:** enables protection on an isolated emulator, launches Scroll Test, accepts the Normal popup, waits through Resistant and supplies a reason for a one-minute visit, then verifies Strict ignores that existing visit. Checks notification-shade transitions, home/relaunch recovery, and automatic expiry. The fixture is a separate project, not part of Focus.
+- Android lint passed without errors; debug assembly and signed release assembly passed. Release builds use R8 and resource shrinking.
+- Signed APK metadata: Focus, version **1.1.0**, version code **110**, minimum API **28**, target API **36**. APK signature verification passed. It requests no network permission.
+- The release signing certificate is unchanged from v1.0.0. SHA-256 fingerprint: `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`.
 
-## Emulator checks
+The installed-app test originally exposed a fallback startup gap when no accessibility window/event identified the foreground package. After moving usage-event recovery before that early return, all seven connected tests passed together. Earlier unsuccessful runs are not counted as passing validation.
 
-- Completed onboarding and the prominent accessibility disclosure.
-- Enabled accessibility protection, Usage Access, and notifications.
-- Selected a separately installed test app and started a real focus session.
-- Confirmed the accessibility blocking screen appeared over that app.
-- Completed the standard-mode waiting period, entered a reason, and confirmed the five-minute intentional visit released the test app.
-- Opened Focus from the blocking state and confirmed its active session remained accessible.
-- Opened Android system settings while the session was active; access remained available.
-- Viewed light and dark themes and text scaling at 150%.
-- Captured the app's actual interface. Screenshots use a sample app called Scroll Test. No fake usage history is seeded.
-- Installed the optimized, signed v1.0.0 APK and repeated onboarding, permission consent, app selection, focus-session startup, app blocking, return to Focus, insights, and dark-theme checks. Repository screenshots are from that release build.
+## Signed APK and administration checks
 
-## Outstanding device coverage
+- Installed the optimized release APK on the ordinary emulator and completed onboarding/disclosure, app selection, and the real one-minute Strict test. The overlay appeared over Scroll Test with no temporary-access button.
+- Activated optional legacy administration through Android's actual activation screen. A developer uninstall attempt returned `DELETE_FAILED_DEVICE_POLICY_MANAGER`. Focus's disable control deactivated the administrator outside Strict.
+- On a separate fresh device-owner emulator, enabled uninstall protection and verified Android refused removal.
+- Started managed Strict with an eligible whole-app target and precise-ending permission. Android reported the target suspended and clock configuration restricted.
+- Disabled accessibility while managed Strict was active: the target remained suspended.
+- At expiry, Android reported the target unsuspended and Focus's temporary clock restriction removed, while accessibility remained disabled.
+- Focus preserves essential/system access. Managed setup remained isolated from personal devices.
 
-Current third-party feed and browser versions, OEM background behavior, screen-reader interactions, widget launcher differences, Quick Settings behavior on older Android versions, and notification timing under extended Doze have not been fully verified. Website and feed detection remain explicitly experimental in the app. Store review is not completed. The v1.0.0 APK is signed with a dedicated local release key.
+Home, rules, theme, insights, and session screenshots retain the v1.0.0 visual design. The blocking and administrator screenshots show actual v1.1.0 behavior. No fake usage history is presented. Initial v1.0.0 validation also covered light/dark theme and 150% text scaling.
+
+## Reproduce
+
+Use a disposable emulator; the UI tests reset Focus's local state.
+
+```bash
+./gradlew testDebugUnitTest lintDebug assembleDebug
+./gradlew -p test-fixture assembleDebug
+adb install test-fixture/build/outputs/apk/debug/ScrollTest-debug.apk
+./gradlew connectedDebugAndroidTest
+```
+
+Set `ANDROID_SERIAL` if multiple devices are connected. The installed-app scenario deliberately skips physical phones and emulators without Scroll Test. A run with a skip does not verify accessibility blocking. Do not run the connected installer against the separate uninstall-protected device-owner emulator.
+
+## Outstanding coverage
+
+Physical OnePlus/OxygenOS battery behavior, current third-party feed/browser builds, screen-reader interactions, widget launcher differences, older Android versions, extended Doze timing, and managed reboot recovery before first unlock need further device testing. Selective website/feed detection remains experimental. Ordinary-phone Strict cannot prevent Android permission revocation or administrator deactivation. Exact managed expiry assumes Android can access Focus's credential-protected storage; open Focus after unlock if recovery is delayed. Google Play review has not been completed.

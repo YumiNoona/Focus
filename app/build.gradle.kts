@@ -19,8 +19,8 @@ android {
         applicationId = "dev.still.focus"
         minSdk = 28
         targetSdk = 36
-        versionCode = 100
-        versionName = "1.0.0"
+        versionCode = 110
+        versionName = "1.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true }

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0) — 2026-10-14
+
+- Repair foreground tracking: recheck application windows continuously, ignore keyboards and accessibility overlays, and use usage-event fallback when windows are unavailable.
+- Show live protection health, observed app, connection/overlay failures, explicit timer-only status, battery links, and a one-minute real-app test.
+- Introduce Normal popup, Resistant 30-second wait with reason and one-minute visit, and finite Strict with no in-app temporary visits or early ending.
+- Prevent Strict rule edits, consent withdrawal, data deletion, and existing-visit bypasses; Strict has no Pomodoro breaks or open-ended sessions.
+- Preserve explicit empty custom scopes and plan routine end boundaries correctly.
+- Add optional administrator uninstall resistance; opt-in device-owner uninstall blocking, app suspension, temporary clock protection, exact expiry, and persisted recovery.
+- Add installed-app accessibility regression coverage, Strict backend tests, and dedicated-device/OxygenOS documentation.
+- Keep the three-icon dock and existing visual design; reuse the v1.0.0 signing certificate for updates.
+
+Selective websites/feeds remain experimental. Physical OnePlus Nord CE 2 verification remains outstanding; ordinary-phone Strict cannot prevent Android permission revocation.
+
 ## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — 2026-10-14
 
 First public Focus release, developed from the earlier Still preview.

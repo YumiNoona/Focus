@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.selection.toggleable
 import kotlinx.coroutines.*
 import java.time.*
 import java.time.format.DateTimeFormatter
@@ -72,15 +73,16 @@ class MainActivity : ComponentActivity() {
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); Repository.reconcile(); delay(1000) } }
     LaunchedEffect(route, now / 15_000) { usage = withContext(Dispatchers.IO) { UsageReader.day(Repository.context) }; usageReady = true }
     val mainRoutes = listOf("home", "rules", "insights")
-    BackHandler(route !in mainRoutes) { route = if (route in listOf("picker", "allowlist", "schedule", "appRule")) "rules" else "home" }
+    BackHandler(route !in mainRoutes) { route = if (route == "managed") "settings" else if (route in listOf("picker", "allowlist", "schedule", "appRule")) "rules" else "home" }
     var appRule by remember { mutableStateOf<AppRule?>(null) }
     var stopDialog by remember { mutableStateOf(false) }
     var timerDialog by remember { mutableStateOf(false) }
-    var pendingStart by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var pendingStart by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
+    var strictRequested by remember { mutableStateOf(false) }
     val nav: (String) -> Unit = { route = it }
     if (!s.onboarding) { Onboarding { Repository.update { it.copy(onboarding = true) }; route = "settings" }; return }
     Scaffold(containerColor = MaterialTheme.colorScheme.background,
-        topBar = { Header(route, s.name, { route = "profile" }, { route = "settings" }, { route = if (route == "schedule" || route == "appRule" || route == "picker" || route == "allowlist") "rules" else "home" }) },
+        topBar = { Header(route, s.name, { route = "profile" }, { route = "settings" }, { route = if (route == "managed") "settings" else if (route == "schedule" || route == "appRule" || route == "picker" || route == "allowlist") "rules" else "home" }) },
         bottomBar = { if (route in mainRoutes) Dock(route, nav) }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -90,18 +92,19 @@ class MainActivity : ComponentActivity() {
                 "insights" -> Insights(s, usage, usageReady)
                 "profile" -> ProfileScreen(s, { editingProfile = it; route = "profileEdit" }, { editingProfile = null; route = "profileEdit" })
                 "settings" -> SettingsScreen(s, nav)
+                "managed" -> ManagedScreen(s)
                 "picker", "allowlist" -> AppPicker(s, route == "allowlist") { route = "rules" }
                 "appRule" -> appRule?.let { AppRuleEditor(it) { updated -> Repository.update { state -> state.copy(apps = state.apps.map { if (it.packageName == updated.packageName) updated else it }) }; route = "rules" } }
                 "schedule" -> ScheduleEditor(s, editingSchedule) { schedule -> Repository.update { state -> state.copy(schedules = state.schedules.filterNot { it.id == schedule.id } + schedule) }; FocusNotifications.plan(Repository.context); route = "rules" }
                 "setup", "profileEdit" -> SessionEditor(s, if (route == "profileEdit") editingProfile else selectedProfile, route == "profileEdit", onSave = { p -> Repository.update { state -> state.copy(profiles = state.profiles.filterNot { it.id == p.id } + p) }; route = "profile" }, onStart = { p, duration, intention ->
-                    val action = { Repository.start(p, duration, intention); route = "home"; Unit }
-                    if (!Repository.protectionGranted() || !s.disclosure) { pendingStart = action; timerDialog = true } else action()
+                    val action: (Boolean) -> Unit = { timerOnly -> route = if (Repository.start(p, duration, intention, timerOnly)) "home" else "settings" }
+                    if (!Repository.protectionReady()) { strictRequested = p.mode == FocusMode.STRICT; pendingStart = action; timerDialog = true } else action(false)
                 })
                 else -> Home(s, now, usage, usageReady, nav, { selectedProfile = it; route = "setup" }, { stopDialog = true })
             }
         }
     }
-    if (timerDialog) AlertDialog(onDismissRequest = { timerDialog = false }, title = { Text("Enable protection", fontFamily = Mono) }, text = { Text("Blocking needs your consent and Android accessibility access. You can enable it now, or start a timer without blocking.") }, confirmButton = { TextButton({ timerDialog = false; route = "settings" }) { Text("Enable protection") } }, dismissButton = { TextButton({ timerDialog = false; pendingStart?.invoke(); pendingStart = null }) { Text("Timer only") } })
+    if (timerDialog) AlertDialog(onDismissRequest = { timerDialog = false }, title = { Text("Enable protection", fontFamily = Mono) }, text = { Text(if (strictRequested) "Strict requires a connected protection service. Enable it and allow background activity first." else "Blocking needs your consent and a connected Android accessibility service. You can enable it now, or explicitly start a timer without blocking.") }, confirmButton = { TextButton({ timerDialog = false; route = "settings" }) { Text("Enable protection") } }, dismissButton = { if (!strictRequested) TextButton({ timerDialog = false; pendingStart?.invoke(true); pendingStart = null }) { Text("Timer only") } })
     if (stopDialog) EndSessionDialog(s.session?.profile?.mode ?: FocusMode.STANDARD, { stopDialog = false }) { Repository.stop(); stopDialog = false }
 }
 
@@ -114,7 +117,7 @@ class MainActivity : ComponentActivity() {
                 else Text(name.first().uppercase(), fontFamily = Mono, color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { contentDescription = "Profile" })
             }
         } else IconButton(back) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-        Text(if (root) "focus" else when (route) { "profile" -> "your space"; "settings" -> "preferences"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontFamily = Mono, fontSize = 18.sp)
+        Text(if (root) "focus" else when (route) { "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontFamily = Mono, fontSize = 18.sp)
         if (root) IconButton(settings) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) } else Spacer(Modifier.width(48.dp))
     }
 }
@@ -134,7 +137,7 @@ class MainActivity : ComponentActivity() {
 @Composable fun Heading(title: String, subtitle: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) } } }
 @Composable fun Primary(text: String, enabled: Boolean = true, icon: ImageVector? = Icons.AutoMirrored.Outlined.ArrowForward, action: () -> Unit) { val haptic = LocalHapticFeedback.current; Button({ if (Repository.state.haptics) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); action() }, Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = enabled, shape = RoundedCornerShape(18.dp), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)) { Text(text, Modifier.weight(1f)); icon?.let { Icon(it, null, Modifier.size(24.dp)) } } }
 @Composable fun SoftCard(content: @Composable ColumnScope.() -> Unit) { Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface) { Column(Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(14.dp), content = content) } }
-@Composable fun ToggleRow(title: String, description: String, checked: Boolean, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f).padding(end = 12.dp)) { Text(title, style = MaterialTheme.typography.bodyLarge); Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; Switch(checked, onChange, Modifier.semantics { contentDescription = title }) } }
+@Composable fun ToggleRow(title: String, description: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth().toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onChange).semantics { contentDescription = title }, verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f).padding(end = 12.dp)) { Text(title, style = MaterialTheme.typography.bodyLarge); Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; Switch(checked, null, enabled = enabled) } }
 @Composable fun LinkRow(title: String, detail: String, icon: ImageVector = Icons.Outlined.ChevronRight, action: () -> Unit) { Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = action).padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(title, style = MaterialTheme.typography.bodyLarge); if (detail.isNotBlank()) Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) } }
 @Composable fun Input(label: String, value: String, onChange: (String) -> Unit, numeric: Boolean = false, supporting: String? = null) { OutlinedTextField(value, onChange, Modifier.fillMaxWidth(), label = { Text(label) }, shape = RoundedCornerShape(16.dp), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text), supportingText = supporting?.let { { Text(it) } }) }
 @Composable fun ChoiceRow(options: List<String>, selected: String, choose: (String) -> Unit) { Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { options.forEach { FilterChip(selected == it, { choose(it) }, label = { Text(it) }) } } }
@@ -177,7 +180,7 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
             Heading("A little less scroll.\nA little more you.", "Give the next moment your full attention.")
             OrbitArt(Modifier.fillMaxWidth().height(190.dp))
             Primary("Start focus", icon = Icons.Outlined.PlayArrow) { start(s.profiles.firstOrNull() ?: FocusState.defaults().first()) }
-            if (!Repository.protectionGranted() || !s.disclosure) LinkRow("Set up protection", "Enable blocking when you’re ready.", Icons.Outlined.Shield) { nav("settings") }
+            if (!Repository.protectionReady()) LinkRow("Set up protection", "Enable blocking when you’re ready.", Icons.Outlined.Shield) { nav("settings") }
             else Caption("PROTECTION CONNECTED · RULES APPLY DURING FOCUS")
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Find your rhythm", style = MaterialTheme.typography.titleMedium)
@@ -203,9 +206,9 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
                     Caption(if (session.onBreak(now)) "BREAK TIME" else if (session.end == 0L) "TIME IN FOCUS" else "REMAINING")
                 }
             }
-            SoftCard { Caption(session.profile.name.uppercase()); Text(if (Repository.protectionGranted() && s.disclosure) "${s.apps.count { it.enabled }} ${if (s.apps.count { it.enabled } == 1) "selected app" else "selected apps"} · ${s.domains.size} ${if (s.domains.size == 1) "website" else "websites"}" else "Timer only · protection is off", style = MaterialTheme.typography.bodyLarge); Text(if (session.onBreak(now)) "Session restrictions are paused. Daily limits and schedules still apply." else "${session.profile.mode.name.lowercase().replaceFirstChar { it.uppercase() }} mode · your essential apps remain available.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            OutlinedButton(stop, Modifier.fillMaxWidth().heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp)) { Text("End session") }
-            LinkRow("Protection health", if (Repository.protectionGranted()) "Accessibility connected" else "Blocking is unavailable", Icons.Outlined.Shield) { nav("settings") }
+            SoftCard { Caption(session.profile.name.uppercase()); Text(if (s.managedLockdown && ManagedProtection.verifiedSuspendedCount() > 0) "${ManagedProtection.verifiedSuspendedCount()} apps locked by Android" else if (!session.timerOnly && Repository.protectionReady()) "${s.apps.count { it.enabled }} ${if (s.apps.count { it.enabled } == 1) "selected app" else "selected apps"} · ${s.domains.size} ${if (s.domains.size == 1) "website" else "websites"}" else if (session.timerOnly) "Timer only · protection is off" else "Blocking interrupted · check protection health", style = MaterialTheme.typography.bodyLarge); Text(if (session.onBreak(now)) "Session restrictions are paused. Daily limits and schedules still apply." else "${session.profile.mode.label} mode · your essential apps remain available.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            OutlinedButton(stop, Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = session.profile.mode != FocusMode.STRICT, shape = RoundedCornerShape(18.dp)) { Text(if (session.profile.mode == FocusMode.STRICT) "Locked until the timer ends" else "End session") }
+            LinkRow("Protection health", if (Repository.protectionReady()) "Service connected and responsive" else "Blocking is unavailable", Icons.Outlined.Shield) { nav("settings") }
         }
         val next = s.schedules.mapNotNull { schedule -> schedule.nextStart(now)?.let { it to schedule } }.minByOrNull { it.first }
         val active = s.schedules.filter { it.active(now) }
@@ -221,6 +224,7 @@ fun minuteLabel(minute: Int) = "%02d:%02d".format(minute / 60, minute % 60)
 }
 
 @Composable fun Rules(s: FocusState, tab: String, selectTab: (String) -> Unit, nav: (String) -> Unit, editApp: (AppRule) -> Unit, editSchedule: (Schedule?) -> Unit) {
+    if (RulesEngine.strictActive(s, System.currentTimeMillis())) { LockedRules(s); return }
     var domain by rememberSaveable { mutableStateOf("") }
     var domainError by remember { mutableStateOf(false) }
     Page {
@@ -344,28 +348,34 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     var rounds by rememberSaveable { mutableStateOf(initial.rounds.toString()) }
     var scopedApps by remember { mutableStateOf(initial.apps) }
     var scopedDomains by remember { mutableStateOf(initial.domains) }
+    var allApps by rememberSaveable { mutableStateOf(initial.useAllApps) }
+    var allDomains by rememberSaveable { mutableStateOf(initial.useAllDomains) }
+    var strictAcknowledged by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(mode) { if (mode == "STRICT") pomo = false; strictAcknowledged = false }
     val duplicateName = editing && s.profiles.any { it.id != profileId && it.name.equals(name.trim(), true) }
-    val valid = name.isNotBlank() && !duplicateName && minutes.toIntOrNull()?.let { it in 0..1440 } == true && (!pomo || (work.toIntOrNull()?.let { it in 1..240 } == true && pause.toIntOrNull()?.let { it in 1..60 } == true && rounds.toIntOrNull()?.let { it in 1..12 } == true))
-    fun configured() = Profile(profileId, name.trim(), minutes.toIntOrNull() ?: 50, intention.trim(), FocusMode.valueOf(mode), pomo, work.toIntOrNull() ?: 25, pause.toIntOrNull() ?: 5, rounds.toIntOrNull() ?: 4, scopedApps, scopedDomains)
+    val valid = name.isNotBlank() && !duplicateName && minutes.toIntOrNull()?.let { it in (if (mode == "STRICT") 1 else 0)..1440 } == true && (!pomo || (work.toIntOrNull()?.let { it in 1..240 } == true && pause.toIntOrNull()?.let { it in 1..60 } == true && rounds.toIntOrNull()?.let { it in 1..12 } == true))
+    fun configured() = Profile(profileId, name.trim(), minutes.toIntOrNull() ?: 50, intention.trim(), FocusMode.valueOf(mode), pomo, work.toIntOrNull() ?: 25, pause.toIntOrNull() ?: 5, rounds.toIntOrNull() ?: 4, scopedApps, scopedDomains, allApps, allDomains)
     Page {
         Heading(if (editing) "Build your rhythm." else "What deserves\nyour attention?", if (editing) "Save a profile for sessions and schedules." else "Choose a little space for yourself.")
-        if (!editing) ChoiceRow(s.profiles.map { it.name }, name) { choice -> s.profiles.find { it.name == choice }?.let { p -> profileId = p.id; name = p.name; minutes = p.minutes.toString(); intention = p.intention; mode = p.mode.name; pomo = p.pomodoro; work = p.workMinutes.toString(); pause = p.breakMinutes.toString(); rounds = p.rounds.toString(); scopedApps = p.apps; scopedDomains = p.domains } }
+        if (!editing) ChoiceRow(s.profiles.map { it.name }, name) { choice -> s.profiles.find { it.name == choice }?.let { p -> profileId = p.id; name = p.name; minutes = p.minutes.toString(); intention = p.intention; mode = p.mode.name; pomo = p.pomodoro; work = p.workMinutes.toString(); pause = p.breakMinutes.toString(); rounds = p.rounds.toString(); scopedApps = p.apps; scopedDomains = p.domains; allApps = p.useAllApps; allDomains = p.useAllDomains } }
         if (editing) Input("Profile name", name, { name = it.take(40) })
         Input("Your intention", intention, { intention = it.take(120) })
         if (!pomo) { ChoiceRow(listOf("25", "50", "90", "0"), minutes) { minutes = it }; Input("Duration (minutes)", minutes, { minutes = it.filter(Char::isDigit) }, true, "0 for an open-ended session. Up to 1440 minutes.") }
-        ToggleRow("Pomodoro rhythm", "Alternate focus and restorative breaks.", pomo) { pomo = it }
+        if (mode != "STRICT") ToggleRow("Pomodoro rhythm", "Alternate focus and restorative breaks.", pomo) { pomo = it }
         if (pomo) { Input("Focus minutes", work, { work = it.filter(Char::isDigit) }, true, "1–240 minutes"); Input("Break minutes", pause, { pause = it.filter(Char::isDigit) }, true, "1–60 minutes"); Input("Rounds", rounds, { rounds = it.filter(Char::isDigit) }, true, "1–12 rounds · no break after the last round") }
         Text("How firm should the boundary be?", style = MaterialTheme.typography.titleMedium)
-        ChoiceRow(listOf("GENTLE", "STANDARD", "STRICT"), mode) { mode = it }
-        SoftCard { Text(when (mode) { "GENTLE" -> "A pause before you continue. You can take a short intentional visit."; "STRICT" -> "A 30-second pause and a reason before overriding or ending early. Emergency and system access stay available. Android settings can always disable protection."; else -> "Blocks distractions. A short wait and temporary access are available when needed." }, style = MaterialTheme.typography.bodyMedium) }
+        ChoiceRow(FocusMode.entries.map { it.label }, FocusMode.valueOf(mode).label) { label -> mode = FocusMode.entries.first { it.label == label }.name }
+        SoftCard { Text(when (mode) { "GENTLE" -> "A small popup asks you to return to focus or take an intentional visit."; "STRICT" -> "No temporary visits, early ending, breaks, or rule changes until the timer ends. Phone and emergency access stay available. On an ordinary phone, Android settings can still stop protection; managed devices can add OS enforcement."; else -> "A fullscreen boundary, a 30-second wait and a written reason. Visits last one minute, with at least a 10-minute cooldown. Ending early also requires a deliberate pause." }, style = MaterialTheme.typography.bodyMedium) }
+        if (mode == "STRICT" && !editing) ToggleRow("Lock until the timer ends", "I understand that Focus has no early end or override in Strict mode.", strictAcknowledged) { strictAcknowledged = it }
         Text("What gets paused", style = MaterialTheme.typography.titleMedium)
-        Caption("NO SPECIFIC SELECTION = ALL ENABLED GLOBAL RULES")
+        ToggleRow("Use all selected app rules", "Or choose a specific subset below.", allApps) { allApps = it }
         if (s.apps.isEmpty() && s.domains.isEmpty() && s.feeds.isEmpty()) Text("You haven’t selected distractions yet. Add them in Rules to make blocking useful.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        s.apps.filter { it.enabled }.forEach { rule -> ToggleRow(rule.label, if (scopedApps.isEmpty()) "Uses all enabled apps" else "Include in this profile", rule.packageName in scopedApps) { enabled -> scopedApps = if (enabled) scopedApps + rule.packageName else scopedApps - rule.packageName } }
-        s.domains.forEach { host -> ToggleRow(host, "Website rule", host in scopedDomains) { enabled -> scopedDomains = if (enabled) scopedDomains + host else scopedDomains - host } }
+        if (!allApps) s.apps.filter { it.enabled }.forEach { rule -> ToggleRow(rule.label, "Include in this profile", rule.packageName in scopedApps) { enabled -> scopedApps = if (enabled) scopedApps + rule.packageName else scopedApps - rule.packageName } }
+        ToggleRow("Use all website rules", "An empty custom subset means no websites.", allDomains) { allDomains = it }
+        if (!allDomains) s.domains.forEach { host -> ToggleRow(host, "Website rule", host in scopedDomains) { enabled -> scopedDomains = if (enabled) scopedDomains + host else scopedDomains - host } }
         if (s.feeds.isNotEmpty()) Text("Selected feed rules apply to every focus profile.", style = MaterialTheme.typography.bodyMedium)
         if (!valid) Text(if (duplicateName) "Choose a unique profile name." else "Check the name and minute ranges above.", color = MaterialTheme.colorScheme.error)
-        Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
+        Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null) && (editing || mode != "STRICT" || strictAcknowledged), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
         if (!editing && s.session != null) Text("End your current session before starting another.", color = MaterialTheme.colorScheme.error)
     }
 }
@@ -407,8 +417,8 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         Input("Default focus intention", s.intention, { value -> Repository.update { it.copy(intention = value.take(120)) } })
         Input("Daily focus goal (minutes)", goal, { goal = it.filter(Char::isDigit); goal.toIntOrNull()?.takeIf { it in 1..1440 }?.let { minutes -> Repository.update { it.copy(goalMinutes = minutes) } } }, true, "Choose 1–1440 minutes. This is a personal guide, not a score.")
         Text("Your rhythms", style = MaterialTheme.typography.titleMedium)
-        s.profiles.forEach { p -> LinkRow(p.name, "${if (p.pomodoro) "${p.workMinutes}/${p.breakMinutes} rhythm" else "${p.minutes} minutes"} · ${p.mode.name.lowercase()}", Icons.Outlined.Edit) { edit(p) } }
-        Primary("Create focus profile", icon = Icons.Outlined.Add, action = add)
+        s.profiles.forEach { p -> LinkRow(p.name, "${if (p.pomodoro) "${p.workMinutes}/${p.breakMinutes} rhythm" else "${p.minutes} minutes"} · ${p.mode.label}", Icons.Outlined.Edit) { if (!RulesEngine.strictActive(s, System.currentTimeMillis())) edit(p) } }
+        Primary("Create focus profile", enabled = !RulesEngine.strictActive(s, System.currentTimeMillis()), icon = Icons.Outlined.Add, action = add)
         Text("Gradual reduction plans live with each app’s daily allowance in Rules.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -418,7 +428,8 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     val scope = rememberCoroutineScope()
     var usage by remember { mutableStateOf(Repository.usageGranted()) }
     var accessibility by remember { mutableStateOf(Repository.protectionGranted()) }
-    var connected by remember { mutableStateOf(FocusAccessibilityService.instance != null) }
+    var connected by remember { mutableStateOf(ProtectionRuntime.live()) }
+    var batteryExempt by remember { mutableStateOf(false) }
     var consent by remember { mutableStateOf(false) }
     var delete by remember { mutableStateOf(false) }
     var exportStatus by remember { mutableStateOf("") }
@@ -428,13 +439,14 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             exportStatus = withContext(Dispatchers.IO) { runCatching { ctx.contentResolver.openOutputStream(uri)?.use { it.write(Repository.export().toByteArray()) } ?: error("Could not open the destination") }.fold({ "Your data was exported." }, { "Export failed. Choose a different destination." }) }
         }
     }
-    LaunchedEffect(Unit) { while (true) { usage = Repository.usageGranted(); accessibility = Repository.protectionGranted(); connected = FocusAccessibilityService.instance != null; delay(1000) } }
+    LaunchedEffect(Unit) { while (true) { usage = Repository.usageGranted(); accessibility = Repository.protectionGranted(); connected = ProtectionRuntime.live(); batteryExempt = ctx.getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName); delay(1000) } }
     Page {
         Heading("Keep it yours.", "Permissions, privacy, and the little details.")
         SoftCard {
             Caption("PROTECTION HEALTH")
             Text(if (accessibility && connected && s.disclosure) "Ready to protect your focus." else "Blocking needs setup.", style = MaterialTheme.typography.titleMedium)
             Text(if (accessibility && !connected) "Android enabled the service, but it has not connected. Try turning Focus off and on in Accessibility settings." else "App and visit limits need protection. Daily allowances and usage charts also need usage access.", style = MaterialTheme.typography.bodyMedium)
+            if (ProtectionRuntime.lastError.isNotBlank()) Text(ProtectionRuntime.lastError, color = MaterialTheme.colorScheme.error)
             LinkRow("Focus protection", if (accessibility && s.disclosure) "Enabled · service ${if (connected) "connected" else "disconnected"}" else "Off · accessibility access", Icons.Outlined.Shield) { if (s.disclosure) Repository.openAccessibility() else consent = true }
             LinkRow("Usage access", if (usage) "Enabled · daily allowances available" else "Off · needed for daily usage", Icons.Outlined.Timer) { Repository.openUsage() }
             LinkRow("Notification permission", "Session status and optional reminders", Icons.Outlined.NotificationsNone) {
@@ -442,8 +454,18 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
                 else ctx.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName))
             }
             if (!s.disclosure) TextButton({ consent = true }) { Text("Read protection disclosure") }
-            else TextButton({ Repository.update { it.copy(disclosure = false) }; FocusAccessibilityService.instance?.clearOverlay(); FocusNotifications.session(ctx) }) { Text("Withdraw protection consent") }
+            else TextButton({ if (Repository.update { it.copy(disclosure = false) }) { FocusAccessibilityService.instance?.clearOverlay(); FocusNotifications.session(ctx) } }, enabled = !RulesEngine.strictActive(s, System.currentTimeMillis())) { Text("Withdraw protection consent") }
+            LinkRow("Background activity", if (batteryExempt) "Android battery optimization is excluded" else "Check battery restrictions for reliable blocking", Icons.Outlined.BatteryChargingFull) { Repository.openBatterySettings() }
+            LinkRow("App information", "Background access, restricted settings, and permissions") { Repository.openAppInfo() }
+            if (android.os.Build.MANUFACTURER.equals("OnePlus", true) || android.os.Build.MANUFACTURER.equals("OPPO", true)) Text("On OxygenOS, open Focus’s App Info → Battery usage / App battery management. Allow background activity and remove battery optimization. Menu names vary by Android version. Re-enable Focus protection after changing these options.", style = MaterialTheme.typography.bodyMedium)
+            if (ProtectionRuntime.observedPackage.isNotBlank()) Caption("LAST APP DETECTED · ${runCatching { ctx.packageManager.getApplicationLabel(ctx.packageManager.getApplicationInfo(ProtectionRuntime.observedPackage, 0)).toString() }.getOrDefault(ProtectionRuntime.observedPackage)}")
+            Primary("Test selected app for 1 minute", enabled = connected && s.disclosure && s.session == null && s.apps.any { it.enabled && it.packageName !in s.allowlist }, icon = Icons.Outlined.Shield) {
+                val app = s.apps.first { it.enabled && it.packageName !in s.allowlist }
+                val test = Profile("diagnostic", "Protection test", 1, "Checking that this app is locked.", FocusMode.STRICT)
+                if (Repository.start(test, 1, test.intention)) { nav("home"); ctx.packageManager.getLaunchIntentForPackage(app.packageName)?.let { ctx.startActivity(it) } }
+            }
         }
+        LinkRow("Uninstall & managed protection", "Optional uninstall resistance and OS-enforced Strict rules", Icons.Outlined.Lock) { nav("managed") }
         Text("Appearance", style = MaterialTheme.typography.titleMedium)
         ChoiceRow(listOf("System", "Light", "Dark"), s.theme) { value -> Repository.update { it.copy(theme = value) } }
         ToggleRow("Reduce motion", "Keep transitions quiet and immediate.", s.reduceMotion) { value -> Repository.update { it.copy(reduceMotion = value) } }
@@ -451,7 +473,8 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         ToggleRow("Completion & routine reminders", "Optional heads-ups, without nagging.", s.reminders) { value -> Repository.update { it.copy(reminders = value) }; FocusNotifications.plan(ctx) }
         ToggleRow("Hide insights", "Keep your numbers out of view.", s.hideInsights) { value -> Repository.update { it.copy(hideInsights = value) } }
         Text("Intentional visits", style = MaterialTheme.typography.titleMedium)
-        ToggleRow("Ask for an intention", "A reason before a temporary visit. Strict mode always asks.", s.askReason) { value -> Repository.update { it.copy(askReason = value) } }
+        ToggleRow("Ask for an intention", "Normal mode preference. Resistant always asks; Strict has no visits.", s.askReason) { value -> Repository.update { it.copy(askReason = value) } }
+        Text("Resistant visits require a 30-second pause and reason, last one minute, and have at least a 10-minute cooldown. Strict offers no visit.", style = MaterialTheme.typography.bodyMedium)
         Caption("TEMPORARY ACCESS · MINUTES")
         ChoiceRow(listOf("1", "5", "10"), s.overrideMinutes.toString()) { value -> Repository.update { it.copy(overrideMinutes = value.toInt()) } }
         Caption("COOLDOWN AFTER A VISIT · MINUTES")
@@ -463,12 +486,12 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         LinkRow("Delete my data", "Stops the session and clears Focus’s local records", Icons.Outlined.Delete) { delete = true }
         Text("Emergency access", style = MaterialTheme.typography.titleMedium)
         Text("Phone, your launcher, system settings, and Focus are never blocked. You can disable the service in Android Accessibility settings. Strict mode adds friction, but cannot prevent you from changing system settings or uninstalling the app.", style = MaterialTheme.typography.bodyMedium)
-        Caption("FOCUS 1.0.0 · ANDROID 9+")
+        Caption("FOCUS 1.1.0 · ANDROID 9+")
     }
     if (consent) AlertDialog(onDismissRequest = { consent = false }, title = { Text("How protection works", fontFamily = Mono) }, text = { Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Focus uses Android Accessibility access to observe which app is open, check selected feed controls and supported browser address fields, and display a blocking screen for rules you choose.")
         Text("This access can expose on-screen text. Focus checks it only in memory on your device. It does not store screen content, send it anywhere, or use it for advertising.")
-        Text("Access is optional. You can withdraw consent or turn protection off in Android settings at any time. Without access, focus timers still work.")
+        Text("Access is optional. You can withdraw consent inside Focus when Strict is inactive, or turn accessibility protection off in Android settings at any time. Without access, focus timers still work. Managed whole-app suspension is controlled separately by Android device-owner policies.")
     } }, confirmButton = { TextButton({ Repository.update { it.copy(disclosure = true) }; consent = false; Repository.openAccessibility() }) { Text("Agree & open settings") } }, dismissButton = { TextButton({ consent = false }) { Text("Not now") } })
     if (delete) AlertDialog(onDismissRequest = { delete = false }, title = { Text("Clear your space?", fontFamily = Mono) }, text = { Text("This deletes Focus’s rules, profiles, sessions, and override history and ends any active session. It does not delete Android’s system usage history. This cannot be undone.") }, confirmButton = { TextButton({ Repository.deleteAll(); delete = false; nav("home") }) { Text("Delete local data", color = MaterialTheme.colorScheme.error) } }, dismissButton = { TextButton({ delete = false }) { Text("Keep data") } })
 }
@@ -540,12 +563,55 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
 }
 
 @Composable fun EndSessionDialog(mode: FocusMode, dismiss: () -> Unit, stop: () -> Unit) {
-    var remaining by remember { mutableIntStateOf(if (mode == FocusMode.STRICT) 30 else 0) }
+    if (mode == FocusMode.STRICT) { AlertDialog(onDismissRequest = dismiss, title = { Text("Strict stays locked", fontFamily = Mono) }, text = { Text("The timer must finish. There is no early end in Focus. Phone and emergency access stay available.") }, confirmButton = { TextButton(dismiss) { Text("Keep focusing") } }); return }
+    var remaining by remember { mutableIntStateOf(mode.waitSeconds) }
     var reason by remember { mutableStateOf("") }
     LaunchedEffect(Unit) { while (remaining > 0) { delay(1000); remaining-- } }
     AlertDialog(onDismissRequest = dismiss, title = { Text("A conscious pause.", fontFamily = Mono) }, text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(if (mode == FocusMode.STRICT) "Strict mode asks for a short pause and an intention before ending early. Essential apps remain available." else "End this session now? The time you spent focusing will still be recorded.")
-        if (mode == FocusMode.STRICT) Input("Why are you ending early?", reason, { reason = it.take(120) })
+        Text(if (mode == FocusMode.STANDARD) "Resistant mode asks for a pause and a reason before ending early." else "End this session now? The time you spent focusing will still be recorded.")
+        if (mode == FocusMode.STANDARD) Input("Why are you ending early?", reason, { reason = it.take(120) })
         if (remaining > 0) Text("Ready in ${remaining}s", fontFamily = Mono)
-    } }, confirmButton = { TextButton(stop, enabled = remaining == 0 && (mode != FocusMode.STRICT || reason.isNotBlank())) { Text("End session") } }, dismissButton = { TextButton(dismiss) { Text("Keep focusing") } })
+    } }, confirmButton = { TextButton(stop, enabled = remaining == 0 && (mode != FocusMode.STANDARD || reason.isNotBlank())) { Text("End session") } }, dismissButton = { TextButton(dismiss) { Text("Keep focusing") } })
+}
+
+@Composable fun LockedRules(s: FocusState) {
+    Page { Heading("Rules are locked.", "Strict keeps this boundary in place until its timer or schedule ends.")
+        s.session?.let { Text("${it.profile.name} · ${if (it.end > 0) clock(it.end - System.currentTimeMillis()) else "schedule active"}", fontFamily = Mono) }
+        s.apps.filter { it.enabled }.forEach { Text(it.label) }
+        Text("You can still view insights and change appearance. Phone and emergency access remain available.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable fun ManagedScreen(s: FocusState) {
+    val ctx = LocalContext.current
+    var owner by remember { mutableStateOf(ManagedProtection.isOwner(ctx)) }
+    var admin by remember { mutableStateOf(ManagedProtection.adminEnabled(ctx)) }
+    var protected by remember { mutableStateOf(ManagedProtection.uninstallBlocked(ctx)) }
+    var exact by remember { mutableStateOf(ManagedProtection.preciseEnding(ctx)) }
+    val locked = RulesEngine.strictActive(s, System.currentTimeMillis())
+    LaunchedEffect(Unit) { while (true) { owner = ManagedProtection.isOwner(ctx); admin = ManagedProtection.adminEnabled(ctx); protected = ManagedProtection.uninstallBlocked(ctx); exact = ManagedProtection.preciseEnding(ctx); delay(1000) } }
+    Page {
+        Heading("Keep the boundary.", "Choose the protection your Android setup supports.")
+        SoftCard { Caption(if (owner) "MANAGED DEVICE" else "ORDINARY ANDROID INSTALLATION")
+            Text(if (owner) "Android device-owner management is active." else "Android settings still control this app.", style = MaterialTheme.typography.titleMedium)
+            Text("Focus never hides its administrator or prevents emergency access. Absolute protection against a device reset, root access, or administrator tools cannot be promised.", style = MaterialTheme.typography.bodyMedium)
+        }
+        if (!owner) {
+            Text("Uninstall resistance", style = MaterialTheme.typography.titleMedium)
+            Text("An optional Android administrator makes you deactivate it in system settings before uninstalling Focus. This adds resistance; it does not make uninstall impossible. No wipe, password, camera, or screen-lock policy is requested.")
+            if (!admin) Primary("Enable uninstall resistance", enabled = !locked, icon = Icons.Outlined.Lock) { ManagedProtection.requestAdmin(ctx) }
+            else { Caption("ADMINISTRATOR ACTIVE · DEACTIVATE BEFORE UNINSTALLING"); Primary("Disable uninstall resistance", enabled = !locked, icon = Icons.Outlined.LockOpen) { ManagedProtection.removeAdmin(ctx) } }
+        } else {
+            ToggleRow("Managed uninstall protection", if (protected) "Verified: Android blocks Focus removal." else "Apply Android's uninstall policy for Focus.", s.uninstallProtection, enabled = !locked) { enabled -> if (Repository.update { it.copy(uninstallProtection = enabled) }) ManagedProtection.sync(ctx) }
+            ToggleRow("OS-enforced Strict app blocking", "Suspend selected whole apps and prevent changing the device clock until Strict ends. Focus and essential apps stay available.", s.managedLockdown, enabled = !locked) { enabled ->
+                if (!enabled || exact) { if (Repository.update { it.copy(managedLockdown = enabled) }) { ManagedProtection.sync(ctx); FocusNotifications.plan(ctx) } }
+                else ManagedProtection.openPreciseEnding(ctx)
+            }
+            LinkRow("Reliable session ending", if (exact) "Exact deadline alarm available" else "Enable before managed Strict can start") { ManagedProtection.openPreciseEnding(ctx) }
+            Text("Websites and feeds need their browser or social app selected as a whole-app rule for OS enforcement. Exact ending can be delayed across a reboot until Android unlocks app storage; opening Focus reconciles and releases expired rules.", style = MaterialTheme.typography.bodyMedium)
+        }
+        Text("Stronger managed protection", style = MaterialTheme.typography.titleMedium)
+        Text("Android reserves OS uninstall blocking and app suspension for a device-owner administrator. A normal install on your OnePlus cannot grant itself that role. It requires a dedicated-device or enterprise setup, typically before personal accounts are configured. Setup guidance is included in the project's managed-device guide.")
+        if (locked) Text("Protection preferences stay locked until Strict ends.", color = MaterialTheme.colorScheme.primary)
+    }
 }

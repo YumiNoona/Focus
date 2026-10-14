@@ -59,7 +59,9 @@ class EngineTest {
         assertNull(RulesEngine.restriction(state, "social", 999, 60_000))
         assertNotNull(RulesEngine.restriction(state, "social", 1000, 60_000))
         assertFalse(RulesEngine.canOverride(state, "social", 1000))
-        assertTrue(RulesEngine.canOverride(state, "social", 301_000))
+        assertFalse(RulesEngine.canOverride(state, "social", 301_000))
+        assertTrue(RulesEngine.canOverride(state, "social", 601_000))
+        assertTrue(RulesEngine.canOverride(state, "social", 301_000, FocusMode.GENTLE))
     }
     @Test fun reductionStopsAtTargetAndCanPause() {
         val start = at("2024-01-01", "00:00")
@@ -73,5 +75,42 @@ class EngineTest {
         val state = FocusState(apps = listOf(AppRule("a", "A"), AppRule("b", "B")), session = Session(profile = p, start = 0, end = 1000))
         assertNotNull(RulesEngine.restriction(state, "a", 100))
         assertNull(RulesEngine.restriction(state, "b", 100))
+    }
+    @Test fun strictIgnoresAnExistingVisitAndNeverOffersAnother() {
+        val profile = Profile("strict", "Strict", 10, "Work", FocusMode.STRICT)
+        val state = FocusState(apps = listOf(AppRule("social", "Social")), session = Session(profile = profile, start = 0, end = 1000), overrides = listOf(OverrideRecord("social", 0, 900, "earlier visit")))
+        assertEquals(FocusMode.STRICT, RulesEngine.restriction(state, "social", 100)?.mode)
+        assertFalse(RulesEngine.canOverride(state, "social", 100, FocusMode.STRICT))
+        assertTrue(RulesEngine.strictActive(state, 999))
+        assertFalse(RulesEngine.strictActive(state, 1000))
+    }
+    @Test fun explicitEmptySubsetDoesNotSilentlyBecomeAllApps() {
+        val profile = Profile("p", "Custom", 10, "Work", useAllApps = false, useAllDomains = false)
+        val state = FocusState(apps = listOf(AppRule("social", "Social")), domains = setOf("example.com"), session = Session(profile = profile, start = 0, end = 1000))
+        assertEquals(0, RulesEngine.selectedRuleCount(state, profile))
+        assertNull(RulesEngine.restriction(state, "social", 100))
+        assertNull(RulesEngine.restriction(state, "browser", 100, website = "example.com"))
+    }
+    @Test fun timerOnlyNeverActivatesAppBlocking() {
+        val profile = FocusState.defaults().first()
+        val state = FocusState(apps = listOf(AppRule("social", "Social")), session = Session(profile = profile, start = 0, end = 1000, timerOnly = true))
+        assertNull(RulesEngine.restriction(state, "social", 100))
+    }
+    @Test fun keyboardAndOverlayWindowsDoNotReplaceTheForegroundApp() {
+        val windows = listOf(AppWindow("social", 1), AppWindow("keyboard", 10, true, false), AppWindow("focus", 20, true, false))
+        assertEquals("social", ForegroundResolver.choose(windows, "focus"))
+        assertEquals("browser", ForegroundResolver.choose(listOf(AppWindow("browser", 2, true)), "social"))
+        assertEquals("social", ForegroundResolver.choose(emptyList(), "social"))
+    }
+    @Test fun schedulePlansItsEndRatherThanOnlyTheNextStart() {
+        val schedule = Schedule(name = "Night", profileId = "sleep", days = setOf(1), startMinute = 1320, endMinute = 420)
+        assertEquals(at("2024-01-02", "07:00"), schedule.nextBoundary(at("2024-01-02", "06:00"), zone))
+        assertEquals(at("2024-01-08", "22:00"), schedule.nextBoundary(at("2024-01-02", "07:00"), zone))
+    }
+    @Test fun strictDoesNotEnterPomodoroBreaks() {
+        val profile = Profile("s", "Strict", 55, "Work", FocusMode.STRICT, pomodoro = true)
+        val session = Session(profile = profile, start = 0, end = 3_300_000)
+        assertFalse(session.onBreak(1_500_000))
+        assertEquals(1_800_000L, session.phaseRemaining(1_500_000))
     }
 }

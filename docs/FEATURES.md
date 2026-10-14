@@ -1,10 +1,10 @@
 # Focus for Android
 
-An Android focus app built in Kotlin and Jetpack Compose. Version 1.0.0 is the first public release for Android 9 and newer.
+An Android focus app built in Kotlin and Jetpack Compose. Version 1.1.0 strengthens blocking and introduces three resistance levels for Android 9 and newer.
 
 ## Try it
 
-Install the supplied `Focus-v1.0.0.apk` on an Android phone. On first launch:
+Install the supplied `Focus-v1.1.0.apk` on an Android phone. On first launch:
 
 1. Choose **Make room**.
 2. Read the focus-protection disclosure. If you agree, enable **Focus protection** in Android Accessibility settings.
@@ -26,9 +26,9 @@ Type sizes are 44, 28, 24, 20, 18, 16, 14, and 12 sp. Spacing follows a 4 dp gri
 
 | Capability | Implementation |
 | --- | --- |
-| Instant / open-ended sessions | Start, view remaining or elapsed time, end, and recover persisted sessions |
-| Focus profiles | Four presets, custom profiles, editable intentions, modes, app and website scopes |
-| Pomodoro | Custom focus length, break length, and rounds; no final break |
+| Instant / open-ended sessions | Start, view time, and recover persisted sessions; Strict requires a finite deadline |
+| Focus profiles | Four presets, custom profiles, explicit all/custom app and website scopes; empty custom scope stays empty |
+| Pomodoro | Custom work/break/round settings in Normal and Resistant; no final break; Strict remains continuous |
 | App blocking | User-consented accessibility overlay for selected foreground apps |
 | Daily budgets | Android usage events; requires Usage Access and focus protection |
 | Per-visit limits | Foreground visit duration while screen is interactive |
@@ -37,15 +37,17 @@ Type sizes are 44, 28, 24, 20, 18, 16, 14, and 12 sp. Spacing follows a 4 dp gri
 | Feed rules | Opt-in experimental YouTube Shorts, Instagram Reels, Facebook Reels detection |
 | Recurring routines | Weekday/weekend/custom days, overnight schedules, overlap warning |
 | Conflict resolution | Applicable restrictions combine; strictest applicable mode wins |
-| Interruptions | Gentle pause, standard 10-second wait, strict 30-second wait |
-| Intentional visits | Optional reason, configurable duration, cooldown, local history |
-| Ending strict sessions | 30-second pause and reason required within Focus |
+| Interruptions | Normal compact popup; Resistant full screen and 30-second wait; Strict full screen with no visit option |
+| Intentional visits | Normal configurable visit/reason; Resistant mandatory reason, one-minute visit and minimum ten-minute cooldown; Strict never permits visits |
+| Ending sessions | Normal confirmation; Resistant deliberate pause and reason; Strict no early ending even through backend actions |
+| Strict integrity | Existing visits ignored; no rule weakening, consent withdrawal, data deletion, timer-only, breaks, or open-ended timer |
+| Optional administration | Administrator deactivation step before uninstall; actual uninstall blocking/app suspension only with provisioned device owner |
 | Essential access | Focus, phone, launcher, emergency and system settings are exempt |
 | Insights | Daily logged focus, completed sessions, personal goal, selected-app usage, seven-day chart, prior-week comparison when data exists, override count, recent sessions |
 | Quick Settings | Starts first favorite profile with protection enabled; otherwise opens Focus; active sessions open for review |
 | Home-screen widget | Focus status and Start/View session action |
 | Notifications | Session status, View session / Manage protection actions, optional completion and routine reminders |
-| Permission recovery | Permission health display, service connection status, system-settings links |
+| Permission recovery | Live heartbeat, last observed app, failed overlay feedback, battery/app-info links, one-minute selected-app test |
 | Profile | Local name, default intention, goal, custom focus profiles |
 | Privacy | Local storage, no accounts/ads/analytics/network permission, export, deletion, consent withdrawal |
 | Appearance | System/light/dark theme, haptics, reduced-motion preference, hidden insights |
@@ -58,13 +60,13 @@ Website blocking is **not a VPN, DNS filter, or system-wide firewall**. It inspe
 
 Selective feed detection depends on third-party view identifiers or selected accessibility controls. It is **experimental and unverified on current Instagram/Facebook/YouTube production builds**. Messaging remains accessible when selective rules are the only rules enabled. Whole-app blocking takes precedence if also selected. Unsupported feeds such as TikTok use whole-app rules.
 
-This is behavioral blocking, not device administration or kiosk mode. Android’s system settings can disable the service, the app can be uninstalled, and OEM background restrictions can stop protection. Strict mode adds deliberate friction without preventing emergency or system access.
+On an ordinary phone, Android settings can disable accessibility and deactivate the optional administrator. Strict removes in-app escape paths but retains home, emergency, and system access. Separately provisioned device-owner management adds opt-in OS uninstall blocking and selected whole-app suspension. See [managed setup and recovery](MANAGED_DEVICE.md). Focus does not implement kiosk mode.
 
-Schedules evaluate local wall-clock time and the current timezone while the accessibility service is connected. Saved session deadlines survive normal process restarts and device reboots, but a user changing the device clock can change timing. Notification alarms are inexact and may be delayed by Doze or battery restrictions. No exact-alarm permission or permanent foreground monitoring service is used.
+Schedules evaluate local time and timezone; both start and end boundaries are planned. Saved deadlines survive normal process restarts and reboots, but a user changing the clock can change ordinary-phone timing. Ordinary reminders use inexact alarms. Managed Strict requires precise-ending permission, temporarily restricts clock configuration, journals suspended targets, and releases them at expiry independently of accessibility. Reboot recovery can wait until first unlock. No permanent foreground monitoring service is used.
 
 App-specific daily usage is derived from Android foreground activity events, not a claimed measurement of attention. Split-screen use, OS event availability, and time spent behind a blocking overlay can affect those values. Focus totals record session time excluding Pomodoro breaks; cross-midnight daily totals are apportioned estimates. Ongoing sessions are not included in “logged sessions” until ended. No invented “time saved” metric or sample usage is displayed. Insight comparison is between a rolling seven-day period including the unfinished current day and the preceding seven days, and is shown only when prior usage exists.
 
-History and override records are capped at the latest 1,000 each. Export contains names, intentions, and override reasons, so choose an appropriate destination. Android’s own usage history is not deleted by Focus’s deletion action.
+History and override records are capped at the latest 1,000 each. Export contains names, intentions, and override reasons. Local deletion is unavailable during Strict. Android's own usage history is not deleted by Focus.
 
 ## Screen map
 
@@ -79,6 +81,7 @@ Rules → Schedules → Routine editor → Overlap explanation
 Insights → Daily summary / Usage chart / Recent sessions
 Profile → Name / Intention / Goal / Focus profile editor
 Settings → Permissions / Appearance / Visits / Privacy / Export / Delete
+Settings → Uninstall & managed protection → Android administration / Device-owner controls
 Restricted app → Blocking screen → Return home / Intentional visit / Emergency access
 Widget or tile → Session setup or current session
 ```
@@ -101,11 +104,15 @@ Important files:
 - `Engine.kt`: pure rules, schedule, domain, session, and allowance logic.
 - `Repository.kt`: persisted state, JSON export, and Android usage-event aggregation.
 - `FocusAccessibilityService.kt`: user-consented app/website/feed enforcement and interruption overlay.
+- `ProtectionRuntime.kt`: live connection health and observed/blocked foreground state.
+- `ManagedProtection.kt`: optional administration and journaled Android device-owner policies.
 - `Integrations.kt`: notification scheduling, reboot receiver, Quick Settings tile, widget.
 - `MainActivity.kt`: app screens, forms, navigation, permission explanations.
 - `Theme.kt`: colors and typography.
 - `EngineTest.kt`: rules tests.
 - `AppTest.kt`: connected Android UI and persistence tests.
+- `ProtectionScenarioTest.kt`: real installed-app accessibility regression on isolated emulators.
+- `test-fixture/`: separate local distraction app; never bundled in Focus.
 
 ## Before distribution
 

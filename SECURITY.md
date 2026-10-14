@@ -4,6 +4,8 @@ Focus processes accessibility controls and supported browser address fields on t
 
 Do not post sensitive exports, signing material, passwords, or screen content in public issues. For a suspected security vulnerability, use [GitHub private vulnerability reporting](https://github.com/YumiNoona/Focus/security/advisories/new) if available. If that repository feature is unavailable, request a private reporting channel without disclosing exploit details publicly.
 
-Version 1.0.x is the current release line. No response-time guarantee is currently offered.
+Version 1.1.x is the current release line. No response-time guarantee is currently offered.
 
-Blocking is a voluntary behavioral aid. It does not prevent access to Android system settings, uninstalling, permission revocation, or emergency functions. Strict mode adds friction within the app; it is not a device-management lock.
+Strict rejects early ending, temporary visits, weakening rules, consent withdrawal, and local deletion inside Focus until its finite deadline. Ordinary phones still permit Android permission revocation and administrator deactivation. Home and emergency access remain available.
+
+Optional legacy administration adds a deactivation step before uninstall. Separately provisioned device-owner management can enforce an uninstall block and suspend selected apps during managed Strict, with exact-alarm expiry and a persisted recovery journal. It requests no wipe/password/camera/lock policy. See [managed-device behavior and recovery limits](docs/MANAGED_DEVICE.md); this is not a claim to resist root, recovery, factory reset, or a device administrator.

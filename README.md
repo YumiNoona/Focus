@@ -15,7 +15,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](#design)
 [![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](#privacy)
 
-**[Download v1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0)** · **[Features](docs/FEATURES.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)** · **[Build status](https://github.com/YumiNoona/Focus/actions)**
+**[Download v1.1.0](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
 
 </div>
 
@@ -54,16 +54,27 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 Screenshots are captured from the actual Android app in an emulator. Scroll Test is a separate test app used to demonstrate blocking; it is not included in the installed Focus app. Usage history is not fabricated.
 
+<details>
+<summary>Optional uninstall and managed-device controls</summary>
+
+<img src="docs/screenshots/uninstall.png" alt="Optional administrator active on a personal Android installation" width="250" />
+<img src="docs/screenshots/managed.png" alt="Verified device-owner uninstall protection and managed Strict controls" width="250" />
+
+Personal-phone administration adds a deactivation step. Separately provisioned device-owner management can enforce Android uninstall blocking and whole-app suspension.
+
+</details>
+
 ## What’s included
 
 | Area | Features |
 | --- | --- |
-| **Focus sessions** | Instant and open-ended sessions; custom durations and intentions; reusable profiles; Deep Work, Study, Wind Down, and Personal Time presets |
-| **Pomodoro** | Configurable work periods, breaks, and rounds; no extra break after the final round |
+| **Focus sessions** | Custom durations and intentions; reusable presets; open-ended Normal/Resistant sessions; finite Strict sessions |
+| **Pomodoro** | Configurable work periods, breaks, and rounds in Normal/Resistant; Strict stays locked until its deadline |
 | **App boundaries** | Whole-app blocking during focus; daily usage budgets; time per visit; essential-app exceptions |
 | **Gradual reduction** | Reduce an app’s allowance by five minutes per day toward a chosen target; pause and resume |
 | **Routines** | Weekdays, weekends, custom days, and overnight schedules; advance reminders; overlap detection |
-| **Interruption modes** | Gentle pause, standard waiting period, or strict friction; temporary visits with reasons and cooldowns |
+| **Interruption modes** | Normal popup, Resistant waiting period and reason, Strict with no temporary visits or early ending |
+| **Uninstall protection** | Optional administrator deactivation step on personal phones; verified Android uninstall blocking and app suspension on separately provisioned managed devices |
 | **Insights** | Logged focus time, completed sessions, personal goals, measured app usage, weekly chart, prior-week comparison when data is available, and session history |
 | **Everyday access** | Home-screen widget, Quick Settings tile, optional notifications, and permission health |
 | **Privacy & appearance** | Local storage, JSON export, deletion, consent withdrawal, hidden insights, light/dark themes, reduced motion, and optional haptics |
@@ -71,21 +82,32 @@ Screenshots are captured from the actual Android app in an emulator. Scroll Test
 
 Read the [full feature and coverage guide](docs/FEATURES.md) for details about rule precedence, timing, and measured usage.
 
+### Choose your resistance
+
+| Mode | When a selected app opens | Leaving the restriction |
+| --- | --- | --- |
+| **Normal** | Compact popup | Continue for the configured visit duration; reason optional |
+| **Resistant** | Full-screen interruption | Wait 30 seconds, give a reason, then get one minute; at least ten minutes between visits |
+| **Strict** | Full-screen lock until the deadline | No temporary visits, early stop, rule weakening, or data deletion within Focus; existing visits are ignored |
+
+Strict requires a live protection service, selected rules, and a finite timer of 1–1,440 minutes. Home, emergency access, and Android settings remain accessible. Ordinary phones allow Android permission revocation. For Android-enforced whole-app suspension and uninstall blocking, see the opt-in [managed-device guide](docs/MANAGED_DEVICE.md).
+
 ## Installation
 
 **Requires Android 9 / API 28 or newer.**
 
-1. Open the [v1.0.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0).
-2. Download **`Focus-v1.0.0.apk`** and open it on your Android phone.
+1. Open the [v1.1.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0).
+2. Download **`Focus-v1.1.0.apk`** and open it on your Android phone.
 3. If Android asks, allow installation from the browser or file manager you are using.
 4. Launch **Focus** and choose **Make room**.
 5. Read the protection disclosure and enable **Focus protection** in Android Accessibility settings if you want blocking.
 6. Enable **Usage Access** for daily budgets and usage charts. Notifications are optional.
-7. Choose distractions under **Rules**, then start a session from **Home**.
+7. Choose distractions under **Rules**. In **Settings → Protection health**, check that the service is connected, then use **Test selected app for 1 minute**.
+8. Start your preferred session from **Home**. For OnePlus Nord CE 2 background settings, follow [troubleshooting](docs/TROUBLESHOOTING.md).
 
 Some Android versions place additional restrictions on accessibility access for sideloaded apps. If needed, allow restricted settings from Focus’s system App Info screen before enabling protection.
 
-The APK is release-signed for GitHub distribution. It has not been submitted to Google Play. The earlier Still 0.1.0 preview used a debug certificate; installing v1.0.0 over that preview requires uninstalling the old build first. Uninstalling clears its local data, so export anything you want to keep beforehand. There is no import feature in v1.0.0.
+The APK is release-signed for GitHub distribution and uses the same certificate as v1.0.0, so it installs as an update and preserves local data. It has not been submitted to Google Play. Debug builds and the earlier Still preview use different certificates. There is no JSON import feature.
 
 ## Permissions, explained
 
@@ -96,16 +118,18 @@ The APK is release-signed for GitHub distribution. It has not been submitted to 
 | **Notifications** | Session status, completion, and optional routine reminders | Sessions and rules still work |
 | **Boot/time broadcasts** | Reconcile saved session deadlines and replan reminders after reboot or time changes | Managed automatically by Android |
 | **Vibration** | Optional haptic feedback on primary actions | Can be disabled in Focus settings |
+| **Device administrator** | Optional uninstall resistance: Android requires deactivation before uninstalling | No uninstall resistance; no wipe/password/camera/lock policy is requested |
+| **Exact alarms** | Precise release of managed Strict app suspension | Managed Strict cannot start; ordinary sessions do not require this permission |
 
-Focus requests no network permission. Permission setup is progressive, and blocking status is displayed explicitly. You can withdraw consent or disable the accessibility service through Android settings.
+Focus requests no network permission. Permission setup is progressive, and blocking status uses the service's live heartbeat. Consent withdrawal inside Focus is locked during Strict; Android settings remain available. Device-owner management is a separate provisioning requirement, not a permission a personal-phone app can grant itself.
 
 ## Coverage and limitations
 
 - **App blocking:** a user-consented accessibility overlay interrupts selected apps. Phone, emergency access, your launcher, system settings, and Focus remain available.
 - **Website rules:** experimental address-field detection in Chrome, Edge, Brave, and Firefox during focus. Hidden fields, private browsing, embedded browsers, and app updates can bypass detection. Whole-browser blocking is the available fallback.
 - **Feed rules:** experimental detection using third-party accessibility controls and view identifiers. Current production versions of YouTube, Instagram, and Facebook have not all been verified. Use whole-app rules when selective detection misses a feed.
-- **Strict mode:** adds waiting and intentional choices within Focus. Android settings can still disable protection, and the app can be uninstalled.
-- **Background behavior:** OEM restrictions can stop accessibility protection. Reminder alarms are inexact and may be delayed by Doze or battery restrictions.
+- **Strict mode:** no in-app escape before the deadline. Android settings can still disable accessibility on an ordinary phone. Optional administrator activation adds a deactivation step before uninstalling; actual uninstall blocking requires device-owner provisioning.
+- **Background behavior:** OEM restrictions can stop accessibility protection. Focus rechecks application windows every 500 ms and displays connection failures. Ordinary reminders are inexact. Managed Strict uses exact alarms; reboot recovery may wait for the first unlock.
 - **Measurements:** Android foreground usage is not a measurement of attention. Split-screen behavior, event availability, and time behind an overlay can affect it. Cross-midnight daily focus totals are apportioned estimates; ongoing sessions enter logged totals when ended.
 
 The [validation record](VALIDATION.md) separates verified behavior from remaining device coverage.
@@ -170,7 +194,7 @@ Without signing configuration, this produces an **unsigned** release APK. The of
 ./gradlew connectedDebugAndroidTest  # connected device/emulator required
 ```
 
-The initial local validation passed **10 JVM tests and 4 connected Android tests**. Android lint passed with no errors. See [VALIDATION.md](VALIDATION.md) for scope and remaining warnings.
+The optional `test-fixture` project supplies a local distraction app for the accessibility regression. Build it with `./gradlew -p test-fixture assembleDebug`, then install its debug APK on an isolated emulator before connected tests. The scenario skips personal phones and emulators without the fixture. See [VALIDATION.md](VALIDATION.md) for test counts, scope, and remaining device coverage.
 
 [GitHub Actions](.github/workflows/android.yml) runs JVM tests, Android lint, and debug assembly on pushes and pull requests. It uploads debug APKs and available reports as workflow artifacts. It does not contain release signing secrets or run the connected-device suite.
 

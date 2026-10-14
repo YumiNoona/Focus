@@ -23,7 +23,7 @@ object FocusNotifications {
         val s = Repository.state.session
         if (s == null) { mgr.cancel(1); return }
         if (!permitted(ctx)) return
-        val status = if (Repository.protectionGranted(ctx) && Repository.state.disclosure) "Protection enabled" else "Timer only · enable protection"
+        val status = if (!s.timerOnly && Repository.protectionReady(ctx)) "${s.profile.mode.label} · protection connected" else "Blocking unavailable · check protection"
         mgr.notify(1, Notification.Builder(ctx, CHANNEL).setSmallIcon(R.drawable.ic_still)
             .setContentTitle("${s.profile.name} · ${if (s.onBreak(System.currentTimeMillis())) "break" else "in progress"}")
             .setContentText(status).setContentIntent(open(ctx)).setOngoing(true)
@@ -42,6 +42,7 @@ object FocusNotifications {
             if (s.profile.pomodoro && s.alive(now)) times += now + s.phaseRemaining(now) + 1000
         }
         state.schedules.filter { it.enabled }.forEach { schedule ->
+            schedule.nextBoundary(now)?.let { times += it }
             schedule.nextStart(now)?.let { next ->
                 times += next
                 if (schedule.reminder && state.reminders && next - 300_000 > now) times += next - 300_000
@@ -50,7 +51,10 @@ object FocusNotifications {
         val alarm = ctx.getSystemService(AlarmManager::class.java)
         val pending = PendingIntent.getBroadcast(ctx, 0, Intent(ctx, FocusReceiver::class.java).setAction("dev.still.TICK"), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         alarm.cancel(pending)
-        times.minOrNull()?.let { alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, it, pending) }
+        times.minOrNull()?.let {
+            if (state.managedLockdown && ManagedProtection.isOwner(ctx) && ManagedProtection.preciseEnding(ctx)) alarm.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, it, pending)
+            else alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, it, pending)
+        }
     }
 }
 
@@ -86,7 +90,7 @@ class FocusTile : TileService() {
     override fun onClick() {
         Repository.init(this)
         unlockAndRun {
-            if (Repository.state.session == null && Repository.protectionGranted(this) && Repository.state.disclosure && (Repository.state.apps.any { it.enabled } || Repository.state.domains.isNotEmpty() || Repository.state.feeds.isNotEmpty())) {
+            if (Repository.state.session == null && Repository.protectionReady(this) && (Repository.state.apps.any { it.enabled } || Repository.state.domains.isNotEmpty() || Repository.state.feeds.isNotEmpty())) {
                 val p = Repository.state.profiles.firstOrNull() ?: FocusState.defaults().first()
                 Repository.start(p, p.minutes, p.intention)
                 refresh()

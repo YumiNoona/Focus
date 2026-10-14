@@ -32,21 +32,43 @@ class FocusAccessibilityService : AccessibilityService() {
     private var overridePending = false
     private var generation = 0
     private var lastPhase = ""
+    private var eventPackage: String? = null
+    private var fallbackAt = 0L
+    private var fallbackReading = false
+    private fun refreshForeground(event: AccessibilityEvent? = null) {
+        val eventPkg = event?.packageName?.toString()
+        val imePackages = windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+            .mapNotNull { it.root?.packageName?.toString() }.toSet()
+        if (eventPkg != null &&
+            eventPkg !in imePackages && !eventPkg.contains("inputmethod") && eventPkg != "com.android.systemui" &&
+            (eventPkg != packageName || event.className?.toString() == MainActivity::class.java.name)) eventPackage = eventPkg
+        val appWindows = windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }
+            .mapNotNull { window -> window.root?.packageName?.toString()?.let { AppWindow(it, window.layer, window.isFocused) } }
+            .filterNot { it.packageName in imePackages }
+        val rootPackage = if (overlay == null) rootInActiveWindow?.packageName?.toString()?.takeUnless { it in imePackages || it == "com.android.systemui" } else null
+        if (appWindows.isEmpty() && Repository.usageGranted(this) && !fallbackReading && System.currentTimeMillis() - fallbackAt > 2000) {
+            fallbackReading = true; fallbackAt = System.currentTimeMillis()
+            Thread {
+                val recent = UsageReader.foreground(this)
+                handler.post { if (instance === this@FocusAccessibilityService) { fallbackReading = false; recent?.let { eventPackage = it }; refreshForeground(); evaluate() } }
+            }.start()
+        }
+        val resolved = ForegroundResolver.choose(appWindows, rootPackage ?: eventPackage) ?: return
+        if (resolved != foreground) {
+            clearOverlay(); foreground = resolved; openedAt = System.currentTimeMillis(); openingElapsed = 0L
+            website = null; feed = null
+        }
+        ProtectionRuntime.observed(resolved)
+    }
     private val poll = object : Runnable {
         override fun run() {
             val tickNow = System.currentTimeMillis()
             val interactive = getSystemService(android.os.PowerManager::class.java).isInteractive
+            if (interactive) refreshForeground()
             if (interactive && overlay == null && foreground.isNotBlank()) openingElapsed += (tickNow - lastPoll).coerceIn(0, 5000)
             lastPoll = tickNow
             if (!interactive) clearOverlay()
-            if (interactive && foreground.isBlank()) {
-                val root = rootInActiveWindow
-                val pkg = root?.packageName?.toString()
-                if (root != null && pkg != null && !essential(this@FocusAccessibilityService, pkg)) {
-                    foreground = pkg; openedAt = tickNow; openingElapsed = 0L
-                    inspect(root, pkg)
-                }
-            }
+            ProtectionRuntime.tick()
             Repository.reconcile()
             val s = Repository.state.session
             val phase = "${s?.id}:${s?.onBreak(System.currentTimeMillis())}"
@@ -59,42 +81,28 @@ class FocusAccessibilityService : AccessibilityService() {
                 }.start()
             }
             evaluate()
-            handler.postDelayed(this, 1000)
+            handler.postDelayed(this, 500)
         }
     }
     override fun onServiceConnected() {
         Repository.init(this)
         instance = this
+        ProtectionRuntime.connect()
+        handler.removeCallbacks(poll)
         handler.post(poll)
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        val pkg = event.packageName?.toString() ?: return
-        if (pkg == packageName) {
-            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && event.className?.toString() == MainActivity::class.java.name) { foreground = ""; clearOverlay() }
-            return
-        }
-        if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            // Ignore transient keyboard windows. They must not reset the app's visit budget.
-            if (pkg == "com.google.android.inputmethod.latin" || pkg.contains("inputmethod")) return
-            if (foreground != pkg) {
-                foreground = pkg
-                openedAt = System.currentTimeMillis()
-                openingElapsed = 0L
-                website = null; feed = null
-                overridePending = false
-                clearOverlay()
-            }
-            if (essential(this, pkg)) { clearOverlay(); return }
-        }
-        if (pkg != foreground || essential(this, pkg)) return
+        refreshForeground(event)
+        val pkg = foreground
+        if (pkg.isBlank() || essential(this, pkg)) { clearOverlay(); return }
         val now = System.currentTimeMillis()
         val state = Repository.state
         val needsScreen = (pkg in browserIds && (state.domains.isNotEmpty() || state.profiles.any { it.domains.isNotEmpty() })) ||
             (state.feeds.isNotEmpty() && pkg in setOf("com.google.android.youtube", "com.instagram.android", "com.facebook.katana"))
-        if (needsScreen && now - screenSeenAt > 350 && overlay == null) {
+        if (needsScreen && now - screenSeenAt > 200 && overlay == null) {
             screenSeenAt = now
-            val root = rootInActiveWindow
+            val root = windows.filter { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION }.maxByOrNull { it.layer }?.root ?: rootInActiveWindow
             if (root != null && root.packageName?.toString() == pkg) inspect(root, pkg)
         }
         evaluate()
@@ -156,8 +164,8 @@ class FocusAccessibilityService : AccessibilityService() {
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) }
             setPadding(dp(16), dp(16), dp(16), dp(16)); setOnClickListener { if (Repository.state.haptics) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); click() }
         }.also(container::addView)
-        text("focus / a conscious pause", 14f, violet, true)
-        text("Is this what you\nmeant to do?", 28f, ink, true)
+        text("focus / ${restriction.mode.label.lowercase()}", 14f, violet, true)
+        text(if (restriction.mode == FocusMode.STRICT) "This app stays locked." else "Is this what you\nmeant to do?", if (restriction.mode == FocusMode.GENTLE) 22f else 28f, ink, true)
         text(restriction.label, 18f, ink, true)
         text(restriction.explanation, 16f, secondary)
         text(restriction.intention, 20f)
@@ -171,12 +179,17 @@ class FocusAccessibilityService : AccessibilityService() {
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(24) }
         }
         container.addView(reason)
-        val canOverride = RulesEngine.canOverride(state, blockedPackage, System.currentTimeMillis())
+        val canOverride = RulesEngine.canOverride(state, blockedPackage, System.currentTimeMillis(), restriction.mode)
         if (canOverride) {
-            var remaining = when (restriction.mode) { FocusMode.GENTLE -> 0; FocusMode.STANDARD -> 10; FocusMode.STRICT -> 30 }
-            val ask = state.askReason || restriction.mode == FocusMode.STRICT
+            var remaining = restriction.mode.waitSeconds
+            val ask = restriction.mode == FocusMode.STANDARD || state.askReason
+            val visitMinutes = if (restriction.mode == FocusMode.STANDARD) 1 else state.overrideMinutes
             lateinit var visit: Button
-            visit = button("Take an intentional visit") {
+            visit = button(if (restriction.mode == FocusMode.GENTLE && !ask) "Continue for $visitMinutes minutes" else "Take an intentional visit") {
+                if (restriction.mode == FocusMode.GENTLE && !ask) {
+                    if (Repository.allow(blockedPackage, "", restriction.mode)) clearOverlay()
+                    return@button
+                }
                 if (!overridePending) {
                     overridePending = true
                     if (ask) reason.visibility = View.VISIBLE
@@ -184,7 +197,7 @@ class FocusAccessibilityService : AccessibilityService() {
                     val wait = object : Runnable {
                         override fun run() {
                             if (generation != myGeneration || overlay == null) return
-                            visit.text = if (remaining > 0) "Pause for ${remaining}s" else "Allow for ${state.overrideMinutes} minutes"
+                            visit.text = if (remaining > 0) "Pause for ${remaining}s" else "Allow for $visitMinutes minutes"
                             visit.isEnabled = remaining == 0
                             if (remaining > 0) { remaining--; handler.postDelayed(this, 1000) }
                         }
@@ -192,24 +205,30 @@ class FocusAccessibilityService : AccessibilityService() {
                     handler.post(wait)
                 } else {
                     if (ask && reason.text.toString().isBlank()) { reason.error = "Add a short intention first"; return@button }
-                    if (Repository.allow(blockedPackage, reason.text.toString().take(120))) { overridePending = false; clearOverlay() }
+                    if (Repository.allow(blockedPackage, reason.text.toString().take(120), restriction.mode)) { overridePending = false; clearOverlay() }
                     else visit.text = "Cooldown is still active"
                 }
             }
-        } else text("Your next intentional visit is available after the cooldown. Essential apps remain available.", 14f, secondary)
+        } else text(if (restriction.mode == FocusMode.STRICT) "Strict has no temporary access or early end. Your timer or schedule must finish. Phone and emergency access remain available." else "Your next intentional visit is available after the cooldown. Essential apps remain available.", 14f, secondary)
         button("Emergency & system access") { overridePending = false; performGlobalAction(GLOBAL_ACTION_HOME); foreground = ""; clearOverlay() }
-        val params = WindowManager.LayoutParams(-1, -1, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, 0, android.graphics.PixelFormat.TRANSLUCENT)
+        val normal = restriction.mode == FocusMode.GENTLE
+        val params = WindowManager.LayoutParams(if (normal) (resources.displayMetrics.widthPixels * .92).toInt() else -1, if (normal) -2 else -1, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, 0, android.graphics.PixelFormat.TRANSLUCENT)
+        params.gravity = Gravity.CENTER
+        if (normal) { params.flags = params.flags or WindowManager.LayoutParams.FLAG_DIM_BEHIND; params.dimAmount = .45f }
+        if (normal) { container.setPadding(dp(24), dp(24), dp(24), dp(24)); container.background = background(bg, 24) }
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         overlayKey = "$foreground:${restriction.explanation}:${restriction.mode}"
         overlay = scroll
-        runCatching { getSystemService(WindowManager::class.java).addView(scroll, params) }.onFailure { overlay = null; overlayKey = "" }
+        runCatching { getSystemService(WindowManager::class.java).addView(scroll, params); ProtectionRuntime.blocked(blockedPackage) }
+            .onFailure { overlay = null; overlayKey = ""; ProtectionRuntime.error("Android could not show the blocking screen. Re-enable Focus protection and check background access.") }
     }
     fun clearOverlay() {
         overlay?.let { runCatching { getSystemService(WindowManager::class.java).removeView(it) } }
         overlay = null; overlayKey = ""; generation++; overridePending = false
+        ProtectionRuntime.cleared()
     }
     override fun onInterrupt() { clearOverlay() }
-    override fun onDestroy() { handler.removeCallbacksAndMessages(null); clearOverlay(); instance = null; super.onDestroy() }
+    override fun onDestroy() { handler.removeCallbacksAndMessages(null); clearOverlay(); instance = null; ProtectionRuntime.disconnect(); super.onDestroy() }
     companion object {
         private var serviceReference = java.lang.ref.WeakReference<FocusAccessibilityService>(null)
         var instance: FocusAccessibilityService?
@@ -220,7 +239,7 @@ class FocusAccessibilityService : AccessibilityService() {
             "com.microsoft.emmx" to setOf("url_bar"), "com.brave.browser" to setOf("url_bar"),
             "org.mozilla.firefox" to setOf("mozac_browser_toolbar_url_view", "mozac_browser_toolbar_edit_url_view"))
         fun essential(ctx: Context, pkg: String): Boolean {
-            if (pkg == ctx.packageName || pkg == "android" || pkg.startsWith("com.android.settings") || pkg == "com.android.systemui" || pkg.contains("permissioncontroller") || pkg.contains(".dialer") || pkg.contains(".telecom") || pkg.contains("emergency") || pkg.contains("incallui")) return true
+            if (pkg == ctx.packageName || pkg in setOf("android", "com.android.settings", "com.android.systemui", "com.android.permissioncontroller", "com.google.android.permissioncontroller", "com.android.phone", "com.android.server.telecom", "com.android.emergency", "com.google.android.apps.safetyhub", "com.android.incallui")) return true
             val launcher = ctx.packageManager.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0)?.activityInfo?.packageName
             val dialer = ctx.getSystemService(android.telecom.TelecomManager::class.java)?.defaultDialerPackage
             return pkg == launcher || pkg == dialer

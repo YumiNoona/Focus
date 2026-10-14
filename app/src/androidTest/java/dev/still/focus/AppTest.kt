@@ -32,7 +32,7 @@ class AppTest {
     @Test fun timerOnlyWarningIsExplicitAndSessionStarts() {
         ui.onNodeWithText("Start focus").performClick()
         ui.onNodeWithText("Start focus").performScrollTo().performClick()
-        ui.onNodeWithText("Blocking needs your consent and Android accessibility access. You can enable it now, or start a timer without blocking.").assertExists()
+        ui.onNodeWithText("Blocking needs your consent and a connected Android accessibility service. You can enable it now, or explicitly start a timer without blocking.").assertExists()
         ui.onNodeWithText("Timer only").performClick()
         ui.onNodeWithText("Timer only · protection is off").assertExists()
         ui.runOnIdle { assertNotNull(Repository.state.session); Repository.stop() }
@@ -45,6 +45,29 @@ class AppTest {
             assertEquals(Repository.state.apps, decoded.apps)
             assertEquals(Repository.state.domains, decoded.domains)
             assertEquals(Repository.state.schedules, decoded.schedules)
+        }
+    }
+    @Test fun strictRejectsEarlyStopVisitsDeletionAndRuleWeakening() {
+        ui.runOnIdle {
+            val now = System.currentTimeMillis()
+            val p = Profile("s", "Strict", 1, "Work", FocusMode.STRICT)
+            Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Fixture")), session = Session(profile = p, start = now, end = now + 1800)) }
+            assertFalse(Repository.stop())
+            assertFalse(Repository.stop(completed = true))
+            assertFalse(Repository.allow("dev.still.fixture", "escape", FocusMode.STRICT))
+            assertFalse(Repository.deleteAll())
+            assertFalse(Repository.update { it.copy(apps = emptyList(), disclosure = false) })
+            assertEquals(1, Repository.state.apps.size)
+        }
+        Thread.sleep(2000)
+        ui.runOnIdle { Repository.reconcile(); assertNull(Repository.state.session); assertTrue(Repository.update { it.copy(apps = emptyList()) }) }
+    }
+    @Test fun strictCannotStartAsOpenEndedOrTimerOnly() {
+        ui.runOnIdle {
+            val p = Profile("s", "Strict", 1, "Work", FocusMode.STRICT)
+            assertFalse(Repository.start(p, 0, "Work"))
+            assertFalse(Repository.start(p, 1, "Work", timerOnly = true))
+            assertNull(Repository.state.session)
         }
     }
 }
