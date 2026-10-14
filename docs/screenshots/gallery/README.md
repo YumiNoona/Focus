@@ -1,6 +1,6 @@
 # FocuLY screen gallery
 
-Actual Android 15 captures after source commit `c8a9062`. Separate Scroll Test fixture; no fabricated usage statistics. The managed comparison uses a dedicated device-owner emulator. No release published.
+Actual Android 15 captures after source commit `21b297a`. Separate Scroll Test fixture; no fabricated usage statistics. The managed comparison uses a dedicated device-owner emulator. Release v1.2.0. Managed comparison captures are retained from the preceding validation; those controls are unchanged.
 
 [Open the searchable HTML gallery](index.html)
 
@@ -203,3 +203,31 @@ Actual Android 15 captures after source commit `c8a9062`. Separate Scroll Test f
 ### managed future install
 
 <a href="34-managed-future-install.png"><img src="34-managed-future-install.png" alt="managed future install" width="260" /></a>
+
+### end session warning
+
+<a href="35-end-session-warning.png"><img src="35-end-session-warning.png" alt="end session warning" width="260" /></a>
+
+### session complete
+
+<a href="36-session-complete.png"><img src="36-session-complete.png" alt="session complete" width="260" /></a>
+
+### unblock warning
+
+<a href="37-unblock-warning.png"><img src="37-unblock-warning.png" alt="unblock warning" width="260" /></a>
+
+### protection warning
+
+<a href="38-protection-warning.png"><img src="38-protection-warning.png" alt="protection warning" width="260" /></a>
+
+### pomodoro break
+
+<a href="39-pomodoro-break.png"><img src="39-pomodoro-break.png" alt="pomodoro break" width="260" /></a>
+
+### dark focus
+
+<a href="40-dark-focus.png"><img src="40-dark-focus.png" alt="dark focus" width="260" /></a>
+
+### warning large text
+
+<a href="41-warning-large-text.png"><img src="41-warning-large-text.png" alt="warning large text" width="260" /></a>

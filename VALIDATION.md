@@ -7,6 +7,7 @@
 - Android lint, debug/test APK assembly, and optimized signed release assembly pass. APK metadata is `dev.still.focus`, version `1.2.0`, code `122`, Android 9+, label `FocuLY`.
 - The APK retains release certificate SHA-256 `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`, supporting updates from v1.0.0/v1.1.0.
 - Warnings retain their buttons and gain scrollable content. Native illustration heights are unchanged, and dark mode uses pastel backings for black ink. Artwork does not change rule enforcement or grant extra access.
+- The full opt-in gallery capture passes. A focused milestone recapture also passes with an explicit `BREAK TIME` display assertion after a real one-minute work period; its test clock is resumed before taking the image. The gallery contains 57 screenshots, including complete warning/completion cards and a 130% font-scale warning with both actions visible. Managed comparison images are retained from the preceding validation of unchanged controls.
 - Physical OnePlus Nord CE 2 testing remains outstanding. Earlier functional/device-owner validation is recorded below; managed-policy behavior is unchanged by this illustration update.
 
 ## FocuLY branding and onboarding

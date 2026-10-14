@@ -37,6 +37,41 @@ class ScreenshotGalleryTest {
         ui.waitForIdle(); Thread.sleep(250)
     }
     private fun lower(name: String) { scrollPage(ui.activity.resources.displayMetrics.heightPixels * .65f); shot(name) }
+    private fun captureCompletion() {
+        ui.onNodeWithText("A little win for you.").performScrollTo()
+        scrollPage(800f)
+        shot("36-session-complete")
+    }
+    private fun captureBreak(demo: FocusState) {
+        val breakProfile = Profile("break-preview", "Quiet rhythm", 3, "Give yourself a little room.", FocusMode.GENTLE, pomodoro = true, workMinutes = 1, breakMinutes = 1, rounds = 2)
+        ui.runOnIdle { Repository.update { demo }; assertTrue(Repository.start(breakProfile, 3, breakProfile.intention, timerOnly = true)) }
+        // Wall time advances while the test clock is idle. Resume its coroutine tick before capture.
+        Thread.sleep(61_000)
+        ui.mainClock.advanceTimeBy(1_100)
+        open("home")
+        ui.onNodeWithText("BREAK TIME").assertIsDisplayed()
+        assertTrue(Repository.state.session!!.onBreak(System.currentTimeMillis()))
+        shot("39-pomodoro-break")
+        ui.runOnIdle { Repository.stop(); Repository.update { demo.copy(theme = "Dark", session = Session(profile = breakProfile.copy(pomodoro = false), start = System.currentTimeMillis(), end = System.currentTimeMillis() + 60_000, timerOnly = true)) } }
+        open("home"); shot("40-dark-focus")
+    }
+    @Test fun captureSessionMilestones() {
+        Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
+        automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+        Assume.assumeTrue(shell("getprop ro.kernel.qemu").trim() == "1")
+        assertFalse(RulesEngine.strictActive(Repository.state, System.currentTimeMillis()))
+        val original = Repository.state
+        try {
+            val demo = FocusState(onboarding = true)
+            val now = System.currentTimeMillis()
+            ui.runOnIdle { Repository.update { demo.copy(session = Session(profile = Profile("completion-preview", "Quiet moment", 1, "One small step.", FocusMode.GENTLE), start = now, end = now + 20_000, timerOnly = true)) } }
+            open("home"); Thread.sleep(20_100)
+            ui.mainClock.advanceTimeBy(1_100)
+            ui.runOnIdle { Repository.reconcile() }
+            open("home"); captureCompletion()
+            captureBreak(demo)
+        } finally { ui.runOnIdle { Repository.update { original } }; open("home") }
+    }
     @Test fun captureAllPages() {
         Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
         automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
@@ -112,7 +147,7 @@ class ScreenshotGalleryTest {
                 Thread.sleep((now + 20_100 - System.currentTimeMillis()).coerceAtLeast(0))
                 ui.runOnIdle { Repository.reconcile() }; open("home")
             }
-            ui.onNodeWithText("A little win for you.").performScrollTo(); shot("36-session-complete")
+            captureCompletion()
             ui.runOnIdle { Repository.update { demo.copy(blocks = listOf(BlockPlan(kind = BlockKind.APPS, targets = setOf("dev.still.fixture"), mode = FocusMode.STANDARD, start = System.currentTimeMillis(), period = BlockPeriod.MANUAL))) } }
             open("home"); ui.onNodeWithText("Unblock").performScrollTo().performClick(); shot("37-unblock-warning")
             ui.onNodeWithText("Keep block").performClick()
@@ -122,14 +157,7 @@ class ScreenshotGalleryTest {
             automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
             ui.runOnIdle { Repository.update { demo } }
             open("home")
-            val breakProfile = Profile("break-preview", "Quiet rhythm", 3, "Give yourself a little room.", FocusMode.GENTLE, pomodoro = true, workMinutes = 1, breakMinutes = 1, rounds = 2)
-            ui.runOnIdle { assertTrue(Repository.start(breakProfile, 3, breakProfile.intention, timerOnly = true)) }
-            // Let a real one-minute work period pass; do not manufacture elapsed usage.
-            Thread.sleep(61_000)
-            open("home"); assertTrue(Repository.state.session!!.onBreak(System.currentTimeMillis())); shot("39-pomodoro-break")
-            ui.runOnIdle { Repository.stop() }
-            ui.runOnIdle { Repository.update { demo.copy(theme = "Dark", session = Session(profile = breakProfile.copy(pomodoro = false), start = System.currentTimeMillis(), end = System.currentTimeMillis() + 60_000, timerOnly = true)) } }
-            open("home"); shot("40-dark-focus")
+            captureBreak(demo)
             ui.runOnIdle { Repository.update { demo.copy(theme = "Dark") } }; open("home"); shot("31-dark-home")
         } finally { ui.runOnIdle { Repository.update { original } }; open("home") }
     }
