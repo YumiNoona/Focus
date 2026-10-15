@@ -15,7 +15,7 @@ The first three screens use a circular Next action. Four progress dashes sit bes
 
 - Warm paper `#FBFAF5`, charcoal `#202520`, blush `#F8DED9`, lime `#F0F7D6`, peach `#FCE6D1`, and lilac `#EAE3F7`.
 - Black ink drawings, white cat silhouettes, sparing lilac/peach accents, and true transparent backgrounds.
-- JetBrains Mono headings and labels; system body text; the existing text scale and 48 dp minimum interaction targets.
+- JetBrains Mono throughout the current interface; the existing text scale and 48 dp minimum interaction targets.
 - Rounded story cards, 20–26 dp padding, concise copy, segmented progress, and a persistent primary action. Long content scrolls rather than clipping on smaller screens or with larger type.
 - Doodles also appear in Home, active sessions, app/web/schedule empty states, first-session insights, protection health, the checklist, and native blocking overlays.
 - Dark mode retains readable pastel illustration cards with charcoal text, paired with dark surrounding surfaces. Controls still reflect the selected mode and actual permission state.
@@ -36,11 +36,25 @@ Created with the built-in imagegen tool, using the user's provided pastel onboar
 | `cat_focus.png` | A cat waters a sprouting plant. Attention growing during an active focus session. |
 | `cat_break.png` | A cat stretches on a lilac cushion beside a cup of tea. Retained for legacy artwork compatibility. |
 | `cat_complete.png` | A cat hugs a peach star with small confetti. Completed sessions only. |
+| `cat_choose.png` | A cat taps one of two large choice tiles. Direct app and website selection. |
+| `cat_feeds.png` | A cat rolls up a lilac film strip beside a face-down phone. Home and selective feed setup. |
+| `cat_routine.png` | A cat marks a blank calendar with a peach pencil. Routine setup and its empty state. |
+| `cat_tune.png` | A cat adjusts two chunky sliders. Visible appearance controls. |
 
 Shared prompt: “Transparent raster doodle for FocuLY. Confident slightly wobbly black ink, simple white-filled forms, sparse black solid patches, and tiny motion lines. A charming white cat with triangular ears, dot eyes, whiskers, rounded body, and curled tail. Tiny lilac and peach accent patches. Complete centered illustration, generous transparent margins, square canvas. No text, logo, UI panel, paper background, gradients, 3D rendering, or watermark.”
 
 The files preserve generated alpha and are packaged locally; no runtime image downloads are used.
 
 The complete prompt set is stored in [illustration-prompts.json](illustration-prompts.json).
+
+## Simpler paths — 15 October 2026
+
+Home offers Start focus, Block apps, Block websites, and Shorts & Reels. The dock remains exactly three destinations. An app shortcut opens block setup, automatically presenting the shared selection sheet when there are no selected apps. Websites can be entered directly into block setup. Feed switches are visible together, without a Rules detour.
+
+Focus setup exposes Apps and Websites as summary cards. Each opens its selection sheet immediately; changing a selection switches from the shared saved list to a custom scope automatically. Search, selected counts, clear/select-all, and a persistent Done button stay in the app sheet. Start/Save and block confirmation remain fixed beneath scrolling options. Adding a valid website dismisses its keyboard so duration and resistance choices are reachable immediately.
+
+Protection setup returns to the screen that opened it, preserving the draft. Settings has one protection-setup entry and visible appearance choices. Advanced privacy, device management, and daily app limits remain available. Navigation simplification does not remove Strict acknowledgement, resistance waits, permission consent, or Android limitation disclosures.
+
+The four additional doodles were generated individually with built-in imagegen using `cat_pause.png` as the character reference. Full prompts are recorded in the JSON above; original alpha and the supplied logo are preserved. The four scenes are also available in the profile illustration selector.
 
 The six new scenes use `cat_pause.png` as their character/style reference through built-in imagegen. Original onboarding art and the supplied logo remain unchanged. Art is decorative for accessibility, adds no touch actions, and never replaces the actual mode, expiry, service status, or custom message. Native overlay heights remain 86 dp for Normal and 120 dp for other modes; scrolling retains access to actions and emergency essentials. Pastel badges preserve dark-theme contrast.

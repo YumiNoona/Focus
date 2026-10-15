@@ -27,7 +27,8 @@ object FoculyBrand {
 enum class CatArt(@param:DrawableRes val drawable: Int) {
     PAUSE(R.drawable.cat_pause), STUDY(R.drawable.cat_study), GUARD(R.drawable.cat_guard),
     REMINDER(R.drawable.cat_reminder), PATIENCE(R.drawable.cat_patience), BOUNDARY(R.drawable.cat_boundary),
-    FOCUS(R.drawable.cat_focus), BREAK(R.drawable.cat_break), COMPLETE(R.drawable.cat_complete)
+    FOCUS(R.drawable.cat_focus), BREAK(R.drawable.cat_break), COMPLETE(R.drawable.cat_complete),
+    CHOOSE(R.drawable.cat_choose), FEEDS(R.drawable.cat_feeds), ROUTINE(R.drawable.cat_routine), TUNE(R.drawable.cat_tune)
 }
 
 /** Shared by the native blocking overlay and its in-app preview. */

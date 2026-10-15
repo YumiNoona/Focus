@@ -2,6 +2,8 @@
 
 ## Subsequent development review — 15 October 2026
 
+The [simpler-flow iteration](docs/SIMPLER_FLOWS.md) adds four cat doodles, direct Home blocking, shared target sheets, visible duration choices, and persistent primary actions. Updated Android regressions cover direct entry without saved targets, normalized website drafts, picker restoration, profile scopes, and returning from permissions. Its [current screenshot set](docs/screenshots/simple/README.md) is separate from the historical release gallery below.
+
 The current source contains additional Android/web changes after the published v1.2.0 APK. The [flow review](docs/FLOW_REVIEW_2026-10-15.md) records fixes for restoration, saved illustrations, parked-overlay consent/mode changes, setup recovery, and website keyboard navigation, along with validation and reproduction steps. Earlier release checks below describe the tagged release and its historical gallery.
 
 ## FocuLY v1.2.0 release

@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
     }, confirmButton = { TextButton({ if (Repository.update { it.copy(disclosure = true) }) { close(); Repository.openAccessibility() } }) { Text("Agree & open settings") } }, dismissButton = { TextButton(close) { Text("Not now") } })
 }
 
-@Composable fun SetupChecklist(onboarding: Boolean = false, done: () -> Unit) {
+@Composable fun SetupChecklist(onboarding: Boolean = false, doneLabel: String = "Done", done: () -> Unit) {
     val ctx = LocalContext.current
     var pulse by remember { mutableIntStateOf(0) }
     var consent by remember { mutableStateOf(false) }
@@ -93,7 +93,7 @@ import kotlinx.coroutines.withContext
             Text("Strict has no early exit inside FocuLY. On a regular phone, Android still allows disabling protection or removing this app after deactivating its administrator. Your FocuLY PIN cannot protect Android settings.")
             Text("Device-owner setup on a dedicated managed device adds OS app suspension and uninstall blocking. FocuLY cannot grant itself this role on your personal phone.")
         }
-        Primary("Start using FocuLY", enabled = ready, icon = Icons.Outlined.Check) { done() }
+        Primary(doneLabel, icon = Icons.Outlined.Check) { done() }
     }
     if (consent) ProtectionConsent { consent = false }
     if (pin) PinDialog { pin = false; pulse++ }

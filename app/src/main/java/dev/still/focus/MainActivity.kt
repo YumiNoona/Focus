@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
     var blockTargets by rememberSaveable { mutableStateOf<Set<String>?>(null) }
     var blockParent by rememberSaveable { mutableStateOf("rules") }
     var settingsParent by rememberSaveable { mutableStateOf("home") }
+    var permissionParent by rememberSaveable { mutableStateOf("settings") }
     var profileParent by rememberSaveable { mutableStateOf("home") }
     var pinParent by rememberSaveable { mutableStateOf("settings") }
     val screenState = rememberSaveableStateHolder()
@@ -101,7 +102,7 @@ class MainActivity : ComponentActivity() {
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); Repository.reconcile(); delay(1000) } }
     LaunchedEffect(route, now / 15_000) { usage = withContext(Dispatchers.IO) { UsageReader.day(Repository.context) }; usageReady = true }
     val mainRoutes = listOf("home", "rules", "insights")
-    val back: () -> Unit = { route = when (route) { "block" -> blockParent; "setup" -> sessionParent; "settings" -> settingsParent; "profile" -> profileParent; "pin" -> pinParent; "profileEdit" -> "profile"; "managed", "messages", "permissions", "welcome" -> "settings"; "lifecycle" -> "managed"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
+    val back: () -> Unit = { route = when (route) { "block" -> blockParent; "setup" -> sessionParent; "settings" -> settingsParent; "permissions" -> permissionParent; "profile" -> profileParent; "pin" -> pinParent; "profileEdit" -> "profile"; "managed", "messages", "welcome" -> "settings"; "lifecycle" -> "managed"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
     BackHandler(route !in mainRoutes, onBack = back)
     var appRulePackage by rememberSaveable { mutableStateOf<String?>(null) }
     val appRule = s.apps.find { it.packageName == appRulePackage }
@@ -112,8 +113,10 @@ class MainActivity : ComponentActivity() {
     val startBlock: (BlockKind, Set<String>?) -> Unit = { kind, targets -> screenState.removeState("block"); blockKind = kind; blockTargets = targets; blockParent = if (route == "appRule") "rules" else route; route = "block" }
     val startSession: (Profile) -> Unit = { screenState.removeState("setup"); selectedProfileId = it.id; sessionParent = route; route = "setup" }
     val nav: (String) -> Unit = { when (it) {
-        "blockApps" -> if (s.apps.none { it.enabled && it.packageName !in s.allowlist }) { tab = "Apps"; route = "picker" } else startBlock(BlockKind.APPS, null)
-        "blockWebsites" -> if (s.domains.isEmpty()) { tab = "Websites"; route = "rules" } else startBlock(BlockKind.WEBSITES, null)
+        "blockApps" -> startBlock(BlockKind.APPS, null)
+        "blockWebsites" -> startBlock(BlockKind.WEBSITES, null)
+        "blockFeeds" -> startBlock(BlockKind.FEEDS, null)
+        "permissions" -> { permissionParent = route; route = "permissions" }
         "settings" -> { settingsParent = route; route = "settings" }
         "pin" -> { pinParent = route; route = "pin" }
         "profile" -> { profileParent = route; route = "profile" }
@@ -133,7 +136,7 @@ class MainActivity : ComponentActivity() {
             when (route) {
                 "home" -> Home(s, now, usage, usageReady, nav, startSession, { stopDialog = true })
                 "rules" -> Rules(s, tab, { tab = it }, nav, { appRulePackage = it.packageName; route = "appRule" }, { screenState.removeState("schedule"); editingScheduleId = it?.id; route = "schedule" }, startBlock)
-                "block" -> BlockEditor(s, blockKind, blockTargets, { route = "home" }, { settingsParent = "block"; route = "settings" }, startSession)
+                "block" -> BlockEditor(s, blockKind, blockTargets, { route = "home" }, { permissionParent = "block"; route = "permissions" })
                 "insights" -> Insights(s, usage, usageReady)
                 "profile" -> ProfileScreen(s,
                     { screenState.removeState("profileEdit"); editingProfileId = it.id; route = "profileEdit" },
@@ -144,7 +147,7 @@ class MainActivity : ComponentActivity() {
                 "lifecycle" -> DeviceControlsGate { LifecycleScreen(s) }
                 "pin" -> PinScreen(s)
                 "messages" -> MessageScreen(s)
-                "permissions" -> SetupChecklist { route = "settings" }
+                "permissions" -> SetupChecklist(doneLabel = if (permissionParent == "block") "Back to block" else "Done") { route = permissionParent }
                 "picker", "allowlist" -> AppPicker(s, route == "allowlist") { route = "rules" }
                 "appRule" -> appRule?.let { app -> AppRuleEditor(app, { startBlock(BlockKind.APPS, setOf(app.packageName)) }) { updated -> Repository.update { state -> state.copy(apps = state.apps.map { if (it.packageName == updated.packageName) updated else it }) }; route = "rules" } }
                 "schedule" -> ScheduleEditor(s, editingSchedule, { nav("profile") }) { schedule -> if (Repository.update { state -> state.copy(schedules = state.schedules.filterNot { it.id == schedule.id } + schedule) }) { FocusNotifications.plan(Repository.context); route = "rules" } }
@@ -160,7 +163,7 @@ class MainActivity : ComponentActivity() {
     if (timerDialog) AlertDialog(onDismissRequest = { timerDialog = false }, title = { Text("Enable protection", fontFamily = Mono) }, text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DoodleBadge(CatArt.REMINDER, Modifier.fillMaxWidth().height(88.dp))
         Text(if (strictRequested) "Strict requires a connected protection service. Enable it and allow background activity first." else "Blocking needs your consent and a connected Android accessibility service. You can enable it now, or explicitly start a timer without blocking.")
-    } }, confirmButton = { TextButton({ timerDialog = false; settingsParent = "setup"; route = "settings" }) { Text("Enable protection") } }, dismissButton = { if (!strictRequested) TextButton({ timerDialog = false; pendingStart?.invoke(true); pendingStart = null }) { Text("Timer only") } })
+    } }, confirmButton = { TextButton({ timerDialog = false; permissionParent = "setup"; route = "permissions" }) { Text("Enable protection") } }, dismissButton = { if (!strictRequested) TextButton({ timerDialog = false; pendingStart?.invoke(true); pendingStart = null }) { Text("Timer only") } })
     if (stopDialog) EndSessionDialog(s.session?.profile?.mode ?: FocusMode.STANDARD, { stopDialog = false }) { Repository.stop(); stopDialog = false }
 }
 
@@ -215,35 +218,43 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
         Caption("${when (hour) { in 5..11 -> "GOOD MORNING"; in 12..17 -> "GOOD AFTERNOON"; else -> "GOOD EVENING" }}${if (s.name.isBlank()) "" else ", ${s.name.uppercase()}"}")
         val session = s.session
         if (session == null) {
-            DoodleCard(CatArt.PAUSE, "A little less scroll.\nA little more you.", "Give the next moment your full attention.", FoculyBrand.blush)
+            DoodleCard(CatArt.PAUSE, "Make room.", "A little more you.", FoculyBrand.blush)
+            Primary("Start focus", icon = Icons.Outlined.PlayArrow) { start(s.profiles.firstOrNull() ?: FocusState.defaults().first()) }
             ActiveBlocks(s, now)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf(Triple("Block apps", "blockApps", R.drawable.cat_block_apps), Triple("Block websites", "blockWebsites", R.drawable.cat_block_websites)).forEach { (title, target, art) ->
-                    Surface(Modifier.weight(1f).height(126.dp).clip(RoundedCornerShape(20.dp)).clickable { nav(target) },
+                    Surface(Modifier.weight(1f).heightIn(min = 146.dp).clip(RoundedCornerShape(20.dp)).clickable { nav(target) },
                         shape = RoundedCornerShape(20.dp), color = if (target == "blockApps") FoculyBrand.lilac else FoculyBrand.peach,
                         contentColor = FoculyBrand.ink) {
-                        Box(Modifier.fillMaxSize()) {
-                            Image(painterResource(art), null, Modifier.align(Alignment.CenterEnd).size(126.dp).alpha(.58f), contentScale = ContentScale.Fit)
-                            Text(title, Modifier.align(Alignment.BottomStart).fillMaxWidth(.8f).padding(14.dp),
+                        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Image(painterResource(art), null, Modifier.align(Alignment.End).size(72.dp), contentScale = ContentScale.Fit)
+                            Text(title, Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.titleSmall, color = FoculyBrand.ink, maxLines = 2)
                         }
                     }
                 }
             }
-            if (!Repository.protectionReady()) LinkRow("Set up protection", "Enable blocking when you’re ready.", Icons.Outlined.Shield) { nav("settings") }
+            Surface(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).clickable { nav("blockFeeds") }, color = FoculyBrand.lime, contentColor = FoculyBrand.ink, shape = RoundedCornerShape(22.dp)) {
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    CatDoodle(CatArt.FEEDS, Modifier.size(72.dp))
+                    Column(Modifier.weight(1f)) { Text("Shorts & Reels", style = MaterialTheme.typography.titleMedium); Text("Pause the endless scroll", style = MaterialTheme.typography.bodySmall) }
+                    Icon(Icons.Outlined.ChevronRight, null)
+                }
+            }
+            if (!Repository.protectionReady()) LinkRow("Set up protection", "Enable blocking when you’re ready.", Icons.Outlined.Shield) { nav("permissions") }
             else Caption("PROTECTION CONNECTED")
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Find your rhythm", style = MaterialTheme.typography.titleMedium)
                 s.profiles.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    pair.forEach { p -> Surface(Modifier.weight(1f).height(156.dp).clip(RoundedCornerShape(20.dp)).clickable { start(p) },
+                    pair.forEach { p -> Surface(Modifier.weight(1f).heightIn(min = 156.dp).clip(RoundedCornerShape(20.dp)).clickable { start(p) },
                         shape = RoundedCornerShape(20.dp), color = profileArt(p).tint(), contentColor = FoculyBrand.ink) {
-                        Box(Modifier.fillMaxSize()) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Image(painterResource(profileArt(p).drawable), null,
-                                Modifier.align(Alignment.CenterEnd).size(146.dp).alpha(.42f), contentScale = ContentScale.Fit)
-                            Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Modifier.align(Alignment.End).size(64.dp), contentScale = ContentScale.Fit)
+                            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                 Text(p.name, style = MaterialTheme.typography.titleSmall, color = FoculyBrand.ink, maxLines = 2)
                                 Text("${profileDuration(p.minutes)} · ${p.mode.label}", style = MaterialTheme.typography.bodySmall,
-                                    color = FoculyBrand.ink.copy(alpha = .76f), maxLines = 1)
+                                    color = FoculyBrand.ink.copy(alpha = .76f))
                             }
                         }
                     } }; if (pair.size == 1) Spacer(Modifier.weight(1f))
@@ -303,13 +314,12 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
                 if (s.apps.isEmpty()) DoodleCard(CatArt.PAUSE, "Choose your first app.", "A small pause can make a big difference.", FoculyBrand.blush)
                 s.apps.forEach { app -> Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     AppBadge(app.packageName)
-                    Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { editApp(app) }.padding(horizontal = 12.dp, vertical = 10.dp)) { Text(app.label, style = MaterialTheme.typography.titleSmall); Text(buildList { add("Session selection"); if (app.dailyMinutes > 0) add("${app.allowance(System.currentTimeMillis())}m/day"); if (app.openingMinutes > 0) add("${app.openingMinutes}m/visit") }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { block(BlockKind.APPS, setOf(app.packageName)) }.padding(horizontal = 12.dp, vertical = 10.dp)) { Text(app.label, style = MaterialTheme.typography.titleSmall); Text(buildList { add("Tap to block"); if (app.dailyMinutes > 0) add("${app.allowance(System.currentTimeMillis())}m/day"); if (app.openingMinutes > 0) add("${app.openingMinutes}m/visit") }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton({ block(BlockKind.APPS, setOf(app.packageName)) }, enabled = app.enabled && app.packageName !in s.allowlist) { Icon(Icons.Outlined.LockClock, "Block ${app.label}", Modifier.size(20.dp)) }
                     IconButton({ editApp(app) }) { Icon(Icons.Outlined.Edit, "Edit ${app.label}", Modifier.size(20.dp)) }
                 } } }
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 LinkRow("Always allowed", "${s.allowlist.size} additional exceptions · phone and settings stay available", Icons.Outlined.LockOpen) { nav("allowlist") }
-                LinkRow("Daily allowances & gradual reduction", "Tap an app above to set its limits.", Icons.Outlined.Timer) { if (s.apps.isNotEmpty()) editApp(s.apps.first()) else nav("picker") }
             }
             "Websites" -> {
                 Input("Website or domain", domain, { domain = it; domainError = false }, supporting = if (domainError) "Enter a domain, such as reddit.com" else null)
@@ -323,6 +333,7 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
                 DetailsCard("Browser coverage", "Chrome · Edge · Brave · Firefox", Icons.Outlined.Info) { Text("Experimental address-field detection. Hidden fields, private browsing, embedded browsers, and app updates can miss pages. Add the whole browser for a stronger boundary.", style = MaterialTheme.typography.bodyMedium) }
             }
             "Feeds" -> {
+                DoodleCard(CatArt.FEEDS, "Keep the app. Pause the feed.", "Choose Shorts or Reels below.", FoculyBrand.lime)
                 Caption("SELECTIVE DETECTION · EXPERIMENTAL")
                 listOf("YouTube Shorts", "Instagram Reels", "Facebook Reels").forEach { feed -> SoftCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) { Icon(if (feed == "YouTube Shorts") Icons.Outlined.SmartDisplay else Icons.Outlined.Movie, null, tint = MaterialTheme.colorScheme.primary); Text(feed, style = MaterialTheme.typography.titleMedium) }
@@ -335,7 +346,7 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
             }
             "Schedules" -> {
                 Primary("Add a routine", icon = Icons.Outlined.Add) { editSchedule(null) }
-                if (s.schedules.isEmpty()) DoodleCard(CatArt.STUDY, "Give focus a regular place.", "A quiet morning, study hours, or time to wind down.", FoculyBrand.lime)
+                if (s.schedules.isEmpty()) DoodleCard(CatArt.ROUTINE, "Give focus a regular place.", "A quiet morning, study hours, or time to wind down.", FoculyBrand.lime)
                 s.schedules.forEach { schedule -> SoftCard {
                     Row(verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(schedule.name, style = MaterialTheme.typography.titleMedium); Caption("${minuteLabel(schedule.startMinute)}–${minuteLabel(schedule.endMinute)}${if (schedule.endMinute <= schedule.startMinute) " · next day" else ""}") }; Switch(schedule.enabled, { enabled -> Repository.update { it.copy(schedules = it.schedules.map { item -> if (item.id == schedule.id) item.copy(enabled = enabled) else item }) }; FocusNotifications.plan(Repository.context) }, Modifier.semantics { contentDescription = "Enable ${schedule.name}" }) }
                     Text(schedule.days.sorted().joinToString(" · ") { DayOfWeek.of(it).name.take(3).lowercase().replaceFirstChar(Char::uppercase) }, style = MaterialTheme.typography.bodyMedium)
@@ -427,24 +438,24 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     var allApps by rememberSaveable { mutableStateOf(initial.useAllApps) }
     var allDomains by rememberSaveable { mutableStateOf(initial.useAllDomains) }
     var art by rememberSaveable { mutableStateOf(initial.art) }
-    var newDomain by rememberSaveable { mutableStateOf("") }
-    var chooseApps by remember { mutableStateOf(false) }
-    var installed by remember { mutableStateOf<List<InstalledApp>?>(null) }
-    var appQuery by rememberSaveable { mutableStateOf("") }
+    var chooseApps by rememberSaveable { mutableStateOf(false) }
+    var chooseWebsites by rememberSaveable { mutableStateOf(false) }
+    val installed = selectableApps(s)
     var strictAcknowledged by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(chooseApps) { if (chooseApps && installed == null) installed = withContext(Dispatchers.IO) {
-        val ctx = Repository.context
-        ctx.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
-            .filter { it.activityInfo.packageName != ctx.packageName && !FocusAccessibilityService.essential(ctx, it.activityInfo.packageName) }
-            .map { InstalledApp(it.activityInfo.packageName, it.loadLabel(ctx.packageManager).toString(), it.loadIcon(ctx.packageManager)) }
-            .distinctBy { it.pkg }.sortedBy { it.label.lowercase() }
-    } }
     LaunchedEffect(mode) { strictAcknowledged = false }
     val duplicateName = editing && s.profiles.any { it.id != profileId && it.name.equals(name.trim(), true) }
     val valid = name.isNotBlank() && !duplicateName && minutes.toIntOrNull()?.let { it in (if (mode == "STRICT") 1 else 0)..10_080 } == true
     fun configured() = Profile(profileId, name.trim(), minutes.toIntOrNull() ?: 50, intention.trim(), FocusMode.valueOf(mode), scopedApps, scopedDomains, allApps, allDomains, art)
+    val draftProfile = configured()
+    val strictNeedsAcknowledgement = mode == "STRICT" && (!editing || original?.mode != FocusMode.STRICT)
+    Column(Modifier.fillMaxSize().imePadding()) {
+    Box(Modifier.weight(1f)) {
     Page {
-        Heading(if (editing) if (original == null) "New profile." else "Edit profile." else "Make room.")
+        if (editing) Heading(if (original == null) "New profile." else "Edit profile.")
+        else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Make room.", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium)
+            DoodleBadge(profileArt(draftProfile), Modifier.size(80.dp))
+        }
         if (!editing) ChoiceRow(s.profiles.map { it.name }, name) { choice -> s.profiles.find { it.name == choice }?.let { p -> profileId = p.id; name = p.name; minutes = p.minutes.toString(); intention = p.intention; mode = p.mode.name; scopedApps = p.apps; scopedDomains = p.domains; allApps = p.useAllApps; allDomains = p.useAllDomains; art = p.art; customTime = p.minutes !in setOf(0, 25, 50, 90, 1_440, 10_080) } }
         if (editing) {
             Surface(shape = RoundedCornerShape(24.dp), color = FoculyBrand.lilac, contentColor = FoculyBrand.ink) {
@@ -454,7 +465,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
                 }
             }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf(CatArt.FOCUS, CatArt.STUDY, CatArt.GUARD, CatArt.BREAK, CatArt.PAUSE).forEach { option ->
+                listOf(CatArt.FOCUS, CatArt.STUDY, CatArt.GUARD, CatArt.BREAK, CatArt.PAUSE, CatArt.CHOOSE, CatArt.FEEDS, CatArt.ROUTINE, CatArt.TUNE).forEach { option ->
                     Surface(Modifier.size(60.dp).clip(RoundedCornerShape(18.dp)).clickable { art = option.name }
                         .semantics { contentDescription = "${option.name.lowercase()} illustration"; selected = art == option.name },
                         shape = RoundedCornerShape(18.dp), color = if (art == option.name) FoculyBrand.lilac else MaterialTheme.colorScheme.surfaceVariant) {
@@ -474,56 +485,33 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         if (customTime) Input("Minutes", minutes, { minutes = it.filter(Char::isDigit).take(5) }, true)
         Caption("RESISTANCE")
         ModeCards(FocusMode.valueOf(mode), manual = minutes == "0") { mode = it.name }
-        val strictNeedsAcknowledgement = mode == "STRICT" && (!editing || original?.mode != FocusMode.STRICT)
         if (mode == "STRICT") {
             if (strictNeedsAcknowledgement) ToggleRow("I understand Strict", "No early end in FocuLY.", strictAcknowledged) { strictAcknowledged = it }
             Text("Android can still disable protection on a personal phone.", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        val draftProfile = configured()
-        if (!editing && RulesEngine.selectedRuleCount(s, draftProfile) == 0) {
-            ActionCard("Choose apps", "Pick what this session pauses", Icons.Outlined.Apps) { allApps = false; chooseApps = true }
-        }
-        DetailsCard("Apps", if (allApps) "All selected" else "${RulesEngine.selectedAppCount(s, draftProfile)} chosen", Icons.Outlined.Apps) {
-            ToggleRow("All selected apps", "", allApps) { allApps = it; if (!it) scopedApps = s.apps.filter { rule -> rule.enabled }.map { rule -> rule.packageName }.toSet() }
-            if (!allApps) {
-                s.apps.filter { it.enabled }.forEach { rule -> ToggleRow(rule.label, "", rule.packageName in scopedApps) { enabled -> scopedApps = if (enabled) scopedApps + rule.packageName else scopedApps - rule.packageName } }
-                OutlinedButton({ chooseApps = true }, Modifier.fillMaxWidth()) { Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(8.dp)); Text("Choose apps") }
-            }
-        }
-        DetailsCard("Websites", if (allDomains) "All saved" else "${RulesEngine.selectedDomainCount(s, draftProfile)} chosen", Icons.Outlined.Public) {
-            ToggleRow("All saved websites", "", allDomains) { allDomains = it; if (!it) scopedDomains = s.domains }
-            if (!allDomains) {
-                s.domains.sorted().forEach { host -> ToggleRow(host, "", host in scopedDomains) { enabled -> scopedDomains = if (enabled) scopedDomains + host else scopedDomains - host } }
-                Input("Add website", newDomain, { newDomain = it })
-                val host = RulesEngine.normalizeDomain(newDomain)
-                OutlinedButton({ if (host != null && Repository.update { it.copy(domains = it.domains + host) }) { scopedDomains = scopedDomains + host; newDomain = "" } },
-                    Modifier.fillMaxWidth(), enabled = host != null) { Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(8.dp)); Text("Add") }
-            }
-        }
+        TargetSummary("Apps", s.apps.filter { it.enabled && it.packageName !in s.allowlist && (allApps || it.packageName in scopedApps) }.map { it.label }, Icons.Outlined.Apps) { chooseApps = true }
+        TargetSummary("Websites", (if (allDomains) s.domains else scopedDomains.intersect(s.domains)).sorted(), Icons.Outlined.Public) { chooseWebsites = true }
         if (!valid) Text(if (duplicateName) "Choose a unique profile name." else "Check the name and minute ranges above.", color = MaterialTheme.colorScheme.error)
-        Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null) && (!strictNeedsAcknowledgement || strictAcknowledged), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
         if (!editing && s.session != null) Text("End your current session before starting another.", color = MaterialTheme.colorScheme.error)
     }
-    if (chooseApps) AlertDialog(onDismissRequest = { chooseApps = false }, title = { Text("Apps in this profile", fontFamily = Mono) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Input("Find an app", appQuery, { appQuery = it })
-                if (installed == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-                LazyColumn(Modifier.heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(installed.orEmpty().filter { it.label.contains(appQuery, true) }, key = { it.pkg }) { app ->
-                        val selected = app.pkg in scopedApps
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
-                            if (selected) scopedApps = scopedApps - app.pkg
-                            else if (Repository.update { state -> state.copy(apps = if (state.apps.any { it.packageName == app.pkg }) state.apps.map { if (it.packageName == app.pkg) it.copy(enabled = true) else it } else state.apps + AppRule(app.pkg, app.label)) }) scopedApps = scopedApps + app.pkg
-                        }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(app.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                            Checkbox(selected, null)
-                        }
-                    }
-                }
-            }
-        }, confirmButton = { TextButton({ chooseApps = false }) { Text("Done") } })
+    }
+    Surface(color = MaterialTheme.colorScheme.background) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Caption("${profileDuration(minutes.toIntOrNull() ?: 0)} · ${FocusMode.valueOf(mode).label}")
+            Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null) && (!strictNeedsAcknowledgement || strictAcknowledged), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
+        }
+    }
+    }
+    if (chooseApps) AppSelectionSheet(installed,
+        if (allApps) s.apps.filter { it.enabled && it.packageName !in s.allowlist }.map { it.packageName }.toSet() else scopedApps,
+        { chosen ->
+            val added = installed.orEmpty().filter { it.pkg in chosen }
+            if (Repository.update { state -> state.copy(apps = state.apps.map { if (it.packageName in chosen) it.copy(enabled = true) else it } + added.filterNot { app -> state.apps.any { it.packageName == app.pkg } }.map { AppRule(it.pkg, it.label) }) }) { allApps = false; scopedApps = chosen }
+        }, { chooseApps = false }, allApps, { allApps = it; if (!it) scopedApps = s.apps.filter { rule -> rule.enabled && rule.packageName !in s.allowlist }.map { rule -> rule.packageName }.toSet() })
+    if (chooseWebsites) WebsiteSelectionSheet(s.domains, if (allDomains) s.domains else scopedDomains, allDomains,
+        { allDomains = false; scopedDomains = it }, { allDomains = it; if (!it) scopedDomains = s.domains },
+        { host -> if (Repository.update { it.copy(domains = it.domains + host) }) { if (!allDomains) scopedDomains = scopedDomains + host; true } else false }, { chooseWebsites = false })
 }
 
 @Composable fun ScheduleEditor(s: FocusState, original: Schedule?, createProfile: () -> Unit, save: (Schedule) -> Unit) {
@@ -539,7 +527,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     fun time(raw: String): Int? { val pieces = raw.split(':'); if (pieces.size != 2) return null; val h = pieces[0].toIntOrNull() ?: return null; val m = pieces[1].toIntOrNull() ?: return null; return if (h in 0..23 && m in 0..59) h * 60 + m else null }
     val valid = name.isNotBlank() && days.isNotEmpty() && time(start) != null && time(end) != null && time(start) != time(end) && s.profiles.any { it.id == profile }
     Page {
-        Heading("A place for focus.", "Build a routine around your real life.")
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("A place for focus.", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium); DoodleBadge(CatArt.ROUTINE, Modifier.size(80.dp)) }
         Input("Routine name", name, { name = it.take(40) })
         ChoiceRow(listOf("Weekdays", "Weekend", "Every day"), when (days) { setOf(1, 2, 3, 4, 5) -> "Weekdays"; setOf(6, 7) -> "Weekend"; (1..7).toSet() -> "Every day"; else -> "Custom" }) { days = when (it) { "Weekdays" -> setOf(1, 2, 3, 4, 5); "Weekend" -> setOf(6, 7); else -> (1..7).toSet() } }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { (1..7).forEach { d -> FilterChip(d in days, { days = if (d in days) days - d else days + d }, label = { Text(DayOfWeek.of(d).name.take(3)) }) } }
@@ -630,9 +618,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             }
             if (accessibility && !connected) Text("Service disconnected. Toggle FocuLY off and on in Android Accessibility settings.", style = MaterialTheme.typography.bodyMedium)
             if (ProtectionRuntime.lastError.isNotBlank()) Text(ProtectionRuntime.lastError, color = MaterialTheme.colorScheme.error)
-            ActionCard("FocuLY protection", if (connected && s.disclosure) "Connected" else "Required for blocking", Icons.Outlined.Shield, connected && s.disclosure) { if (s.disclosure) Repository.openAccessibility() else consent = true }
-            ActionCard("Usage access", if (usage) "Connected" else "Daily limits & recovery", Icons.Outlined.Timer, usage) { Repository.openUsage() }
-            ActionCard("Background activity", if (batteryExempt) "Unrestricted" else "Check battery settings", Icons.Outlined.BatteryChargingFull, batteryExempt) { Repository.openBatterySettings() }
+            ActionCard("Protection setup", "${if (usage) "Usage connected" else "Usage optional"} · ${if (batteryExempt) "Background unrestricted" else "Check battery"}", Icons.Outlined.Shield, connected && s.disclosure) { nav("permissions") }
         }
         DetailsCard("Setup details", "Permissions & recovery", Icons.Outlined.Info) {
             LinkRow("App information", "Restricted settings & background access") { Repository.openAppInfo() }
@@ -647,9 +633,9 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         ActionCard("Uninstall & managed protection", "Optional Android administration", Icons.Outlined.Lock) { nav("managed") }
         ActionCard("FocuLY admin PIN", if (AdminPin.configured()) "PIN is set" else "Protect device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
         ActionCard("Your blocking screen", "Message, emoji & live preview", Icons.Outlined.EmojiEmotions) { nav("messages") }
-        ActionCard("Setup checklist", "Review all permissions in one place", Icons.AutoMirrored.Outlined.FactCheck) { nav("permissions") }
         ActionCard("Welcome to FocuLY", "Meet your little focus companions", Icons.Outlined.AutoAwesome) { nav("welcome") }
-        DetailsCard("Appearance", s.theme, Icons.Outlined.Palette) {
+        SoftCard {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("Appearance", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); DoodleBadge(CatArt.TUNE, Modifier.size(68.dp)) }
             ChoiceRow(listOf("System", "Light", "Dark"), s.theme) { value -> Repository.update { it.copy(theme = value) } }
             ToggleRow("Reduce motion", "", s.reduceMotion) { value -> Repository.update { it.copy(reduceMotion = value) } }
             ToggleRow("Haptic feedback", "", s.haptics) { value -> Repository.update { it.copy(haptics = value) } }

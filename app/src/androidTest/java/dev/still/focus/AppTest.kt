@@ -69,7 +69,7 @@ class AppTest {
         ui.activityRule.scenario.recreate()
         ui.onNodeWithText("Name").performScrollTo().assertTextContains("Quiet study")
         ui.onNodeWithContentDescription("focus illustration").assertIsSelected()
-        ui.onNodeWithText("Save profile").performScrollTo().performClick()
+        ui.onNodeWithText("Save profile").assertIsDisplayed().performClick()
         ui.runOnIdle {
             assertEquals(4, Repository.state.profiles.size)
             val edited = Repository.state.profiles.single { it.id == "study" }
@@ -125,7 +125,7 @@ class AppTest {
     }
     @Test fun timerOnlyWarningIsExplicitAndSessionStarts() {
         ui.onNodeWithText("Deep work").performScrollTo().performClick()
-        ui.onNodeWithText("Start focus").performScrollTo().performClick()
+        ui.onNodeWithText("Start focus").assertIsDisplayed().performClick()
         ui.onNodeWithText("Blocking needs your consent and a connected Android accessibility service. You can enable it now, or explicitly start a timer without blocking.").assertExists()
         ui.onNodeWithText("Timer only").performClick()
         ui.onNodeWithText("Timer only · protection is off").assertExists()
@@ -136,12 +136,15 @@ class AppTest {
         ui.onNodeWithContentDescription("Profile").performClick()
         ui.onNodeWithText("Create profile").performClick()
         ui.onNodeWithText("Name").performTextReplacement("Week pause")
-        ui.onNodeWithText("1 week").performScrollTo().performClick()
+        ui.onNodeWithText("Name").performImeAction()
+        ui.onNode(hasText("1 week") and hasClickAction()).performScrollTo().performClick().assertIsSelected()
         ui.onNodeWithText("Apps").performScrollTo().performClick()
-        ui.onNodeWithContentDescription("All selected apps").performScrollTo().performClick()
+        ui.onNodeWithContentDescription("All selected apps").performClick()
+        ui.onNodeWithText("Done · 1 selected").performClick()
         ui.onNodeWithText("Websites").performScrollTo().performClick()
-        ui.onNodeWithContentDescription("All saved websites").performScrollTo().performClick()
-        ui.onNodeWithText("Save profile").performScrollTo().performClick()
+        ui.onNodeWithContentDescription("All saved websites").performClick()
+        ui.onNodeWithText("Done · 1 selected").performClick()
+        ui.onNodeWithText("Save profile").assertIsDisplayed().performClick()
         ui.runOnIdle {
             val profile = Repository.state.profiles.single { it.name == "Week pause" }
             assertEquals(10_080, profile.minutes)
@@ -210,15 +213,51 @@ class AppTest {
         ui.onNodeWithContentDescription("Rules").performClick()
         ui.onNodeWithText("Block selected apps").performClick()
         ui.onNodeWithText("1 week").performClick().assertIsSelected()
-        ui.onNodeWithText("Choose targets").performClick()
+        ui.onNodeWithText("Apps").performClick()
         ui.onNodeWithText("Clear").performClick()
-        ui.onNodeWithText("Select all").performClick()
-        ui.onNodeWithText("Connect protection").performScrollTo().performClick()
-        ui.onNodeWithText("PROTECTION HEALTH").assertExists()
+        ui.onNodeWithText("Search apps").performTextInput("Scroll")
+        ui.waitUntil(5000) { ui.onAllNodesWithText("Scroll Test").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithText("Scroll Test").performClick()
+        ui.onNodeWithText("Done · 1 selected").performClick()
+        ui.onNodeWithText("Connect protection").assertIsDisplayed().performClick()
+        ui.onNodeWithText("Back to block").performScrollTo().assertExists()
         ui.onNodeWithContentDescription("Back").performClick()
         ui.onNodeWithText("1 week").assertIsSelected()
         ui.onNodeWithText("Until I unblock").performScrollTo().performClick()
         ui.onNodeWithText("Strict").performScrollTo().assertIsNotEnabled()
+    }
+    @Test fun homeAppShortcutOpensPickerAndRestoresSelectionWithoutSavingABlock() {
+        ui.onNodeWithText("Block apps").performScrollTo().performClick()
+        ui.onNodeWithText("Search apps").assertIsDisplayed().performTextInput("Scroll")
+        ui.waitUntil(5000) { ui.onAllNodesWithText("Scroll Test").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithText("Scroll Test").performClick()
+        ui.activityRule.scenario.recreate()
+        ui.onNodeWithText("Done · 1 selected").assertIsDisplayed().performClick()
+        ui.onNodeWithText("Block apps.").assertIsDisplayed()
+        ui.onNodeWithText("Connect protection").assertIsDisplayed()
+        ui.runOnIdle { assertTrue(Repository.state.apps.isEmpty()); assertTrue(Repository.state.blocks.isEmpty()) }
+    }
+    @Test fun homeWebsiteShortcutAddsAndNormalizesDomainInOneScreen() {
+        ui.onNodeWithText("Block websites").performScrollTo().performClick()
+        ui.onNodeWithText("Website or domain").performTextInput("https://www.reddit.com/r/focus")
+        ui.onNodeWithText("Add website").performClick()
+        ui.onNodeWithText("reddit.com").assertExists()
+        ui.onNodeWithText("1 week").performClick().assertIsSelected()
+        ui.onNodeWithText("Connect protection").assertIsDisplayed()
+        ui.activityRule.scenario.recreate()
+        ui.onNodeWithText("reddit.com").assertExists()
+        ui.onNodeWithText("1 week").assertIsSelected()
+        ui.runOnIdle { assertTrue(Repository.state.domains.isEmpty()); assertTrue(Repository.state.blocks.isEmpty()) }
+    }
+    @Test fun homeFeedsShortcutShowsAllFeedsAndKeepsManualStrictGuard() {
+        ui.onNodeWithText("Shorts & Reels").performScrollTo().performClick()
+        ui.onNodeWithContentDescription("YouTube Shorts").performClick()
+        ui.onNodeWithContentDescription("Instagram Reels").assertExists()
+        ui.onNodeWithContentDescription("Facebook Reels").assertExists()
+        ui.onNodeWithText("Until I unblock").performScrollTo().performClick()
+        ui.onNodeWithText("Strict").performScrollTo().assertIsNotEnabled()
+        ui.onNodeWithText("Connect protection").assertIsDisplayed()
+        ui.runOnIdle { assertTrue(Repository.state.feeds.isEmpty()); assertTrue(Repository.state.blocks.isEmpty()) }
     }
     @Test fun strictBlockRejectsDeletionAndRecoversAtDeadline() {
         ui.runOnIdle {

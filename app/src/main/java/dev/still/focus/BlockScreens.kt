@@ -16,6 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -139,13 +141,25 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
     }
 }
 
-@Composable fun BlockEditor(s: FocusState, kind: BlockKind, initialTargets: Set<String>?, done: () -> Unit, settings: () -> Unit, openProfile: (Profile) -> Unit) {
-    val available = when (kind) {
-        BlockKind.APPS -> s.apps.filter { it.enabled && it.packageName !in s.allowlist }.associate { it.packageName to it.label }
-        BlockKind.WEBSITES -> s.domains.sorted().associateWith { it }
-        BlockKind.FEEDS -> s.feeds.sorted().associateWith { it }
+@OptIn(ExperimentalLayoutApi::class)
+@Composable fun BlockEditor(s: FocusState, kind: BlockKind, initialTargets: Set<String>?, done: () -> Unit, settings: () -> Unit) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
+    val apps = selectableApps(s)
+    val labels = when (kind) {
+        BlockKind.APPS -> s.apps.associate { it.packageName to it.label } + apps.orEmpty().associate { it.pkg to it.label }
+        BlockKind.WEBSITES -> s.domains.associateWith { it }
+        BlockKind.FEEDS -> supportedFeeds.associateWith { it }
     }
-    var targets by rememberSaveable(kind, initialTargets) { mutableStateOf((initialTargets ?: available.keys).intersect(available.keys)) }
+    val defaults = when (kind) {
+        BlockKind.APPS -> s.apps.filter { it.enabled && it.packageName !in s.allowlist }.map { it.packageName }.toSet()
+        BlockKind.WEBSITES -> s.domains
+        BlockKind.FEEDS -> s.feeds
+    }
+    var targets by rememberSaveable(kind, initialTargets) { mutableStateOf((initialTargets ?: defaults).toSet()) }
+    var choosingApps by rememberSaveable { mutableStateOf(kind == BlockKind.APPS && targets.isEmpty()) }
+    var domain by rememberSaveable { mutableStateOf("") }
+    var domainError by rememberSaveable { mutableStateOf(false) }
     var period by rememberSaveable { mutableStateOf(BlockPeriod.DAY) }
     var mode by rememberSaveable { mutableStateOf(FocusMode.STANDARD) }
     var minutes by rememberSaveable { mutableStateOf("60") }
@@ -155,46 +169,74 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
     LaunchedEffect(period, mode) { acknowledged = false; if (period == BlockPeriod.MANUAL && mode == FocusMode.STRICT) mode = FocusMode.STANDARD }
     val valid = targets.isNotEmpty() && (period != BlockPeriod.TIMER || minutes.toIntOrNull()?.let { it in 1..1440 } == true)
     val preview = BlockPlan(kind = kind, targets = targets, mode = mode, start = now, end = period.deadline(now, minutes.toIntOrNull() ?: 60), period = period)
+    val ready = Repository.protectionReady()
     Column(Modifier.fillMaxSize().imePadding()) {
-    Box(Modifier.weight(1f)) {
-    Page {
-        Heading("Block ${kind.label.lowercase()}.")
-        DetailsCard("Choose targets", if (targets.size == 1) available[targets.first()] ?: "1 selected" else "${targets.size} selected", blockIcon(kind), initiallyOpen = targets.isEmpty()) {
-            Row { TextButton({ targets = available.keys.toSet() }) { Text("Select all") }; TextButton({ targets = emptySet() }) { Text("Clear") } }
-            available.forEach { (id, label) -> ToggleRow(label, "", id in targets) { selected -> targets = if (selected) targets + id else targets - id } }
-            if (available.isEmpty()) Text("Add ${kind.label.lowercase()} in Rules first.")
+        Box(Modifier.weight(1f)) {
+            Page {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Block ${kind.label.lowercase()}.", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium)
+                    DoodleBadge(if (kind == BlockKind.FEEDS) CatArt.FEEDS else CatArt.CHOOSE, Modifier.size(80.dp))
+                }
+                when (kind) {
+                    BlockKind.APPS -> TargetSummary("Apps", targets.map { labels[it] ?: it }, Icons.Outlined.Apps) { choosingApps = true }
+                    BlockKind.WEBSITES -> {
+                        Input("Website or domain", domain, { domain = it; domainError = false }, supporting = if (domainError) "Use a domain like reddit.com" else null)
+                        OutlinedButton({
+                            val host = RulesEngine.normalizeDomain(domain)
+                            if (host == null) domainError = true else { targets = targets + host; domain = ""; keyboard?.hide(); focus.clearFocus() }
+                        }, Modifier.fillMaxWidth(), enabled = domain.isNotBlank()) { Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(8.dp)); Text("Add website") }
+                        if (targets.isNotEmpty()) Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            targets.sorted().forEach { host -> InputChip(true, { targets = targets - host }, label = { Text(host) },
+                                trailingIcon = { Icon(Icons.Outlined.Close, "Remove $host", Modifier.size(16.dp)) }) }
+                        }
+                    }
+                    BlockKind.FEEDS -> supportedFeeds.forEach { feed ->
+                        ToggleRow(feed, "", feed in targets) { checked -> targets = if (checked) targets + feed else targets - feed }
+                    }
+                }
+                Caption("HOW LONG")
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BlockPeriod.entries.forEach { option -> FilterChip(period == option, { period = option }, label = { Text(option.label) }) }
+                }
+                if (period == BlockPeriod.TIMER) {
+                    ChoiceRow(listOf("15", "30", "60", "120"), minutes) { minutes = it }
+                    Input("Minutes", minutes, { minutes = it.filter(Char::isDigit).take(4) }, numeric = true, supporting = "1–1440 minutes")
+                }
+                Caption("RESISTANCE")
+                ModeCards(mode, period == BlockPeriod.MANUAL) { mode = it }
+                Text(when (mode) { FocusMode.GENTLE -> "Gentle reminder · temporary visits"; FocusMode.STANDARD -> "30-second pause · reason required"; FocusMode.STRICT -> "Locked until expiry · no early unblock" },
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (period == BlockPeriod.MANUAL) Caption("STRICT NEEDS AN AUTOMATIC ENDING")
+                if (mode == FocusMode.STRICT) {
+                    ToggleRow("Lock until expiry", "No early unblock or rule changes", acknowledged) { acknowledged = it }
+                    Text(if (ManagedProtection.isOwner()) "Android blocks removing FocuLY during Strict." else "Android can still disable or remove FocuLY on this phone.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (kind != BlockKind.APPS) DetailsCard("Detection coverage", "Experimental · whole-app fallback available", Icons.Outlined.Info) {
+                    Text("Detection depends on the app's exposed controls. Choose the whole app for a stronger boundary.")
+                }
+            }
         }
-        Caption("HOW LONG")
-        Text("Or start a saved focus profile", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            s.profiles.forEach { profile -> FilterChip(false, { openProfile(profile) },
-                label = { Text("${profile.name} · ${profileDuration(profile.minutes)}") },
-                leadingIcon = { CatDoodle(profileArt(profile), Modifier.size(28.dp)) }) }
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Caption("${targets.size} selected · ${mode.label} · ${blockDeadline(preview, now)}")
+                val chooseFirst = kind == BlockKind.APPS && targets.isEmpty()
+                Primary(if (chooseFirst) "Choose apps" else if (!ready) "Connect protection" else "Block now",
+                    (chooseFirst || valid && (mode != FocusMode.STRICT || acknowledged)) && !RulesEngine.strictActive(s, now), Icons.Outlined.Lock) {
+                    if (chooseFirst) choosingApps = true
+                    else if (!Repository.protectionReady()) settings()
+                    else {
+                        val saved = Repository.update { state -> when (kind) {
+                            BlockKind.APPS -> state.copy(apps = state.apps.map { if (it.packageName in targets) it.copy(enabled = true) else it } +
+                                targets.filterNot { pkg -> state.apps.any { it.packageName == pkg } }.map { AppRule(it, labels[it] ?: it) })
+                            BlockKind.WEBSITES -> state.copy(domains = state.domains + targets)
+                            BlockKind.FEEDS -> state.copy(feeds = state.feeds + targets)
+                        } }
+                        if (saved && Repository.block(kind, targets, period, mode, minutes.toIntOrNull() ?: 60)) done()
+                    }
+                }
+            }
         }
-        Text("A profile uses its saved apps, websites and resistance settings.", style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant)
-        BlockPeriod.entries.filter { it != BlockPeriod.MANUAL }.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            pair.forEach { choice -> Box(Modifier.weight(1f)) { SelectionCard(choice.label, when (choice) { BlockPeriod.TODAY -> "Until midnight"; BlockPeriod.DAY -> "Same time tomorrow"; BlockPeriod.WEEK -> "Next week"; else -> "Custom timer" }, when (choice) { BlockPeriod.TIMER -> Icons.Outlined.Timer; BlockPeriod.WEEK -> Icons.Outlined.DateRange; else -> Icons.Outlined.Today }, period == choice, tile = true) { period = choice } } }
-        } }
-        SelectionCard("Until I unblock", "No countdown", Icons.Outlined.LockOpen, period == BlockPeriod.MANUAL) { period = BlockPeriod.MANUAL }
-        if (period == BlockPeriod.TIMER) { ChoiceRow(listOf("15", "30", "60", "120"), minutes) { minutes = it }; Input("Minutes", minutes, { minutes = it.filter(Char::isDigit).take(4) }, numeric = true, supporting = "1–1440 minutes") }
-        Caption("RESISTANCE")
-        ModeCards(mode, period == BlockPeriod.MANUAL) { mode = it }
-        if (period == BlockPeriod.MANUAL) Caption("STRICT NEEDS AN AUTOMATIC ENDING")
-        if (mode == FocusMode.STRICT) {
-            ToggleRow("Lock until expiry", "No early unblock or rule changes", acknowledged) { acknowledged = it }
-            Caption(if (ManagedProtection.isOwner()) "Android blocks removing FocuLY during Strict." else "Android can still disable or remove FocuLY on this phone. Admin access adds a deactivation step.")
-        }
-        if (!Repository.protectionReady()) ActionCard("Connect protection", "Required before blocking", Icons.Outlined.Shield, action = settings)
-        if (kind != BlockKind.APPS) DetailsCard("Detection coverage", "Experimental · whole-app fallback available", Icons.Outlined.Info) { Text("${if (kind == BlockKind.WEBSITES) "Supported browser address fields" else "Selected Shorts/Reels controls"} must be exposed by the app. Hidden controls and app updates can miss a block. Choose the whole app for a stronger boundary.") }
     }
-    }
-    Surface(color = MaterialTheme.colorScheme.background) { Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Caption("${targets.size} selected · ${mode.label} · ${blockDeadline(preview, now)}")
-        Primary("Block now", valid && (mode != FocusMode.STRICT || acknowledged) && !RulesEngine.strictActive(s, now), Icons.Outlined.Lock) {
-            if (!Repository.protectionReady()) settings()
-            else if (Repository.block(kind, targets, period, mode, minutes.toIntOrNull() ?: 60)) done()
-        }
-    } }
-    }
+    if (choosingApps) AppSelectionSheet(apps, targets, { targets = it }, { choosingApps = false })
 }

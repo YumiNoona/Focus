@@ -27,7 +27,10 @@ class ScreenshotGalleryTest {
     }
     private fun open(route: String) {
         shell("cmd statusbar collapse")
-        shell("am start -n dev.still.focus/.MainActivity --es screen $route")
+        // Preserve the launch intent filter so ActivityScenario follows recreation and cleanup.
+        ui.activityRule.scenario.onActivity {
+            it.startActivity(Intent(it.intent).putExtra("screen", route).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP))
+        }
         ui.waitForIdle(); Thread.sleep(900)
         scrollPage(-100_000f)
     }
@@ -46,6 +49,40 @@ class ScreenshotGalleryTest {
         val profile = Profile("dark-preview", "Quiet focus", 3, "Give yourself a little room.", FocusMode.GENTLE)
         ui.runOnIdle { Repository.update { demo.copy(theme = "Dark", session = Session(profile = profile, start = System.currentTimeMillis(), end = System.currentTimeMillis() + 60_000, timerOnly = true)) } }
         open("home"); shot("40-dark-focus")
+    }
+    @Test fun captureSimplifiedFlows() {
+        Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
+        automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+        Assume.assumeTrue(shell("getprop ro.kernel.qemu").trim() == "1")
+        assertFalse(RulesEngine.strictActive(Repository.state, System.currentTimeMillis()))
+        val original = Repository.state
+        val fontScale = shell("settings get system font_scale").trim().toFloatOrNull() ?: 1f
+        try {
+            val demo = FocusState(onboarding = true, apps = listOf(AppRule("dev.still.fixture", "Scroll Test")), domains = setOf("reddit.com"))
+            ui.runOnIdle { Repository.update { demo } }
+            open("home"); shot("simple-01-home"); lower("simple-02-home-feeds")
+            ui.onNodeWithText("Block apps").performScrollTo().performClick(); shot("simple-03-block-apps")
+            ui.onNodeWithText("Apps").performClick(); shot("simple-04-choose-apps")
+            ui.onNodeWithText("Search apps").performTextInput("Scroll"); shot("simple-05-search-keyboard")
+            ui.onNodeWithText("Search apps").performImeAction()
+            ui.onNodeWithText("Done · 1 selected").performClick()
+            open("home"); ui.onNodeWithText("Block websites").performScrollTo().performClick(); shot("simple-06-block-websites")
+            open("home"); ui.onNodeWithText("Shorts & Reels").performScrollTo().performClick(); shot("simple-07-block-feeds")
+            open("setup"); shot("simple-08-focus"); lower("simple-09-focus-targets")
+            ui.onNodeWithText("Websites").performScrollTo().performClick(); shot("simple-10-choose-websites")
+            ui.onNodeWithText("Done · 1 selected").performClick()
+            open("rules"); ui.onNodeWithText("Schedules").performClick(); shot("simple-11-routines")
+            ui.onNodeWithText("Add a routine").performClick(); shot("simple-12-routine-editor")
+            open("settings"); shot("simple-13-settings"); ui.onNodeWithText("Appearance").performScrollTo(); lower("simple-14-appearance")
+            ui.runOnIdle { Repository.update { demo.copy(theme = "Dark") } }; open("home"); shot("simple-15-dark-home")
+            ui.onNodeWithText("Shorts & Reels").performScrollTo().performClick(); shot("simple-16-dark-feeds")
+            shell("settings put system font_scale 1.3"); Thread.sleep(1500)
+            ui.runOnIdle { Repository.update { demo } }; open("setup"); shot("simple-17-large-focus")
+            ui.onNodeWithText("Apps").performScrollTo().performClick(); shot("simple-18-large-apps")
+            ui.onNodeWithText("Search apps").performTextInput("Scroll"); shot("simple-19-large-keyboard")
+            ui.onNodeWithText("Search apps").performImeAction()
+            ui.onNodeWithText("Done · 1 selected").performClick()
+        } finally { shell("settings put system font_scale $fontScale"); ui.runOnIdle { Repository.update { original } }; open("home") }
     }
     @Test fun captureSessionMilestones() {
         Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
@@ -105,7 +142,7 @@ class ScreenshotGalleryTest {
             open("profileEdit"); shot("17-profile-editor")
             open("insights"); shot("18-insights")
             open("settings"); shot("19-settings-health"); lower("19b-settings-cards")
-            ui.onNodeWithText("Appearance").performScrollTo().performClick(); shot("19c-appearance"); ui.onNodeWithText("Appearance").performClick()
+            ui.onNodeWithText("Appearance").performScrollTo(); shot("19c-appearance")
             ui.onNodeWithText("Intentional visits").performScrollTo().performClick(); shot("19d-intentional-visits"); ui.onNodeWithText("Intentional visits").performClick()
             ui.onNodeWithText("Privacy & data").performScrollTo().performClick(); shot("19e-privacy-data"); ui.onNodeWithText("Privacy & data").performClick()
             open("managed"); shot("20-device-protection"); lower("20b-device-controls")
@@ -144,7 +181,7 @@ class ScreenshotGalleryTest {
             open("home"); ui.onNodeWithText("Unblock").performScrollTo().performClick(); shot("37-unblock-warning")
             ui.onNodeWithText("Keep block").performClick()
             ui.runOnIdle { Repository.update { demo.copy(disclosure = false) } }
-            open("setup"); ui.onNodeWithText("Start focus").performScrollTo().performClick(); shot("38-protection-warning")
+            open("setup"); ui.onNodeWithText("Start focus").performClick(); shot("38-protection-warning")
             ui.onNodeWithText("Timer only").assertExists()
             automation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
             ui.runOnIdle { Repository.update { demo } }

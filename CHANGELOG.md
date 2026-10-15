@@ -2,6 +2,10 @@
 
 ## Unreleased — flow review, 2026-10-15
 
+- Simplify Home shortcuts: choose and block apps directly, add websites within block setup, or open all Shorts/Reels controls together. Remove the intermediate saved-profile detour from blocking.
+- Share searchable app and website selection sheets across focus/profile setup, show target summaries directly, and keep Start/Save/Block actions visible while scrolling.
+- Return from permission setup to the original draft, consolidate protection setup, expose appearance controls, and dismiss the keyboard after adding a valid website.
+- Add four transparent cat doodles for choosing targets, feeds, routines, and appearance; include them in profile artwork choices.
 - Preserve navigation, app-rule drafts, profile identities, and routine days/identities when Android recreates the activity. Keep explicit notification navigation working after restoration.
 - Preserve explicitly selected profile artwork across storage round-trips; apply legacy illustration defaults only when artwork was never saved.
 - Re-evaluate parked feed overlays using current consent and resistance rules, replacing stale visit buttons and releasing overlays after consent withdrawal.

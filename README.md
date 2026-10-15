@@ -25,6 +25,8 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet FocuLY
 
+**Current development:** Home shortcuts open block setup directly, focus targets use shared selection sheets, and primary actions stay visible. Four additional cat doodles accompany selection, feeds, routines, and appearance. These changes follow the published v1.2.0 APK; see the [flow guide and current screenshots](docs/SIMPLER_FLOWS.md).
+
 **New in v1.2.0:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages with mode previews, direct Shorts/Reels actions, and individual managed app controls. Distinct doodles accompany reminders, patience, Strict boundaries, growing focus, breaks, and completion.
 
 FocuLY helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
