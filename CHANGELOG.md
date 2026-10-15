@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased — flow review, 2026-10-15
+
+- Preserve navigation, app-rule drafts, profile identities, and routine days/identities when Android recreates the activity. Keep explicit notification navigation working after restoration.
+- Preserve explicitly selected profile artwork across storage round-trips; apply legacy illustration defaults only when artwork was never saved.
+- Re-evaluate parked feed overlays using current consent and resistance rules, replacing stale visit buttons and releasing overlays after consent withdrawal.
+- Add empty-profile routine recovery and a direct app-selection action for sessions without targets. Keep failed session starts in the editor and return to the correct screen after creating a profile.
+- Add keyboard-operated website previews, linked tab panels, Escape/outside-click mobile-menu dismissal, and remove collapsed menu links from keyboard focus.
+- Add regression checks for recreation, profile persistence, empty-state recovery, and parked-overlay updates. See [review and validation](docs/FLOW_REVIEW_2026-10-15.md).
+
 ## [1.2.0](https://github.com/YumiNoona/Focus/releases/tag/v1.2.0) — 2026-10-14
 
 - Add six distinct transparent cat doodles for reminders, Resistant waiting, Strict boundaries, active focus, Pomodoro breaks, and completion, bringing the illustration set to nine scenes.

@@ -56,11 +56,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Repository.init(this)
-        requestedScreen = intent.getStringExtra("screen") ?: "home"
+        requestedScreen = savedInstanceState?.getString("requestedScreen") ?: intent.getStringExtra("screen") ?: "home"
+        navigationSequence = savedInstanceState?.getInt("navigationSequence") ?: 0
         enableEdgeToEdge()
         setContent { StillTheme(Repository.state.theme) { StillApp(requestedScreen, navigationSequence) } }
     }
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); requestedScreen = intent.getStringExtra("screen") ?: "home"; navigationSequence++ }
+    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); requestedScreen = intent.getStringExtra("screen") ?: "home"; navigationSequence++ }
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("requestedScreen", requestedScreen)
+        outState.putInt("navigationSequence", navigationSequence)
+        super.onSaveInstanceState(outState)
+    }
     override fun onResume() { super.onResume(); Repository.reconcile(); FocusNotifications.session(this); FocusNotifications.plan(this) }
 }
 
@@ -69,7 +75,8 @@ class MainActivity : ComponentActivity() {
     val lightBars = MaterialTheme.colorScheme.background.luminance() > .5f
     SideEffect { activity?.let { androidx.core.view.WindowCompat.getInsetsController(it.window, it.window.decorView).apply { isAppearanceLightStatusBars = lightBars; isAppearanceLightNavigationBars = lightBars } } }
     val s = Repository.state
-    var route by rememberSaveable { mutableStateOf("home") }
+    var route by rememberSaveable { mutableStateOf(requested) }
+    var appliedNavigation by rememberSaveable { mutableIntStateOf(navigationSequence) }
     var tab by rememberSaveable { mutableStateOf("Apps") }
     var blockKind by rememberSaveable { mutableStateOf(BlockKind.APPS) }
     var blockTargets by rememberSaveable { mutableStateOf<Set<String>?>(null) }
@@ -78,31 +85,38 @@ class MainActivity : ComponentActivity() {
     var profileParent by rememberSaveable { mutableStateOf("home") }
     var pinParent by rememberSaveable { mutableStateOf("settings") }
     val screenState = rememberSaveableStateHolder()
-    var editingProfile by remember { mutableStateOf<Profile?>(null) }
-    var editingSchedule by remember { mutableStateOf<Schedule?>(null) }
-    var selectedProfile by remember { mutableStateOf(s.profiles.firstOrNull() ?: FocusState.defaults().first()) }
+    var editingProfileId by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingScheduleId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedProfileId by rememberSaveable { mutableStateOf(s.profiles.firstOrNull()?.id) }
+    val editingProfile = s.profiles.find { it.id == editingProfileId }
+    val editingSchedule = s.schedules.find { it.id == editingScheduleId }
+    val selectedProfile = s.profiles.find { it.id == selectedProfileId } ?: s.profiles.firstOrNull() ?: FocusState.defaults().first()
     var sessionParent by rememberSaveable { mutableStateOf("home") }
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var usage by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
     var usageReady by remember { mutableStateOf(false) }
-    LaunchedEffect(requested, navigationSequence) { route = requested }
+    LaunchedEffect(requested, navigationSequence) {
+        if (appliedNavigation != navigationSequence) { route = requested; appliedNavigation = navigationSequence }
+    }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); Repository.reconcile(); delay(1000) } }
     LaunchedEffect(route, now / 15_000) { usage = withContext(Dispatchers.IO) { UsageReader.day(Repository.context) }; usageReady = true }
     val mainRoutes = listOf("home", "rules", "insights")
     val back: () -> Unit = { route = when (route) { "block" -> blockParent; "setup" -> sessionParent; "settings" -> settingsParent; "profile" -> profileParent; "pin" -> pinParent; "profileEdit" -> "profile"; "managed", "messages", "permissions", "welcome" -> "settings"; "lifecycle" -> "managed"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
     BackHandler(route !in mainRoutes, onBack = back)
-    var appRule by remember { mutableStateOf<AppRule?>(null) }
+    var appRulePackage by rememberSaveable { mutableStateOf<String?>(null) }
+    val appRule = s.apps.find { it.packageName == appRulePackage }
     var stopDialog by remember { mutableStateOf(false) }
     var timerDialog by remember { mutableStateOf(false) }
     var pendingStart by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
     var strictRequested by remember { mutableStateOf(false) }
     val startBlock: (BlockKind, Set<String>?) -> Unit = { kind, targets -> screenState.removeState("block"); blockKind = kind; blockTargets = targets; blockParent = if (route == "appRule") "rules" else route; route = "block" }
-    val startSession: (Profile) -> Unit = { screenState.removeState("setup"); selectedProfile = it; sessionParent = route; route = "setup" }
+    val startSession: (Profile) -> Unit = { screenState.removeState("setup"); selectedProfileId = it.id; sessionParent = route; route = "setup" }
     val nav: (String) -> Unit = { when (it) {
         "blockApps" -> if (s.apps.none { it.enabled && it.packageName !in s.allowlist }) { tab = "Apps"; route = "picker" } else startBlock(BlockKind.APPS, null)
         "blockWebsites" -> if (s.domains.isEmpty()) { tab = "Websites"; route = "rules" } else startBlock(BlockKind.WEBSITES, null)
         "settings" -> { settingsParent = route; route = "settings" }
         "pin" -> { pinParent = route; route = "pin" }
+        "profile" -> { profileParent = route; route = "profile" }
         else -> route = it
     } }
     if (!s.onboarding) {
@@ -118,12 +132,12 @@ class MainActivity : ComponentActivity() {
             screenState.SaveableStateProvider(route) {
             when (route) {
                 "home" -> Home(s, now, usage, usageReady, nav, startSession, { stopDialog = true })
-                "rules" -> Rules(s, tab, { tab = it }, nav, { appRule = it; route = "appRule" }, { screenState.removeState("schedule"); editingSchedule = it; route = "schedule" }, startBlock)
+                "rules" -> Rules(s, tab, { tab = it }, nav, { appRulePackage = it.packageName; route = "appRule" }, { screenState.removeState("schedule"); editingScheduleId = it?.id; route = "schedule" }, startBlock)
                 "block" -> BlockEditor(s, blockKind, blockTargets, { route = "home" }, { settingsParent = "block"; route = "settings" }, startSession)
                 "insights" -> Insights(s, usage, usageReady)
                 "profile" -> ProfileScreen(s,
-                    { screenState.removeState("profileEdit"); editingProfile = it; route = "profileEdit" },
-                    { screenState.removeState("profileEdit"); editingProfile = null; route = "profileEdit" },
+                    { screenState.removeState("profileEdit"); editingProfileId = it.id; route = "profileEdit" },
+                    { screenState.removeState("profileEdit"); editingProfileId = null; route = "profileEdit" },
                     { profile -> Repository.update { state -> state.copy(profiles = state.profiles.filterNot { it.id == profile.id }, schedules = state.schedules.filterNot { it.profileId == profile.id }) } })
                 "settings" -> SettingsScreen(s, nav)
                 "managed" -> DeviceControlsGate { ManagedScreen(s, nav) }
@@ -133,9 +147,9 @@ class MainActivity : ComponentActivity() {
                 "permissions" -> SetupChecklist { route = "settings" }
                 "picker", "allowlist" -> AppPicker(s, route == "allowlist") { route = "rules" }
                 "appRule" -> appRule?.let { app -> AppRuleEditor(app, { startBlock(BlockKind.APPS, setOf(app.packageName)) }) { updated -> Repository.update { state -> state.copy(apps = state.apps.map { if (it.packageName == updated.packageName) updated else it }) }; route = "rules" } }
-                "schedule" -> ScheduleEditor(s, editingSchedule) { schedule -> Repository.update { state -> state.copy(schedules = state.schedules.filterNot { it.id == schedule.id } + schedule) }; FocusNotifications.plan(Repository.context); route = "rules" }
+                "schedule" -> ScheduleEditor(s, editingSchedule, { nav("profile") }) { schedule -> if (Repository.update { state -> state.copy(schedules = state.schedules.filterNot { it.id == schedule.id } + schedule) }) { FocusNotifications.plan(Repository.context); route = "rules" } }
                 "setup", "profileEdit" -> SessionEditor(s, if (route == "profileEdit") editingProfile else selectedProfile, route == "profileEdit", onSave = { p -> if (Repository.update { state -> state.copy(profiles = state.profiles.filterNot { it.id == p.id } + p) }) route = "profile" }, onStart = { p, duration, intention ->
-                    val action: (Boolean) -> Unit = { timerOnly -> route = if (Repository.start(p, duration, intention, timerOnly)) "home" else "settings" }
+                    val action: (Boolean) -> Unit = { timerOnly -> if (Repository.start(p, duration, intention, timerOnly)) route = "home" }
                     if (!Repository.protectionReady()) { strictRequested = p.mode == FocusMode.STRICT; pendingStart = action; timerDialog = true } else action(false)
                 })
                 else -> Home(s, now, usage, usageReady, nav, startSession, { stopDialog = true })
@@ -467,6 +481,9 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         val draftProfile = configured()
+        if (!editing && RulesEngine.selectedRuleCount(s, draftProfile) == 0) {
+            ActionCard("Choose apps", "Pick what this session pauses", Icons.Outlined.Apps) { allApps = false; chooseApps = true }
+        }
         DetailsCard("Apps", if (allApps) "All selected" else "${RulesEngine.selectedAppCount(s, draftProfile)} chosen", Icons.Outlined.Apps) {
             ToggleRow("All selected apps", "", allApps) { allApps = it; if (!it) scopedApps = s.apps.filter { rule -> rule.enabled }.map { rule -> rule.packageName }.toSet() }
             if (!allApps) {
@@ -509,16 +526,18 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         }, confirmButton = { TextButton({ chooseApps = false }) { Text("Done") } })
 }
 
-@Composable fun ScheduleEditor(s: FocusState, original: Schedule?, save: (Schedule) -> Unit) {
+@Composable fun ScheduleEditor(s: FocusState, original: Schedule?, createProfile: () -> Unit, save: (Schedule) -> Unit) {
+    val scheduleId = rememberSaveable { original?.id ?: UUID.randomUUID().toString() }
     var name by rememberSaveable { mutableStateOf(original?.name ?: "Quiet hours") }
     var start by rememberSaveable { mutableStateOf(minuteLabel(original?.startMinute ?: 540)) }
     var end by rememberSaveable { mutableStateOf(minuteLabel(original?.endMinute ?: 660)) }
-    var days by remember { mutableStateOf(original?.days ?: setOf(1, 2, 3, 4, 5)) }
-    var profile by rememberSaveable { mutableStateOf(original?.profileId ?: s.profiles.first().id) }
+    var days by rememberSaveable { mutableStateOf(original?.days ?: setOf(1, 2, 3, 4, 5)) }
+    var profile by rememberSaveable { mutableStateOf(original?.profileId ?: s.profiles.firstOrNull()?.id.orEmpty()) }
+    LaunchedEffect(s.profiles) { if (s.profiles.none { it.id == profile }) profile = s.profiles.firstOrNull()?.id.orEmpty() }
     var reminder by rememberSaveable { mutableStateOf(original?.reminder ?: false) }
     var conflict by remember { mutableStateOf<Schedule?>(null) }
     fun time(raw: String): Int? { val pieces = raw.split(':'); if (pieces.size != 2) return null; val h = pieces[0].toIntOrNull() ?: return null; val m = pieces[1].toIntOrNull() ?: return null; return if (h in 0..23 && m in 0..59) h * 60 + m else null }
-    val valid = name.isNotBlank() && days.isNotEmpty() && time(start) != null && time(end) != null && time(start) != time(end)
+    val valid = name.isNotBlank() && days.isNotEmpty() && time(start) != null && time(end) != null && time(start) != time(end) && s.profiles.any { it.id == profile }
     Page {
         Heading("A place for focus.", "Build a routine around your real life.")
         Input("Routine name", name, { name = it.take(40) })
@@ -527,11 +546,12 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         Input("Starts (24-hour HH:mm)", start, { start = it.take(5) })
         Input("Ends (24-hour HH:mm)", end, { end = it.take(5) }, supporting = "An earlier end time continues into the following day.")
         Text("Session profile", style = MaterialTheme.typography.titleMedium)
+        if (s.profiles.isEmpty()) ActionCard("Create a profile", "Routines need a saved focus profile", Icons.Outlined.Add, action = createProfile)
         ChoiceRow(s.profiles.map { it.name }, s.profiles.find { it.id == profile }?.name ?: "") { choice -> profile = s.profiles.first { it.name == choice }.id }
         ToggleRow("A gentle heads-up", "Remind me about five minutes before.", reminder) { reminder = it }
-        if (!valid) Text("Choose at least one day and two different valid times.", color = MaterialTheme.colorScheme.error)
+        if (!valid && s.profiles.isNotEmpty()) Text("Choose at least one day and two different valid times.", color = MaterialTheme.colorScheme.error)
         Primary("Save routine", valid, Icons.Outlined.Check) {
-            val candidate = Schedule(original?.id ?: UUID.randomUUID().toString(), name.trim(), profile, days, time(start)!!, time(end)!!, original?.enabled ?: true, reminder)
+            val candidate = Schedule(scheduleId, name.trim(), profile, days, time(start)!!, time(end)!!, original?.enabled ?: true, reminder)
             if (s.schedules.any { it.id != candidate.id && candidate.overlaps(it) }) conflict = candidate else save(candidate)
         }
     }

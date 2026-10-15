@@ -1,5 +1,9 @@
 # Validation — FocuLY v1.2.0, 14 October 2026
 
+## Subsequent development review — 15 October 2026
+
+The current source contains additional Android/web changes after the published v1.2.0 APK. The [flow review](docs/FLOW_REVIEW_2026-10-15.md) records fixes for restoration, saved illustrations, parked-overlay consent/mode changes, setup recovery, and website keyboard navigation, along with validation and reproduction steps. Earlier release checks below describe the tagged release and its historical gallery.
+
 ## FocuLY v1.2.0 release
 
 - Six additional imagegen scenes preserve transparent alpha and the original mascot style. Nine local cat assets ship with the app; the supplied logo remains unchanged.

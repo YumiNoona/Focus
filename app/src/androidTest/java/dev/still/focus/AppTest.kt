@@ -8,6 +8,81 @@ import org.junit.Assert.*
 class AppTest {
     @get:Rule val ui = createAndroidComposeRule<MainActivity>()
     @Before fun reset() { ui.runOnIdle { Repository.update { FocusState(onboarding = true) } } }
+    @Test fun chosenIllustrationSurvivesRoundTripAndLegacyProfilesKeepTheirDefault() {
+        ui.runOnIdle {
+            Repository.update { it.copy(profiles = listOf(Profile("study", "Study", 50, "Learn", art = "FOCUS"))) }
+            val decode = Repository::class.java.getDeclaredMethod("decode", String::class.java).apply { isAccessible = true }
+            val data = Repository.export()
+            assertEquals("FOCUS", (decode.invoke(Repository, data) as FocusState).profiles.single().art)
+            val legacy = org.json.JSONObject(data)
+            legacy.getJSONArray("profiles").getJSONObject(0).remove("art")
+            assertEquals("STUDY", (decode.invoke(Repository, legacy.toString()) as FocusState).profiles.single().art)
+        }
+    }
+    @Test fun appRuleDraftAndNavigationSurviveActivityRecreation() {
+        ui.runOnIdle { Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Scroll Test"))) } }
+        ui.onNodeWithContentDescription("Rules").performClick()
+        ui.onNodeWithContentDescription("Edit Scroll Test").performClick()
+        ui.onNodeWithText("Daily & visit limits").performScrollTo().performClick()
+        ui.onNodeWithText("Daily allowance (minutes)").performScrollTo().performTextReplacement("42")
+        ui.activityRule.scenario.recreate()
+        ui.onNodeWithText("Daily allowance (minutes)").performScrollTo().assertTextContains("42")
+        ui.onNodeWithText("Save app rules").performScrollTo().performClick()
+        ui.runOnIdle { assertEquals(42, Repository.state.apps.single().dailyMinutes) }
+    }
+    @Test fun routineDraftRetainsIdentityAndDaysAfterRecreation() {
+        val saved = Schedule(id = "existing-routine", name = "Study hours", profileId = "study", days = setOf(1, 2, 3), startMinute = 540, endMinute = 600, enabled = false)
+        ui.runOnIdle { Repository.update { it.copy(schedules = listOf(saved)) } }
+        ui.onNodeWithContentDescription("Rules").performClick()
+        ui.onNodeWithText("Schedules").performClick()
+        ui.onNodeWithText("Edit routine").performScrollTo().performClick()
+        ui.onNodeWithText("Routine name").performTextReplacement("Weekend reading")
+        ui.onNodeWithText("Weekend").performClick()
+        ui.activityRule.scenario.recreate()
+        ui.onNodeWithText("Weekend").assertIsSelected()
+        ui.onNodeWithText("Save routine").performScrollTo().performClick()
+        ui.runOnIdle {
+            val routine = Repository.state.schedules.single()
+            assertEquals(saved.id, routine.id)
+            assertEquals("Weekend reading", routine.name)
+            assertEquals(setOf(6, 7), routine.days)
+            assertFalse(routine.enabled)
+        }
+    }
+    @Test fun emptyProfilesOfferRecoveryInsteadOfCrashingRoutineSetup() {
+        ui.runOnIdle { Repository.update { it.copy(profiles = emptyList()) } }
+        ui.onNodeWithContentDescription("Rules").performClick()
+        ui.onNodeWithText("Schedules").performClick()
+        ui.onNodeWithText("Add a routine").performClick()
+        ui.onNodeWithText("Save routine").performScrollTo().assertIsNotEnabled()
+        ui.onNodeWithText("Create a profile").performScrollTo().performClick()
+        ui.onNodeWithText("Your profiles").assertIsDisplayed()
+        ui.onNodeWithContentDescription("Back").performClick()
+        ui.onNodeWithText("Routine name").assertExists()
+    }
+    @Test fun editingProfilePreservesItsIdentityAndArtAfterRecreation() {
+        ui.onNodeWithContentDescription("Profile").performClick()
+        ui.onNodeWithContentDescription("Profile options for Study").performScrollTo().performClick()
+        ui.onNodeWithText("Edit").performClick()
+        ui.onNodeWithText("Name").performScrollTo().performTextReplacement("Quiet study")
+        ui.onNodeWithContentDescription("focus illustration").performScrollTo().performClick()
+        ui.activityRule.scenario.recreate()
+        ui.onNodeWithText("Name").performScrollTo().assertTextContains("Quiet study")
+        ui.onNodeWithContentDescription("focus illustration").assertIsSelected()
+        ui.onNodeWithText("Save profile").performScrollTo().performClick()
+        ui.runOnIdle {
+            assertEquals(4, Repository.state.profiles.size)
+            val edited = Repository.state.profiles.single { it.id == "study" }
+            assertEquals("Quiet study", edited.name)
+            assertEquals("FOCUS", edited.art)
+        }
+        // Preserve the launcher intent filter so ActivityScenario can follow the next recreation.
+        ui.activityRule.scenario.onActivity { it.startActivity(android.content.Intent(it.intent).putExtra("screen", "settings").setFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)) }
+        ui.waitUntil(5000) { ui.onAllNodesWithText("PROTECTION HEALTH").fetchSemanticsNodes().isNotEmpty() }
+        ui.onNodeWithText("PROTECTION HEALTH").assertExists()
+        ui.activityRule.scenario.recreate()
+        ui.onNodeWithText("PROTECTION HEALTH").assertExists()
+    }
     @Test fun onboardingHasFourStepsAndCleanFinish() {
         ui.runOnIdle { Repository.update { FocusState() } }
         ui.onNodeWithText("Less scroll.\nMore life.").assertIsDisplayed()

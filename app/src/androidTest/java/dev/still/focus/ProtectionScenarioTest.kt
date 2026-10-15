@@ -27,6 +27,36 @@ class ProtectionScenarioTest {
     private fun find(text: String) = overlayRoot()?.findAccessibilityNodeInfosByText(text)?.firstOrNull()
     private fun click(text: String) { waitFor { find(text) != null }; assertTrue(find(text)!!.performAction(AccessibilityNodeInfo.ACTION_CLICK)) }
 
+    @Test fun parkedOverlayRefreshesModeAndReleasesOnConsentWithdrawal() {
+        automation = instrumentation.getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+        Assume.assumeTrue(shell("getprop ro.kernel.qemu") == "1")
+        Assume.assumeTrue(shell("pm path $fixture").startsWith("package:"))
+        val previous = shell("settings get secure enabled_accessibility_services")
+        try {
+            onMain { Repository.init(context); Repository.update { FocusState(onboarding = true, disclosure = true, apps = listOf(AppRule(fixture, "Scroll Test"))) } }
+            shell("input keyevent WAKEUP"); shell("wm dismiss-keyguard")
+            shell("settings put secure enabled_accessibility_services null")
+            shell("settings put secure enabled_accessibility_services ${context.packageName}/${FocusAccessibilityService::class.java.name}")
+            shell("settings put secure accessibility_enabled 1")
+            waitFor(12_000) { ProtectionRuntime.live() }
+            onMain { assertTrue(Repository.block(BlockKind.APPS, setOf(fixture), BlockPeriod.MANUAL, FocusMode.GENTLE)) }
+            shell("am start -n $fixture/.ScrollActivity")
+            waitFor { find("FocuLY / normal") != null }
+            // Exercise the parked-overlay branch with the real fixture window, without claiming
+            // third-party Shorts/Reels detection coverage.
+            fun park() = FocusAccessibilityService::class.java.getDeclaredField("feedOverlayOnHome").apply { isAccessible = true }
+                .setBoolean(FocusAccessibilityService.instance, true)
+            onMain { park(); assertTrue(Repository.update { it.copy(blocks = it.blocks.map { plan -> plan.copy(mode = FocusMode.STANDARD) }) }) }
+            waitFor { find("FocuLY / resistant") != null }
+            assertNull(find("Continue for"))
+            onMain { park(); assertTrue(Repository.update { it.copy(disclosure = false) }) }
+            waitFor { overlayRoot() == null && ProtectionRuntime.blockedPackage.isEmpty() }
+        } finally {
+            onMain { Repository.update { FocusState(onboarding = true) }; FocusAccessibilityService.instance?.clearOverlay() }
+            shell("settings put secure enabled_accessibility_services ${if (previous.isBlank() || previous == "null") "null" else previous}")
+        }
+    }
+
     @Test fun popupResistanceStrictAndTransientWindowsWorkAgainstAnInstalledApp() {
         // Do not let test automation suppress the service it is checking.
         automation = instrumentation.getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)

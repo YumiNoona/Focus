@@ -181,9 +181,8 @@ object Repository {
             val rounds = j.optInt("rounds", 4).coerceIn(1, 12)
             (j.optInt("workMinutes", 25).coerceIn(1, 240) * rounds + j.optInt("breakMinutes", 5).coerceIn(1, 60) * (rounds - 1)).coerceAtMost(10_080)
         } else j.optInt("minutes", 50)
-        val art = j.optString("art", "FOCUS").let { saved ->
-            if (saved != "FOCUS") saved else when (j.optString("id")) { "study" -> "STUDY"; "sleep" -> "BREAK"; "personal" -> "PAUSE"; else -> saved }
-        }
+        val art = if (j.has("art")) j.optString("art", "FOCUS") else
+            when (j.optString("id")) { "study" -> "STUDY"; "sleep" -> "BREAK"; "personal" -> "PAUSE"; else -> "FOCUS" }
         return Profile(j.getString("id"), j.getString("name"), minutes, j.optString("intention"), j.mode(),
             j.array("apps").strings(), j.array("domains").strings(), j.optBoolean("useAllApps", j.array("apps").length() == 0),
             j.optBoolean("useAllDomains", j.array("domains").length() == 0), art)

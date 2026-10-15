@@ -10,10 +10,10 @@ document.querySelector('#app').innerHTML = `
         <img src="/assets/logo.png" alt="" />
         <span>FocuLY</span>
       </a>
-      <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+      <button class="menu-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
         <span></span><span></span>
       </button>
-      <div class="nav-links">
+      <div class="nav-links" id="nav-links">
         <a href="#why">Why FocuLY</a>
         <a href="#inside">Inside the app</a>
         <a href="#privacy">Privacy</a>
@@ -75,13 +75,13 @@ document.querySelector('#app').innerHTML = `
           <h2>Everything you need.<br />Nothing chasing you.</h2>
           <p>Move from intention to action without digging through settings. Every screen is designed to feel quiet, clear, and close at hand.</p>
           <div class="preview-tabs" role="tablist" aria-label="App screens">
-            <button class="preview-tab active" role="tab" aria-selected="true" data-screen="home"><b>Home</b><span>Start a session in one tap</span></button>
-            <button class="preview-tab" role="tab" aria-selected="false" data-screen="session"><b>Focus</b><span>See only what matters now</span></button>
-            <button class="preview-tab" role="tab" aria-selected="false" data-screen="blocking"><b>Pause</b><span>Meet distraction with intention</span></button>
-            <button class="preview-tab" role="tab" aria-selected="false" data-screen="insights"><b>Insights</b><span>Notice patterns, not scores</span></button>
+            <button class="preview-tab active" type="button" role="tab" id="preview-tab-home" aria-controls="preview-panel" aria-selected="true" tabindex="0" data-screen="home"><b>Home</b><span>Start a session in one tap</span></button>
+            <button class="preview-tab" type="button" role="tab" id="preview-tab-session" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="session"><b>Focus</b><span>See only what matters now</span></button>
+            <button class="preview-tab" type="button" role="tab" id="preview-tab-blocking" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="blocking"><b>Pause</b><span>Meet distraction with intention</span></button>
+            <button class="preview-tab" type="button" role="tab" id="preview-tab-insights" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="insights"><b>Insights</b><span>Notice patterns, not scores</span></button>
           </div>
         </div>
-        <div class="device-stage reveal delay-1">
+        <div class="device-stage reveal delay-1" role="tabpanel" id="preview-panel" aria-labelledby="preview-tab-home" tabindex="0">
           <div class="stage-blob"></div>
           <div class="phone preview-phone">
             <div class="phone-speaker"></div>
@@ -137,15 +137,22 @@ document.querySelector('#app').innerHTML = `
 
 const menu = document.querySelector('.menu-toggle')
 const links = document.querySelector('.nav-links')
-menu.addEventListener('click', () => {
-  const open = menu.getAttribute('aria-expanded') === 'true'
-  menu.setAttribute('aria-expanded', String(!open))
-  links.classList.toggle('open', !open)
+const setMenu = (open) => {
+  menu.setAttribute('aria-expanded', String(open))
+  menu.setAttribute('aria-label', open ? 'Close menu' : 'Open menu')
+  links.classList.toggle('open', open)
+}
+menu.addEventListener('click', () => setMenu(menu.getAttribute('aria-expanded') !== 'true'))
+links.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => setMenu(false)))
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') {
+    setMenu(false)
+    menu.focus()
+  }
 })
-links.querySelectorAll('a').forEach((link) => link.addEventListener('click', () => {
-  menu.setAttribute('aria-expanded', 'false')
-  links.classList.remove('open')
-}))
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.nav')) setMenu(false)
+})
 
 const previews = {
   home: ['/assets/screen-home.png', 'FocuLY home screen', '01', 'Your calm starting point'],
@@ -154,25 +161,42 @@ const previews = {
   insights: ['/assets/screen-insights.png', 'FocuLY insights screen', '04', 'Patterns without pressure'],
 }
 
-document.querySelectorAll('.preview-tab').forEach((tab) => tab.addEventListener('click', () => {
-  document.querySelectorAll('.preview-tab').forEach((item) => {
+const tabs = [...document.querySelectorAll('.preview-tab')]
+let previewTimer
+const selectPreview = (tab) => {
+  window.clearTimeout(previewTimer)
+  tabs.forEach((item) => {
     item.classList.remove('active')
     item.setAttribute('aria-selected', 'false')
+    item.tabIndex = -1
   })
   tab.classList.add('active')
   tab.setAttribute('aria-selected', 'true')
+  tab.tabIndex = 0
+  document.querySelector('#preview-panel').setAttribute('aria-labelledby', tab.id)
   const [src, alt, index, label] = previews[tab.dataset.screen]
   const image = document.querySelector('#preview-image')
   image.classList.add('switching')
-  window.setTimeout(() => {
+  previewTimer = window.setTimeout(() => {
     image.src = src
     image.alt = alt
     document.querySelector('#preview-index').textContent = index
     document.querySelector('#preview-name').textContent = label
     image.classList.remove('switching')
   }, 180)
-}))
+}
+tabs.forEach((tab, index) => {
+  tab.addEventListener('click', () => selectPreview(tab))
+  tab.addEventListener('keydown', (event) => {
+    const target = { ArrowRight: (index + 1) % tabs.length, ArrowLeft: (index + tabs.length - 1) % tabs.length, Home: 0, End: tabs.length - 1 }[event.key]
+    if (target === undefined) return
+    event.preventDefault()
+    tabs[target].focus()
+    selectPreview(tabs[target])
+  })
+})
 
+if ('IntersectionObserver' in window) {
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (entry.isIntersecting) {
@@ -182,6 +206,9 @@ const observer = new IntersectionObserver((entries) => {
   })
 }, { threshold: 0.14 })
 document.querySelectorAll('.reveal').forEach((element) => observer.observe(element))
+} else {
+  document.querySelectorAll('.reveal').forEach((element) => element.classList.add('visible'))
+}
 
 const nav = document.querySelector('.nav-wrap')
 window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 24), { passive: true })

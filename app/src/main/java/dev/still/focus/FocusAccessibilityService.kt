@@ -153,11 +153,8 @@ class FocusAccessibilityService : AccessibilityService() {
     }
     private fun evaluate() {
         if (!getSystemService(android.os.PowerManager::class.java).isInteractive) { clearOverlay(); return }
-        if (feedOverlayOnHome && overlay != null) {
-            val stillBlocked = RulesEngine.restriction(Repository.state, foreground, System.currentTimeMillis(), website = website, feed = feed)
-            if (stillBlocked == null) clearOverlay()
-            return
-        }
+        // Parked feed overlays use the same consent, allowance and mode checks as every other block.
+        // Returning early here would leave an old Normal visit button after a mode change.
         if (!Repository.state.disclosure || foreground.isBlank() || essential(this, foreground)) { clearOverlay(); return }
         if (usageDate != LocalDate.now()) { usage = emptyMap(); usageAt = 0L }
         val now = System.currentTimeMillis()
