@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — illustration corrections, 2026-10-16
+
+- Remove extra forelegs/paws from the selection, calendar, and plant-watering cat illustrations. Preserve their props, character, palette, and transparent backgrounds.
+
 ## Unreleased — flow review, 2026-10-15
 
 - Simplify Home shortcuts: choose and block apps directly, add websites within block setup, or open all Shorts/Reels controls together. Remove the intermediate saved-profile detour from blocking.

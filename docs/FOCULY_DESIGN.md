@@ -47,6 +47,10 @@ The files preserve generated alpha and are packaged locally; no runtime image do
 
 The complete prompt set is stored in [illustration-prompts.json](illustration-prompts.json).
 
+### Anatomy corrections — 16 October 2026
+
+The selection (`cat_choose.png`), calendar (`cat_routine.png`), and plant-watering (`cat_focus.png`) scenes were edited with built-in imagegen to remove redundant forelegs. Each pose now has two forelegs, one visible folded hind paw, and the other hind leg naturally occluded. Existing asset names retain all in-app references. Transparent backgrounds, props, palette, and character remain consistent. Exact edit prompts are recorded in the JSON above. Screenshots dated 15 October show the preceding artwork.
+
 ## Simpler paths — 15 October 2026
 
 Home offers Start focus, Block apps, Block websites, and Shorts & Reels. The dock remains exactly three destinations. An app shortcut opens block setup, automatically presenting the shared selection sheet when there are no selected apps. Websites can be entered directly into block setup. Feed switches are visible together, without a Rules detour.
