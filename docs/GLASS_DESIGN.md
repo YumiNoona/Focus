@@ -1,6 +1,6 @@
 # FocuLY — glass interface
 
-The 16 October 2026 development design follows the user's glassmorphism reference: a calm scenic backdrop, translucent blue-grey panels, fine light edges, white text, and pale primary actions. The existing FocuLY logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows are retained.
+The v1.3.0 design follows the user's glassmorphism reference: a calm scenic backdrop, translucent blue-grey panels, fine light edges, white text, and pale primary actions. The existing FocuLY logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows are retained.
 
 ## Shared material
 

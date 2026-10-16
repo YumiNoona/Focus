@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased — glass interface, 2026-10-16
+## [1.3.0](https://github.com/YumiNoona/Focus/releases/tag/v1.3.0) — 2026-10-16
+
+### Glass interface
 
 - Make Home's app and website shortcuts illustration-only, with larger centered cats and accessible button labels.
 - Restyle the complete Android interface with a bundled misty lake backdrop, translucent blue glass panels, highlight borders, pale buttons, and coordinated inputs, pickers, dialogs, and charts.
@@ -8,12 +10,12 @@
 - Use lighter sans-serif headings/body copy while retaining JetBrains Mono timers and small labels. Provide light and deeper dark glass themes.
 - Carry the design into onboarding, native Normal/Resistant/Strict overlays, and the home-screen widget without changing protection behavior or adding permissions.
 
-## Unreleased — illustration corrections, 2026-10-16
+### Illustration corrections
 
 - Add a second visible back leg to the selection and plant-watering cats, preserving both existing forepaws and their props.
 - Remove extra forelegs/paws from the selection, calendar, and plant-watering cat illustrations. Preserve their props, character, palette, and transparent backgrounds.
 
-## Unreleased — flow review, 2026-10-15
+### Simpler flows and fixes
 
 - Simplify Home shortcuts: choose and block apps directly, add websites within block setup, or open all Shorts/Reels controls together. Remove the intermediate saved-profile detour from blocking.
 - Share searchable app and website selection sheets across focus/profile setup, show target summaries directly, and keep Start/Save/Block actions visible while scrolling.

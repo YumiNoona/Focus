@@ -8,7 +8,7 @@
 
 A calm Android app for intentional screen time, focus sessions, and everyday boundaries.
 
-**FocuLY is the new name for Focus.** Version 1.2.0 brings the colorful logo, four-screen pastel onboarding, and nine original cat doodles. Existing installations retain their package, saved rules, and signing identity. [Visual direction and illustration prompts](docs/FOCULY_DESIGN.md).
+**FocuLY is the new name for Focus.** Version 1.3.0 brings a scenic glass interface, simpler direct blocking, and larger cat illustrations. Existing installations retain their package, saved rules, and signing identity. [Glass design and current screenshots](docs/GLASS_DESIGN.md).
 
 [![Android CI](https://github.com/YumiNoona/Focus/actions/workflows/android.yml/badge.svg?branch=main)](https://github.com/YumiNoona/Focus/actions/workflows/android.yml)
 [![Latest release](https://img.shields.io/github/v/release/YumiNoona/Focus?style=flat&color=7760BA)](https://github.com/YumiNoona/Focus/releases/latest)
@@ -17,7 +17,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](#design)
 [![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](#privacy)
 
-**[Download v1.2.0](https://github.com/YumiNoona/Focus/releases/tag/v1.2.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
+**[Download v1.3.0](https://github.com/YumiNoona/Focus/releases/tag/v1.3.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
 
 </div>
 
@@ -25,7 +25,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet FocuLY
 
-**Current development:** A complete glass interface brings a misty lake backdrop, translucent blue panels, pale buttons, and a floating three-icon dock. Direct Home shortcuts, shared target sheets, persistent actions, and corrected cat doodles remain. These changes follow the published v1.2.0 APK; see the [glass design and current screenshots](docs/GLASS_DESIGN.md) and [simpler flows](docs/SIMPLER_FLOWS.md).
+**New in v1.3.0:** A complete glass interface brings a misty lake backdrop, translucent blue panels, pale buttons, and a floating three-icon dock. Larger illustration-only Home cards open app and website blocking directly, with accessible labels. Shared target sheets, persistent actions, corrected cat doodles, and fixes for restoring drafts and refreshing blocking screens make everyday setup smoother. See the [glass design and current screenshots](docs/GLASS_DESIGN.md) and [simpler flows](docs/SIMPLER_FLOWS.md).
 
 **New in v1.2.0:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages with mode previews, direct Shorts/Reels actions, and individual managed app controls. Distinct doodles accompany reminders, patience, Strict boundaries, growing focus, breaks, and completion.
 
@@ -35,7 +35,7 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 ## Screenshots
 
-The current development gallery shows the glass interface, retained cat doodles, and actual native blocking screens.
+The v1.3.0 gallery shows the glass interface, retained cat doodles, and actual native blocking screens.
 
 **[Current glass gallery](docs/screenshots/glass/README.md)** · [Design guide](docs/GLASS_DESIGN.md). The [earlier v1.2.0 gallery](docs/screenshots/gallery/README.md) and [HTML gallery](docs/screenshots/gallery/index.html) remain historical records, including managed-device comparisons.
 
@@ -108,7 +108,7 @@ Read the [full feature and coverage guide](docs/FEATURES.md) for details about r
 
 ### Block without a session
 
-Choose **Block apps** or **Block websites** on Home, or select a group in Rules. Pick **Today**, **1 day**, **1 week**, **Set minutes**, or **Until I unblock**, then choose a resistance mode and tap **Block now**. Home shows every active group and its ending. Blocks persist across app restarts and remain active when a focus session ends.
+Tap the **apps cat** or **browser cat** card on Home, or select a group in Rules. Screen readers announce the cards as **Block apps** and **Block websites**. Pick **Today**, **1 day**, **1 week**, **Set minutes**, or **Until I unblock**, then choose a resistance mode and tap **Block now**. Home shows every active group and its ending. Blocks persist across app restarts and remain active when a focus session ends.
 
 Strict needs an automatic expiry. “Until I unblock” supports Normal and Resistant; Resistant unblocking requires a 30-second pause and a reason. The [blocking guide](docs/BLOCKS.md) explains calendar timing, overlaps, and coverage. Permission setup uses compact action cards with expandable details. Draft choices survive navigation to Settings and back.
 
@@ -126,8 +126,8 @@ Strict requires a live protection service and an automatic ending. Sessions can 
 
 **Requires Android 9 / API 28 or newer.**
 
-1. Open the [v1.2.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.2.0).
-2. Download **`FocuLY-v1.2.0.apk`** and open it on your Android phone. The same release certificate supports updating an existing Focus installation.
+1. Open the [v1.3.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.3.0).
+2. Download **`FocuLY-v1.3.0.apk`** and open it on your Android phone. The same release certificate supports updating an existing Focus installation.
 3. If Android asks, allow installation from the browser or file manager you are using.
 4. Launch **FocuLY** and follow the four-screen introduction to the permission checklist.
 5. Read the protection disclosure and enable **FocuLY protection** in Android Accessibility settings if you want blocking.

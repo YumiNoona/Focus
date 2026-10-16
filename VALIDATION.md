@@ -1,10 +1,17 @@
-# Validation — FocuLY v1.2.0, 14 October 2026
+# Validation — FocuLY v1.3.0, 16 October 2026
+
+## v1.3.0 release
+
+- Release metadata is `dev.still.focus`, version `1.3.0`, code `123`, Android 9+, label `FocuLY`. The version code advances from 122 for updates.
+- The release incorporates the glass interface, corrected illustrations, direct blocking flows, and restoration/overlay fixes recorded below. The existing release signing identity is retained.
+- Fresh release preparation passes all 22 JVM tests, debug assembly, Android lint (0 errors; existing warnings remain), optimized signed release assembly, and APK metadata/signature verification. This version bump changes no protection logic; Android functional checks are recorded below.
+- `FocuLY-v1.3.0.apk` SHA-256: `ee0ddbc3b52d1f5bf62bb0d9807a9d3f9367ff41d045a0b0c4d7535ab87de6cb`. Its release certificate SHA-256 is `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`.
 
 ## Glass interface — 16 October 2026
 
 - After enlarging Home's illustration-only shortcuts, both direct-entry regressions and the simplified-flow gallery pass again (3 focused Android checks). Light/dark Home captures and the signed local preview APK are refreshed; button descriptions retain the app/website labels for accessibility.
 - 22 JVM engine tests and all 24 Android checks pass (19 UI/backend, 1 direct Home blocking integration, 2 PIN, 2 native overlay scenarios) on the isolated Android 15 emulator with Scroll Test installed.
-- Debug/test APK assembly, Android lint, and optimized release assembly pass. The release build remains local; this design update does not publish a new APK release or change the version/signing identity.
+- Debug/test APK assembly, Android lint, and optimized release assembly pass. These design changes are included in v1.3.0 with the existing signing identity.
 - Cards, onboarding, target sheets, settings, dialogs, primary actions, the dock, native blocking overlays, and the home-screen widget now share the glass direction. The generated backdrop is bundled locally and opaque; no permission or network access was added.
 - Native scenarios verify Normal visits, Resistant waiting/reasons, Strict enforcement/expiry, transient windows, independent blocks, and parked-overlay refresh/consent withdrawal with the new renderer.
 - The [glass design guide](docs/GLASS_DESIGN.md) records rendering choices, older-Android fallback, the background prompt, and actual emulator captures. Physical OnePlus testing remains outstanding.
@@ -15,7 +22,7 @@
 
 The [simpler-flow iteration](docs/SIMPLER_FLOWS.md) adds four cat doodles, direct Home blocking, shared target sheets, visible duration choices, and persistent primary actions. Updated Android regressions cover direct entry without saved targets, normalized website drafts, picker restoration, profile scopes, and returning from permissions. Its [current screenshot set](docs/screenshots/simple/README.md) is separate from the historical release gallery below.
 
-The current source contains additional Android/web changes after the published v1.2.0 APK. The [flow review](docs/FLOW_REVIEW_2026-10-15.md) records fixes for restoration, saved illustrations, parked-overlay consent/mode changes, setup recovery, and website keyboard navigation, along with validation and reproduction steps. Earlier release checks below describe the tagged release and its historical gallery.
+Version 1.3.0 incorporates the Android changes reviewed after v1.2.0. The [flow review](docs/FLOW_REVIEW_2026-10-15.md) records fixes for restoration, saved illustrations, parked-overlay consent/mode changes, setup recovery, and separate website keyboard navigation, along with validation and reproduction steps. Earlier release checks below describe v1.2.0 and its historical gallery.
 
 ## FocuLY v1.2.0 release
 
