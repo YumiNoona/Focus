@@ -153,6 +153,7 @@ object Repository {
         if (AdminPin.configured() && !AdminPin.authorized()) return fail("Unlock device controls before deleting data.")
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) return fail("Local rules cannot be cleared during Strict mode.")
         update { FocusState(onboarding = true) }; ManagedProtection.sync()
+        BlockingArtwork.prune(context, emptySet())
         FocusAccessibilityService.instance?.clearOverlay()
         FocusNotifications.session(context)
         FocusNotifications.plan(context)
@@ -192,7 +193,7 @@ object Repository {
         .put("theme", s.theme).put("haptics", s.haptics).put("reminders", s.reminders).put("hideInsights", s.hideInsights).put("reduceMotion", s.reduceMotion).put("askReason", s.askReason)
         .put("overrideMinutes", s.overrideMinutes).put("cooldownMinutes", s.cooldownMinutes)
         .put("managedLockdown", s.managedLockdown).put("uninstallProtection", s.uninstallProtection)
-        .put("blockMessage", JSONObject().put("title", s.blockMessage.title).put("body", s.blockMessage.body).put("emoji", s.blockMessage.emoji))
+        .put("blockMessage", JSONObject().put("title", s.blockMessage.title).put("body", s.blockMessage.body).put("emoji", s.blockMessage.emoji).put("art", s.blockMessage.art).put("image", s.blockMessage.image))
         .put("lifecycleRules", JSONArray(s.lifecycleRules.map { JSONObject().put("packageName", it.packageName).put("label", it.label).put("lockUninstall", it.lockUninstall).put("quarantineInstall", it.quarantineInstall).put("end", it.end) }))
         .put("apps", JSONArray(s.apps.map { JSONObject().put("packageName", it.packageName).put("label", it.label).put("enabled", it.enabled).put("dailyMinutes", it.dailyMinutes).put("openingMinutes", it.openingMinutes).put("gradualTarget", it.gradualTarget).put("gradualStart", it.gradualStart).put("gradualPaused", it.gradualPaused) }))
         .put("domains", JSONArray(s.domains.toList())).put("feeds", JSONArray(s.feeds.toList())).put("allowlist", JSONArray(s.allowlist.toList()))
@@ -207,7 +208,7 @@ object Repository {
         return FocusState(name = j.optString("name"), intention = j.optString("intention", "Make room for what matters."), goalMinutes = j.optInt("goalMinutes", 120), onboarding = j.optBoolean("onboarding"), disclosure = j.optBoolean("disclosure"),
             theme = j.optString("theme", "System"), haptics = j.optBoolean("haptics", true), reminders = j.optBoolean("reminders", true), hideInsights = j.optBoolean("hideInsights"), reduceMotion = j.optBoolean("reduceMotion"), askReason = j.optBoolean("askReason", false), overrideMinutes = j.optInt("overrideMinutes", 5), cooldownMinutes = j.optInt("cooldownMinutes", 10),
             managedLockdown = j.optBoolean("managedLockdown"), uninstallProtection = j.optBoolean("uninstallProtection"),
-            blockMessage = j.optJSONObject("blockMessage")?.let { BlockMessage(it.optString("title", "See you later.").take(80), it.optString("body", "Make room for what matters.").take(180), it.optString("emoji", "🌿").take(16)) } ?: BlockMessage(),
+            blockMessage = j.optJSONObject("blockMessage")?.let { BlockMessage(it.optString("title", "See you later.").take(80), it.optString("body", "Make room for what matters.").take(180), it.optString("emoji", "🌿").take(16), it.optString("art").take(32), it.optString("image").takeIf(BlockingArtwork::validName).orEmpty()) } ?: BlockMessage(),
             lifecycleRules = j.array("lifecycleRules").items { AppLifecycleRule(it.getString("packageName"), it.getString("label"), it.optBoolean("lockUninstall"), it.optBoolean("quarantineInstall"), it.optLong("end")) },
             apps = j.array("apps").items { AppRule(it.getString("packageName"), it.getString("label"), it.optBoolean("enabled", true), it.optInt("dailyMinutes"), it.optInt("openingMinutes"), it.optInt("gradualTarget"), it.optLong("gradualStart"), it.optBoolean("gradualPaused")) },
             domains = j.array("domains").strings(), feeds = j.array("feeds").strings(), allowlist = j.array("allowlist").strings(),

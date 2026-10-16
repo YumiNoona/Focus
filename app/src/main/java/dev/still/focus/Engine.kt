@@ -83,7 +83,8 @@ data class AppLifecycleRule(val packageName: String, val label: String,
     fun alive(now: Long) = end == 0L || now < end
 }
 data class BlockMessage(val title: String = "See you later.",
-    val body: String = "Make room for what matters.", val emoji: String = "🌿")
+    val body: String = "Make room for what matters.", val emoji: String = "🌿",
+    val art: String = "", val image: String = "")
 data class FocusState(val name: String = "", val intention: String = "Make room for what matters.",
     val goalMinutes: Int = 120, val onboarding: Boolean = false, val disclosure: Boolean = false,
     val theme: String = "System", val haptics: Boolean = true, val reminders: Boolean = true,

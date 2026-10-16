@@ -194,7 +194,7 @@ class MainActivity : ComponentActivity() {
     }
     }
 }
-@Composable fun Page(content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
+@Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp, bottom = bottomPadding), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
 @Composable fun Caption(text: String) { Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 @Composable fun Heading(title: String, subtitle: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) } } }
 @Composable fun Primary(text: String, enabled: Boolean = true, icon: ImageVector? = Icons.AutoMirrored.Outlined.ArrowForward, action: () -> Unit) {
@@ -379,13 +379,14 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             .filter { it.activityInfo.packageName != ctx.packageName && !FocusAccessibilityService.essential(ctx, it.activityInfo.packageName) }
             .map { InstalledApp(it.activityInfo.packageName, it.loadLabel(ctx.packageManager).toString(), it.loadIcon(ctx.packageManager)) }.distinctBy { it.pkg }.sortedBy { it.label.lowercase() }
     } }
-    Column(Modifier.fillMaxSize().padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Box(Modifier.fillMaxSize().padding(horizontal = 24.dp)) {
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(if (allow) "These apps stay available even when a rule would block them." else "Choose what you want to pause. Phone, emergency access, your launcher, and settings are always available.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Input("Search installed apps", query, { query = it })
         if (apps == null) LinearProgressIndicator(Modifier.fillMaxWidth())
         val visible = apps?.filter { it.label.contains(query, true) }.orEmpty()
         if (apps != null && visible.isEmpty()) Text("No matching apps on this device.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(bottom = 92.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             items(visible, key = { it.pkg }) { app ->
                 val selected = if (allow) app.pkg in s.allowlist else s.apps.any { it.packageName == app.pkg }
                 val change: () -> Unit = { Repository.update { state -> if (allow) state.copy(allowlist = if (selected) state.allowlist - app.pkg else state.allowlist + app.pkg) else state.copy(apps = if (selected) state.apps.filterNot { it.packageName == app.pkg } else state.apps + AppRule(app.pkg, app.label)) } }
@@ -397,8 +398,10 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
                 }
             }
         }
+    }
+    Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp).background(Color(0xFFF2F7FF), RoundedCornerShape(24.dp))) {
         Primary("Done · ${if (allow) s.allowlist.size else s.apps.size} selected", icon = Icons.Outlined.Check, action = done)
-        Spacer(Modifier.height(12.dp))
+    }
     }
 }
 

@@ -196,9 +196,10 @@ class FocusAccessibilityService : AccessibilityService() {
             setPadding(dp(16), dp(16), dp(16), dp(16)); setOnClickListener { if (Repository.state.haptics) performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY); click() }
         }.also(container::addView)
         text("FocuLY / ${restriction.mode.label.lowercase()}", 14f, violet)
-        ImageView(this).apply {
-            val art = restriction.mode.catArt()
-            setImageResource(art.drawable); scaleType = ImageView.ScaleType.FIT_CENTER
+        if (state.blockMessage.art != "NONE" || state.blockMessage.image.isNotEmpty()) ImageView(this).apply {
+            val custom = BlockingArtwork.bitmap(this@FocusAccessibilityService, state.blockMessage.image)
+            if (custom != null) setImageBitmap(custom) else setImageResource(BlockingArtwork.art(state.blockMessage, restriction.mode).drawable)
+            scaleType = ImageView.ScaleType.FIT_CENTER
             background = background(Color.parseColor("#33FFFFFF"))
             setPadding(dp(8), dp(8), dp(8), dp(8))
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO

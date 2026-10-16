@@ -8,6 +8,17 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -46,7 +57,7 @@ import kotlinx.coroutines.withContext
     val usage = Repository.usageGranted()
     val admin = ManagedProtection.adminEnabled(ctx)
     val notifications = Build.VERSION.SDK_INT < 33 || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-    if (onboarding) Page {
+    if (onboarding) Page(bottomPadding = 110.dp) {
         Heading("Make space for focus.")
         GlassSurface(shape = RoundedCornerShape(28.dp), color = FoculyBrand.lilac, contentColor = MaterialTheme.colorScheme.onSurface) {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
@@ -166,17 +177,34 @@ import kotlinx.coroutines.withContext
 
 @Composable fun MessageScreen(s: FocusState) {
     var previewMode by rememberSaveable { mutableStateOf(FocusMode.STANDARD) }
-    var title by rememberSaveable { mutableStateOf(s.blockMessage.title) }
-    var body by rememberSaveable { mutableStateOf(s.blockMessage.body) }
-    var emoji by rememberSaveable { mutableStateOf(s.blockMessage.emoji) }
+    var title by rememberSaveable(s.blockMessage) { mutableStateOf(s.blockMessage.title) }
+    var body by rememberSaveable(s.blockMessage) { mutableStateOf(s.blockMessage.body) }
+    var emoji by rememberSaveable(s.blockMessage) { mutableStateOf(s.blockMessage.emoji) }
+    var art by rememberSaveable(s.blockMessage) { mutableStateOf(s.blockMessage.art) }
+    var image by rememberSaveable(s.blockMessage) { mutableStateOf(s.blockMessage.image) }
     var status by remember { mutableStateOf("") }
+    var importing by remember { mutableStateOf(false) }
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) scope.launch {
+            importing = true
+            val imported = withContext(Dispatchers.IO) { runCatching { BlockingArtwork.importImage(ctx, uri, image) } }
+            imported.onSuccess { image = it; status = "Image added. Save to use it on your blocking screen." }
+                .onFailure { status = if (it is IllegalArgumentException) it.message.orEmpty() else "Couldn't open this image. Try a different image or sticker." }
+            importing = false
+        }
+    }
     val locked = RulesEngine.strictActive(s, System.currentTimeMillis())
+    Box(Modifier.fillMaxSize().imePadding()) {
+    Column(Modifier.fillMaxSize()) {
+    Box(Modifier.weight(1f)) {
     Page {
         Heading("Your pause, your words.")
         ChoiceRow(FocusMode.entries.map { it.label }, previewMode.label) { label -> previewMode = FocusMode.entries.first { it.label == label } }
         SoftCard {
             Caption("BLOCKING SCREEN PREVIEW")
-            DoodleBadge(previewMode.catArt(), Modifier.fillMaxWidth().height(112.dp))
+            BlockingIllustration(BlockMessage(art = art, image = image), previewMode, Modifier.fillMaxWidth().height(144.dp))
             Text(emoji, style = MaterialTheme.typography.displaySmall)
             Text(title.ifBlank { "See you later." }, style = MaterialTheme.typography.headlineMedium)
             if (body.isNotBlank()) Text(body, style = MaterialTheme.typography.bodyLarge)
@@ -187,13 +215,46 @@ import kotlinx.coroutines.withContext
         ChoiceRow(listOf("See you later", "Don't open", "One thing at a time"), when (title) { "Don't open this yet." -> "Don't open"; "One thing at a time." -> "One thing at a time"; else -> "See you later" }) { preset ->
             if (!locked) { title = when (preset) { "Don't open" -> "Don't open this yet."; "One thing at a time" -> "One thing at a time."; else -> "See you later." }; body = when (preset) { "Don't open" -> "Your future self will thank you."; "One thing at a time" -> "Stay with what you chose to do."; else -> "Make room for what matters." } }
         }
-        ChoiceRow(listOf("🌿", "✨", "🧘", "🔒", "👋", "No emoji"), emoji.ifBlank { "No emoji" }) { if (!locked) emoji = if (it == "No emoji") "" else it }
+        Caption("ILLUSTRATION")
+        BlockingArtChoices(art, image, !locked && !importing) { art = it; image = ""; status = "" }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            FilterChip(image.isEmpty() && art.isEmpty(), { art = ""; image = "" }, enabled = !locked && !importing, label = { Text("Match mode") })
+            FilterChip(image.isEmpty() && art == "NONE", { art = "NONE"; image = "" }, enabled = !locked && !importing, label = { Text("No illustration") })
+        }
+        OutlinedButton({ imagePicker.launch("image/*") }, Modifier.fillMaxWidth(), enabled = !locked && !importing) {
+            Icon(Icons.Outlined.AddPhotoAlternate, null); Spacer(Modifier.width(8.dp))
+            Text(if (image.isEmpty()) "Add image or sticker" else "Replace your image")
+        }
+        if (importing) LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (image.isNotEmpty()) TextButton({ image = "" }, enabled = !locked && !importing) { Text("Remove your image") }
+        Text("Saved on this device. Transparent stickers work too; animated images use a still frame.", style = MaterialTheme.typography.bodySmall)
+        Caption("EMOJI & SYMBOLS")
+        val suggestions = listOf("🌿", "✨", "🧘", "🔒", "👋", "🐱", "🐾", "🌙", "☀️", "🌸", "🍃", "🦋", "💜", "🫶", "💪", "🎯", "📚", "☕", "🎧", "🪴", "⏳", "🛑", "★", "♡")
+        suggestions.chunked(5).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                row.forEach { symbol ->
+                    Box(Modifier.weight(1f).heightIn(min = 54.dp).clip(RoundedCornerShape(16.dp))
+                        .background(if (emoji == symbol) MaterialTheme.colorScheme.primaryContainer else Color.White.copy(alpha = .07f))
+                        .selectable(emoji == symbol, enabled = !locked, role = Role.RadioButton) { emoji = symbol }
+                        .semantics { contentDescription = "Use $symbol" }, contentAlignment = Alignment.Center) {
+                        Text(symbol, fontSize = 27.sp)
+                    }
+                }
+                repeat(5 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
+        }
+        FilterChip(emoji.isBlank(), { emoji = "" }, enabled = !locked, label = { Text("No emoji") })
         Input("Headline", title, { title = it.take(80) }, supporting = "${title.length}/80")
         Input("Supporting message", body, { body = it.take(180) }, supporting = "${body.length}/180 · optional")
         Input("Emoji or symbol", emoji, { emoji = it.take(16) })
-        Primary("Save blocking screen", enabled = !locked && title.isNotBlank(), icon = Icons.Outlined.Check) { if (Repository.update { it.copy(blockMessage = BlockMessage(title.trim(), body.trim(), emoji.trim())) }) { ManagedProtection.sync(); status = "Saved. Your next blocking screen uses these words." } }
-        if (status.isNotBlank()) Text(status)
         if (locked) Caption("MESSAGE CHANGES WAIT UNTIL STRICT ENDS.")
+    }
+    }
+    Column(Modifier.padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (status.isNotBlank()) Text(status, style = MaterialTheme.typography.bodySmall)
+        Primary("Save blocking screen", enabled = !locked && !importing && title.isNotBlank(), icon = Icons.Outlined.Check) { if (Repository.update { it.copy(blockMessage = BlockMessage(title.trim(), body.trim(), emoji.trim(), art, image)) }) { BlockingArtwork.prune(ctx, setOf(image)); ManagedProtection.sync(); status = "Saved. Your next blocking screen uses this design." } }
+    }
+    }
     }
 }
 

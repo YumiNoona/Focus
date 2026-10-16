@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — personal blocking screens, 2026-10-16
+
+- Replace onboarding's separate dash row with a four-step progress ring around the circular Next/Done button. Float it over the shared backdrop without a footer panel.
+- Float the app picker's Done action over the list and retain space to reach the last app.
+- Add ten original cat illustrations for breathing, moon naps, tea, reading, headphones, clouds, flowers, a kite, a pillow, and a lantern. Choose artwork independently of resistance mode, match each mode automatically, or hide it.
+- Add personal image/sticker selection through Android's file picker, private local copies, transparent image support, bounded resizing, and shared preview/native-overlay rendering. Animated images use a still frame.
+- Offer 24 larger emoji/symbol suggestions and keep the custom blocking screen's Save action visible. Artwork choices persist with existing messages; Strict still prevents customization changes.
+
 ## [1.3.0](https://github.com/YumiNoona/Focus/releases/tag/v1.3.0) — 2026-10-16
 
 ### Glass interface

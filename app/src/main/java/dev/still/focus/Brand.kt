@@ -28,7 +28,10 @@ enum class CatArt(@param:DrawableRes val drawable: Int) {
     PAUSE(R.drawable.cat_pause), STUDY(R.drawable.cat_study), GUARD(R.drawable.cat_guard),
     REMINDER(R.drawable.cat_reminder), PATIENCE(R.drawable.cat_patience), BOUNDARY(R.drawable.cat_boundary),
     FOCUS(R.drawable.cat_focus), BREAK(R.drawable.cat_break), COMPLETE(R.drawable.cat_complete),
-    CHOOSE(R.drawable.cat_choose), FEEDS(R.drawable.cat_feeds), ROUTINE(R.drawable.cat_routine), TUNE(R.drawable.cat_tune)
+    CHOOSE(R.drawable.cat_choose), FEEDS(R.drawable.cat_feeds), ROUTINE(R.drawable.cat_routine), TUNE(R.drawable.cat_tune),
+    BREATHE(R.drawable.cat_breathe), MOON(R.drawable.cat_moon), TEA(R.drawable.cat_tea), BOOK(R.drawable.cat_book),
+    HEADPHONES(R.drawable.cat_headphones), CLOUD(R.drawable.cat_cloud), FLOWER(R.drawable.cat_flower),
+    KITE(R.drawable.cat_kite), PILLOW(R.drawable.cat_pillow), LANTERN(R.drawable.cat_lantern)
 }
 
 /** Shared by the native blocking overlay and its in-app preview. */

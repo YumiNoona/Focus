@@ -1,5 +1,13 @@
 # Validation — FocuLY v1.3.0, 16 October 2026
 
+## Unreleased personalization — 16 October 2026
+
+- 22 JVM engine tests, Android lint (0 errors; existing warnings remain), debug/test APK assembly, optimized release assembly, and the existing release signature check pass.
+- The 24 existing Android functional checks pass. Two new artwork checks pass after fixing Save/feedback overlap: system-picker result handling, private PNG import and alpha/size bounds, draft recreation, emoji selection, message export round-trip, removal, invalid input rejection, built-in selection, and Strict save rejection. The four-step onboarding check passes again.
+- The opt-in personalization capture test passes on the isolated Android 15 emulator: all four onboarding steps, expanded options, floating app selection, artwork choices, emoji controls, imported-image preview, 130% text size, and an actual native blocking popup using the imported sticker. Its [12 current captures and ten-cat overview](docs/screenshots/personalization/README.md) are separate from the published v1.3.0 gallery.
+- All ten generated assets retain transparent alpha and were visually inspected for coherent anatomy. Prompts and built-in imagegen provenance are recorded in [illustration-prompts.json](docs/illustration-prompts.json). No broad storage/media permission was added. Physical OnePlus and manual screen-reader reviews remain separate.
+- The signed local build is `outputs/FocuLY-personalization-preview.apk`. This development update does not publish a new release.
+
 ## v1.3.0 release
 
 - Release metadata is `dev.still.focus`, version `1.3.0`, code `123`, Android 9+, label `FocuLY`. The version code advances from 122 for updates.

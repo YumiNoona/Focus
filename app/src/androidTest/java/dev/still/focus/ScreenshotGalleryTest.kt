@@ -84,6 +84,50 @@ class ScreenshotGalleryTest {
             ui.onNodeWithText("Done · 1 selected").performClick()
         } finally { shell("settings put system font_scale $fontScale"); ui.runOnIdle { Repository.update { original } }; open("home") }
     }
+    @Test fun capturePersonalization() {
+        Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
+        automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+        Assume.assumeTrue(shell("getprop ro.kernel.qemu").trim() == "1")
+        assertFalse(RulesEngine.strictActive(Repository.state, System.currentTimeMillis()))
+        val original = Repository.state
+        val previous = shell("settings get secure enabled_accessibility_services").trim()
+        val fontScale = shell("settings get system font_scale").trim()
+        try {
+            ui.runOnIdle { Repository.update { FocusState() } }
+            open("home"); shot("personal-01-onboarding")
+            ui.onNodeWithContentDescription("Next").performClick(); shot("personal-01b-onboarding-rhythm")
+            ui.onNodeWithContentDescription("Next").performClick(); shot("personal-01c-onboarding-boundary")
+            ui.onNodeWithContentDescription("Set up protection").performClick(); shot("personal-02-onboarding-done")
+            ui.onNodeWithText("More options").performScrollTo().performClick(); shot("personal-02b-onboarding-options")
+            ui.onNodeWithContentDescription("Finish onboarding").performClick()
+            open("picker"); shot("personal-03-app-picker")
+            open("messages"); shot("personal-04-message-preview")
+            ui.onNodeWithText("ILLUSTRATION").performScrollTo(); scrollPage(950f)
+            ui.onNode(SemanticsMatcher.keyIsDefined(SemanticsActions.ScrollToIndex)).performScrollToIndex(3)
+            shot("personal-05-cat-choices")
+            ui.onNodeWithText("EMOJI & SYMBOLS").performScrollTo(); scrollPage(900f); shot("personal-06-emoji")
+            val image = BlockingArtwork.importImage(ui.activity, android.net.Uri.parse("android.resource://${ui.activity.packageName}/${R.drawable.cat_tea}"))
+            ui.runOnIdle { Repository.update { it.copy(blockMessage = BlockMessage(art = "TEA", image = image)) } }
+            open("home"); open("messages"); shot("personal-07-custom-image")
+            shell("settings put system font_scale 1.3"); Thread.sleep(1500)
+            open("picker"); shot("personal-08-large-app-picker")
+            shell("settings put system font_scale $fontScale"); Thread.sleep(1000)
+            shell("settings put secure enabled_accessibility_services null")
+            shell("settings put secure enabled_accessibility_services dev.still.focus/.FocusAccessibilityService")
+            shell("settings put secure accessibility_enabled 1")
+            ui.waitUntil(12_000) { ProtectionRuntime.live() }
+            ui.runOnIdle { Repository.update { it.copy(disclosure = true, blocks = listOf(BlockPlan(kind = BlockKind.APPS, targets = setOf("dev.still.fixture"), mode = FocusMode.GENTLE, start = System.currentTimeMillis(), period = BlockPeriod.MANUAL))) } }
+            shell("am start -n dev.still.fixture/.ScrollActivity")
+            ui.waitUntil(10_000) { ProtectionRuntime.blockedPackage == "dev.still.fixture" }
+            shot("personal-09-native-custom-image")
+        } finally {
+            shell("settings put system font_scale $fontScale")
+            ui.runOnIdle { Repository.update { original }; FocusAccessibilityService.instance?.clearOverlay() }
+            BlockingArtwork.prune(ui.activity, setOf(original.blockMessage.image))
+            shell("settings put secure enabled_accessibility_services ${if (previous.isBlank() || previous == "null") "null" else previous}")
+            open("home")
+        }
+    }
     @Test fun captureSessionMilestones() {
         Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
         automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)

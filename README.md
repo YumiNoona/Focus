@@ -25,6 +25,8 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet FocuLY
 
+**Current development:** Personal blocking screens add ten new cat scenes, your own image/sticker, and 24 larger emoji suggestions. Onboarding gains circular progress around Next/Done, and app selection uses a floating Done button. [Customization guide](docs/BLOCKING_ARTWORK.md). These changes follow the published v1.3.0 APK.
+
 **New in v1.3.0:** A complete glass interface brings a misty lake backdrop, translucent blue panels, pale buttons, and a floating three-icon dock. Larger illustration-only Home cards open app and website blocking directly, with accessible labels. Shared target sheets, persistent actions, corrected cat doodles, and fixes for restoring drafts and refreshing blocking screens make everyday setup smoother. See the [glass design and current screenshots](docs/GLASS_DESIGN.md) and [simpler flows](docs/SIMPLER_FLOWS.md).
 
 **New in v1.2.0:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages with mode previews, direct Shorts/Reels actions, and individual managed app controls. Distinct doodles accompany reminders, patience, Strict boundaries, growing focus, breaks, and completion.
