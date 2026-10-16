@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — reinstall protection and break reminders, 2026-10-16
+
+- Retain app IDs, active bans, original end dates, app rules, profiles, and routines when a target app is removed or reinstalled. Refresh installation status and icons; end old temporary visits without deleting cooldown history. Package updates preserve visits.
+- Verify managed app suspension against Android even when cached targets match, repairing a lost policy after reinstall. Automatically protect FocuLY removal, force-stop/data controls, and clock settings while managed bans or focus rules are active; release owned restrictions when they end.
+- Add verified managed-removal notification artwork and administrator support text. Personal-phone administration gets a deactivation warning and protection-change notification; Android still controls deactivation/removal on those devices.
+- Add optional illustrated usage-break notifications for unconfigured apps too, with 30/45/60/90-minute thresholds, daytime-only delivery, per-app/day deduplication, two-hour global spacing, three-per-day cap, and Quiet today/Take a break actions. No block is created by a reminder.
+- Check usage in the connected protection service and through Android's periodic job scheduler when the service is unavailable. Require Usage Access and notification permission; keep the feature independently configurable during Strict.
+
 ## Unreleased — personal blocking screens, 2026-10-16
 
 - Replace onboarding's separate dash row with a four-step progress ring around the circular Next/Done button. Float it over the shared backdrop without a footer panel.

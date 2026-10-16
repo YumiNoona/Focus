@@ -6,10 +6,24 @@ import android.content.*
 import android.os.Build
 import android.provider.Settings
 import android.net.Uri
+import androidx.compose.runtime.*
+
+object PackageStatus {
+    var revision by mutableIntStateOf(0); private set
+    fun changed() { revision++ }
+}
 
 class FocusAdminReceiver : DeviceAdminReceiver() {
     override fun onEnabled(context: Context, intent: Intent) { Repository.init(context); sync(context) }
-    override fun onDisabled(context: Context, intent: Intent) { Repository.init(context) }
+    override fun onDisableRequested(context: Context, intent: Intent): CharSequence {
+        Repository.init(context)
+        FocusNotifications.protectionAlert(context, "Review your boundary first", "Deactivating administration allows FocuLY to be removed. Saved app bans survive reinstalling the blocked app, but removing FocuLY deletes its local rules.")
+        return "Deactivating FocuLY allows it to be uninstalled and stops its protection. Your FocuLY PIN cannot lock this Android screen. Open FocuLY → Device protection to review your active boundaries first."
+    }
+    override fun onDisabled(context: Context, intent: Intent) {
+        Repository.init(context)
+        FocusNotifications.protectionAlert(context, "Uninstall resistance is off", "Android administration was deactivated. Review protection in FocuLY; app bans remain saved while FocuLY stays installed.")
+    }
     private fun sync(context: Context) { ManagedProtection.sync(context) }
 }
 
@@ -54,11 +68,12 @@ object ManagedProtection {
         val strict = if (state.managedLockdown) RulesEngine.strictPackages(state, now) else emptySet()
         val desired = (strict + lifecycle.filter { it.quarantineInstall }.map { it.packageName })
             .filter { !FocusAccessibilityService.essential(ctx, it) && installed(ctx, it) }.toSet()
-        val selfProtection = state.uninstallProtection || RulesEngine.strictActive(state, now)
+        val protectClock = RulesEngine.hasActiveProtection(state, now)
+        val selfProtection = state.uninstallProtection || protectClock
         val journal = ctx.getSharedPreferences("managed-policy", 0)
         val previous = journal.getStringSet("suspended", emptySet()).orEmpty().toSet()
         return runCatching {
-            ManagedPolicyService.ensure(ctx, lifecycle.isNotEmpty() || RulesEngine.strictActive(state, now))
+            ManagedPolicyService.ensure(ctx, selfProtection)
             if (lastProtection != selfProtection || policy.isUninstallBlocked(component, ctx.packageName) != selfProtection) {
                 policy.setUninstallBlocked(component, ctx.packageName, selfProtection)
                 lastProtection = selfProtection
@@ -74,11 +89,11 @@ object ManagedProtection {
                 journal.edit().putStringSet("uninstall-targets", uninstallTargets).commit()
             }
             if (lastMessage != state.blockMessage) {
-                policy.setShortSupportMessage(component, "${state.blockMessage.emoji} ${state.blockMessage.title}".trim())
-                policy.setLongSupportMessage(component, "${state.blockMessage.body}\nOpen FocuLY → Device protection to review app controls. Strict rules unlock at their deadline.")
+                policy.setShortSupportMessage(component, "FocuLY removal is blocked while protection is active.")
+                policy.setLongSupportMessage(component, "${state.blockMessage.body}\nOpen FocuLY → Device protection to review app controls. Active bans protect FocuLY from removal. Strict rules unlock at their deadline.")
                 lastMessage = state.blockMessage
             }
-            if (lastDesired != desired || previous != desired) {
+            if (lastDesired != desired || previous != desired || desired.any { !policy.isPackageSuspended(component, it) }) {
                 // Journal before applying so process death cannot orphan suspended apps.
                 val attempted = previous + desired
                 journal.edit().putStringSet("suspended", attempted).commit()
@@ -94,13 +109,13 @@ object ManagedProtection {
                 journal.edit().putStringSet("suspended", desired).commit()
                 lastDesired = desired
             }
-            val controlsLocked = strict.isNotEmpty() || lifecycle.isNotEmpty()
-            if (lastStrict != controlsLocked || journal.getBoolean("owns-clock-restriction", false) != strict.isNotEmpty()) {
+            val controlsLocked = selfProtection
+            if (lastStrict != controlsLocked || journal.getBoolean("owns-clock-restriction", false) != protectClock) {
                 val clockKey = android.os.UserManager.DISALLOW_CONFIG_DATE_TIME
-                if (strict.isNotEmpty() && !policy.getUserRestrictions(component).getBoolean(clockKey)) {
+                if (protectClock && !policy.getUserRestrictions(component).getBoolean(clockKey)) {
                     journal.edit().putBoolean("owns-clock-restriction", true).commit()
                     policy.addUserRestriction(component, clockKey)
-                } else if (strict.isEmpty() && journal.getBoolean("owns-clock-restriction", false)) {
+                } else if (!protectClock && journal.getBoolean("owns-clock-restriction", false)) {
                     policy.clearUserRestriction(component, clockKey)
                     journal.edit().putBoolean("owns-clock-restriction", false).commit()
                 }
@@ -116,6 +131,9 @@ class AppLifecycleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action !in setOf(Intent.ACTION_PACKAGE_ADDED, Intent.ACTION_PACKAGE_REMOVED, Intent.ACTION_PACKAGE_REPLACED)) return
         Repository.init(context)
+        intent.data?.schemeSpecificPart?.takeIf { it.isNotBlank() && it != context.packageName }?.let { pkg ->
+            Repository.packageChanged(pkg, intent.action == Intent.ACTION_PACKAGE_REPLACED || intent.getBooleanExtra(Intent.EXTRA_REPLACING, false))
+        }
         ManagedProtection.invalidate()
         ManagedProtection.sync(context)
         FocusNotifications.plan(context)

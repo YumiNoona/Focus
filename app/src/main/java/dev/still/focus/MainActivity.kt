@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
         outState.putInt("navigationSequence", navigationSequence)
         super.onSaveInstanceState(outState)
     }
-    override fun onResume() { super.onResume(); Repository.reconcile(); FocusNotifications.session(this); FocusNotifications.plan(this) }
+    override fun onResume() { super.onResume(); Repository.reconcile(); FocusNotifications.session(this); FocusNotifications.plan(this); BreakReminders.schedule(this) }
 }
 
 @Composable fun StillApp(requested: String, navigationSequence: Int = 0) {
@@ -325,7 +325,8 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
                 if (s.apps.isEmpty()) DoodleCard(CatArt.PAUSE, "Choose your first app.", "A small pause can make a big difference.", FoculyBrand.blush)
                 s.apps.forEach { app -> GlassSurface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     AppBadge(app.packageName)
-                    Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { block(BlockKind.APPS, setOf(app.packageName)) }.padding(horizontal = 12.dp, vertical = 10.dp)) { Text(app.label, style = MaterialTheme.typography.titleSmall); Text(buildList { add("Tap to block"); if (app.dailyMinutes > 0) add("${app.allowance(System.currentTimeMillis())}m/day"); if (app.openingMinutes > 0) add("${app.openingMinutes}m/visit") }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    val installed = remember(app.packageName, PackageStatus.revision) { ManagedProtection.installed(Repository.context, app.packageName) }
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { block(BlockKind.APPS, setOf(app.packageName)) }.padding(horizontal = 12.dp, vertical = 10.dp)) { Text(app.label, style = MaterialTheme.typography.titleSmall); Text(buildList { add(if (installed) "Tap to block" else "Not installed · rule kept"); if (app.dailyMinutes > 0) add("${app.allowance(System.currentTimeMillis())}m/day"); if (app.openingMinutes > 0) add("${app.openingMinutes}m/visit") }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton({ block(BlockKind.APPS, setOf(app.packageName)) }, enabled = app.enabled && app.packageName !in s.allowlist) { Icon(Icons.Outlined.LockClock, "Block ${app.label}", Modifier.size(20.dp)) }
                     IconButton({ editApp(app) }) { Icon(Icons.Outlined.Edit, "Edit ${app.label}", Modifier.size(20.dp)) }
                 } } }
@@ -374,7 +375,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     val ctx = LocalContext.current
     var apps by remember { mutableStateOf<List<InstalledApp>?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
-    LaunchedEffect(Unit) { apps = withContext(Dispatchers.IO) {
+    LaunchedEffect(PackageStatus.revision) { apps = withContext(Dispatchers.IO) {
         ctx.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
             .filter { it.activityInfo.packageName != ctx.packageName && !FocusAccessibilityService.essential(ctx, it.activityInfo.packageName) }
             .map { InstalledApp(it.activityInfo.packageName, it.loadLabel(ctx.packageManager).toString(), it.loadIcon(ctx.packageManager)) }.distinctBy { it.pkg }.sortedBy { it.label.lowercase() }
@@ -614,13 +615,14 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     var consent by remember { mutableStateOf(false) }
     var delete by remember { mutableStateOf(false) }
     var exportStatus by remember { mutableStateOf("") }
-    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    var breakNoticesAllowed by remember { mutableStateOf(FocusNotifications.breaksAllowed(ctx)) }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { breakNoticesAllowed = FocusNotifications.breaksAllowed(ctx); BreakReminders.schedule(ctx) }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) scope.launch {
             exportStatus = withContext(Dispatchers.IO) { runCatching { ctx.contentResolver.openOutputStream(uri)?.use { it.write(Repository.export().toByteArray()) } ?: error("Could not open the destination") }.fold({ "Your data was exported." }, { "Export failed. Choose a different destination." }) }
         }
     }
-    LaunchedEffect(Unit) { while (true) { usage = Repository.usageGranted(); accessibility = Repository.protectionGranted(); connected = ProtectionRuntime.live(); batteryExempt = ctx.getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName); delay(1000) } }
+    LaunchedEffect(Unit) { while (true) { usage = Repository.usageGranted(); accessibility = Repository.protectionGranted(); connected = ProtectionRuntime.live(); breakNoticesAllowed = FocusNotifications.breaksAllowed(ctx); batteryExempt = ctx.getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName); delay(1000) } }
     Page {
         Heading("Keep it yours.")
         SoftCard {
@@ -648,6 +650,22 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         ActionCard("FocuLY admin PIN", if (AdminPin.configured()) "PIN is set" else "Protect device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
         ActionCard("Your blocking screen", "Message, emoji & live preview", Icons.Outlined.EmojiEmotions) { nav("messages") }
         ActionCard("Welcome to FocuLY", "Meet your little focus companions", Icons.Outlined.AutoAwesome) { nav("welcome") }
+        SoftCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CatDoodle(CatArt.BREATHE, Modifier.size(64.dp)); Spacer(Modifier.width(12.dp))
+                Text("A little breather.", style = MaterialTheme.typography.titleMedium)
+            }
+            ToggleRow("Gentle break reminders", "A friendly nudge, even for apps you haven't blocked.", s.breakReminders) { value -> Repository.update { it.copy(breakReminders = value) } }
+            if (s.breakReminders) {
+                ChoiceRow(listOf("30m", "45m", "60m", "90m"), "${s.breakReminderMinutes}m") { value -> Repository.update { it.copy(breakReminderMinutes = value.removeSuffix("m").toInt()) } }
+                Text("Per app, per day · 8am–10pm · at most 3 reminders a day. No new blocks are created.", style = MaterialTheme.typography.bodySmall)
+                if (!usage) TextButton({ Repository.openUsage() }) { Text("Connect usage access") }
+                if (!breakNoticesAllowed) TextButton({
+                    if (Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    else ctx.startActivity(Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName).putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, "breaks"))
+                }) { Text("Allow break notifications") }
+            }
+        }
         SoftCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("Appearance", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); DoodleBadge(CatArt.TUNE, Modifier.size(68.dp)) }
             ChoiceRow(listOf("System", "Light", "Dark"), s.theme) { value -> Repository.update { it.copy(theme = value) } }
@@ -792,7 +810,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         Heading("Keep the boundary.")
         SoftCard { Caption(if (owner) "MANAGED DEVICE" else "ORDINARY ANDROID INSTALLATION")
             Text(if (owner) "Android device-owner management is active." else "Android settings still control this app.", style = MaterialTheme.typography.titleMedium)
-            Text(if (owner) "FocuLY removal is automatically blocked while Strict is active." else "Your FocuLY PIN protects in-app controls. Android still permits deactivation and removal.", style = MaterialTheme.typography.bodyMedium)
+            Text(if (owner) "FocuLY removal is automatically blocked while a ban, focus rule, or app policy is active." else "Your FocuLY PIN protects in-app controls. Android still permits deactivation and removal.", style = MaterialTheme.typography.bodyMedium)
         }
         if (!owner) {
             SoftCard { Icon(Icons.Outlined.AdminPanelSettings, null, tint = MaterialTheme.colorScheme.primary); Text("Uninstall resistance", style = MaterialTheme.typography.titleMedium); Text("Adds an Android administrator deactivation step before removal. No wipe, password, camera, or screen-lock policy is requested.", style = MaterialTheme.typography.bodyMedium) }

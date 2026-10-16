@@ -84,6 +84,15 @@ class ScreenshotGalleryTest {
             ui.onNodeWithText("Done · 1 selected").performClick()
         } finally { shell("settings put system font_scale $fontScale"); ui.runOnIdle { Repository.update { original } }; open("home") }
     }
+    @Test fun captureBreakSettings() {
+        Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
+        automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+        Assume.assumeTrue(shell("getprop ro.kernel.qemu").trim() == "1")
+        open("settings")
+        ui.onNodeWithText("Gentle break reminders").performScrollTo(); scrollPage(420f)
+        shot("break-settings")
+        open("home")
+    }
     @Test fun capturePersonalization() {
         Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
         automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)

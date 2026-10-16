@@ -1,5 +1,13 @@
 # Validation — FocuLY v1.3.0, 16 October 2026
 
+## Unreleased reinstall protection and breaks — 16 October 2026
+
+- All 27 JVM tests pass (22 engine and 5 new reminder/reinstall policy cases). All 28 ordinary-emulator Android regressions pass, including real fixture removal/reinstall for manual, day, week, and Strict-timer bans, retained end dates/state, resumed overlays, expiry, illustrated notification posting/actions, deduplication, Quiet today, and disabling.
+- Both managed-device tests pass on the separate device-owner Android 15 emulator. They verify actual package uninstall refusal, post-install quarantine, repair of suspension despite unchanged cached targets, FocuLY removal refusal during a Normal day ban, verified notification wording, clock/user-control restrictions, and policy release/expiry.
+- Debug/test assembly, Android lint (0 errors; warnings remain), optimized signed release assembly, and the existing release certificate verification pass. No new runtime permission or network access is added. The private reminder history is cleared by Delete local data.
+- Notification screenshots use explicit fixture usage input, not invented user history. The Settings capture and actual expanded Android notification are recorded with [coverage and platform limits](docs/REINSTALL_AND_REMINDERS.md).
+- The signed local build is `outputs/FocuLY-protection-preview.apk`. No new GitHub release is published. Physical OnePlus Nord CE 2 verification remains outstanding; normal administrator access cannot enforce OS uninstall blocking.
+
 ## Unreleased personalization — 16 October 2026
 
 - 22 JVM engine tests, Android lint (0 errors; existing warnings remain), debug/test APK assembly, optimized release assembly, and the existing release signature check pass.

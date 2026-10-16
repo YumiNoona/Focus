@@ -91,6 +91,7 @@ data class FocusState(val name: String = "", val intention: String = "Make room 
     val hideInsights: Boolean = false, val reduceMotion: Boolean = false, val askReason: Boolean = false,
     val overrideMinutes: Int = 5, val cooldownMinutes: Int = 10,
     val managedLockdown: Boolean = false, val uninstallProtection: Boolean = false,
+    val breakReminders: Boolean = true, val breakReminderMinutes: Int = 45,
     val blockMessage: BlockMessage = BlockMessage(), val lifecycleRules: List<AppLifecycleRule> = emptyList(),
     val apps: List<AppRule> = emptyList(), val domains: Set<String> = emptySet(),
     val feeds: Set<String> = emptySet(), val allowlist: Set<String> = emptySet(),
@@ -105,6 +106,12 @@ data class FocusState(val name: String = "", val intention: String = "Make room 
 }
 data class Restriction(val label: String, val explanation: String, val mode: FocusMode, val intention: String, val until: Long? = null)
 object RulesEngine {
+    fun hasActiveProtection(state: FocusState, now: Long): Boolean = state.blocks.any { it.alive(now) } ||
+        state.lifecycleRules.any { it.alive(now) } || activeProfiles(state, now).any { selectedRuleCount(state, it) > 0 }
+
+    /** Package removal never changes target IDs, deadlines, profiles, or cooldown history. */
+    fun afterPackageChange(state: FocusState, pkg: String, now: Long): FocusState = state.copy(
+        overrides = state.overrides.map { if (it.packageName == pkg && it.until > now) it.copy(until = now) else it })
     private fun profileDeadline(state: FocusState, profile: Profile, now: Long): Long? {
         val ends = mutableListOf<Long>()
         state.session?.takeIf { !it.timerOnly && it.alive(now) && it.profile.id == profile.id && it.profile.mode == profile.mode }?.let { ends += it.end }

@@ -40,7 +40,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
 
 @Composable fun AppBadge(packageName: String) {
     val ctx = LocalContext.current
-    val bitmap = remember(packageName) { runCatching {
+    val bitmap = remember(packageName, PackageStatus.revision) { runCatching {
         val drawable = ctx.packageManager.getApplicationIcon(packageName)
         Bitmap.createBitmap(72, 72, Bitmap.Config.ARGB_8888).also { drawable.setBounds(0, 0, 72, 72); drawable.draw(android.graphics.Canvas(it)) }.asImageBitmap()
     }.getOrNull() }

@@ -33,8 +33,11 @@ object Repository {
         androidx.core.content.ContextCompat.registerReceiver(context, AppLifecycleReceiver(), android.content.IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED); addAction(Intent.ACTION_PACKAGE_REMOVED); addAction(Intent.ACTION_PACKAGE_REPLACED); addDataScheme("package")
         }, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+        BreakReminders.schedule(context)
     }
     @Synchronized fun update(transform: (FocusState) -> FocusState): Boolean {
+        val previousReminderSetting = state.breakReminders
+        val previousReminderMinutes = state.breakReminderMinutes
         val next = transform(state)
         if (AdminPin.configured() && !AdminPin.authorized() &&
             (next.managedLockdown != state.managedLockdown || next.uninstallProtection != state.uninstallProtection ||
@@ -43,6 +46,7 @@ object Repository {
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) {
             val protected = state.copy(name = next.name, intention = next.intention, goalMinutes = next.goalMinutes,
                 theme = next.theme, haptics = next.haptics, reminders = next.reminders, hideInsights = next.hideInsights, reduceMotion = next.reduceMotion,
+                breakReminders = next.breakReminders, breakReminderMinutes = next.breakReminderMinutes,
                 history = next.history, session = if (state.session?.alive(System.currentTimeMillis()) == false) next.session else state.session,
                 lifecycleRules = if (next.lifecycleRules == state.lifecycleRules.filter { it.alive(System.currentTimeMillis()) }) next.lifecycleRules else state.lifecycleRules,
                 blocks = if (next.blocks.filter { it.alive(System.currentTimeMillis()) } == state.blocks.filter { it.alive(System.currentTimeMillis()) }) next.blocks else state.blocks)
@@ -51,7 +55,20 @@ object Repository {
         state = next
         context.getSharedPreferences("still", 0).edit().putString("state", encode(state).toString()).apply()
         FocusWidget.refresh(context)
+        if (next.breakReminders != previousReminderSetting || next.breakReminderMinutes != previousReminderMinutes) BreakReminders.schedule(context)
         return true
+    }
+    @Synchronized fun packageChanged(pkg: String, replacing: Boolean) {
+        // An OS lifecycle event may end a visit, including during Strict, but never edits a rule.
+        if (!replacing) {
+            val next = RulesEngine.afterPackageChange(state, pkg, System.currentTimeMillis())
+            if (next != state) {
+                state = next
+                context.getSharedPreferences("still", 0).edit().putString("state", encode(state).toString()).commit()
+            }
+        }
+        PackageStatus.changed()
+        FocusAccessibilityService.instance?.packageChanged(pkg)
     }
     fun block(kind: BlockKind, targets: Set<String>, period: BlockPeriod, mode: FocusMode, minutes: Int = 60): Boolean {
         reconcile()
@@ -154,6 +171,7 @@ object Repository {
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) return fail("Local rules cannot be cleared during Strict mode.")
         update { FocusState(onboarding = true) }; ManagedProtection.sync()
         BlockingArtwork.prune(context, emptySet())
+        BreakReminders.clear(context)
         FocusAccessibilityService.instance?.clearOverlay()
         FocusNotifications.session(context)
         FocusNotifications.plan(context)
@@ -193,6 +211,7 @@ object Repository {
         .put("theme", s.theme).put("haptics", s.haptics).put("reminders", s.reminders).put("hideInsights", s.hideInsights).put("reduceMotion", s.reduceMotion).put("askReason", s.askReason)
         .put("overrideMinutes", s.overrideMinutes).put("cooldownMinutes", s.cooldownMinutes)
         .put("managedLockdown", s.managedLockdown).put("uninstallProtection", s.uninstallProtection)
+        .put("breakReminders", s.breakReminders).put("breakReminderMinutes", s.breakReminderMinutes)
         .put("blockMessage", JSONObject().put("title", s.blockMessage.title).put("body", s.blockMessage.body).put("emoji", s.blockMessage.emoji).put("art", s.blockMessage.art).put("image", s.blockMessage.image))
         .put("lifecycleRules", JSONArray(s.lifecycleRules.map { JSONObject().put("packageName", it.packageName).put("label", it.label).put("lockUninstall", it.lockUninstall).put("quarantineInstall", it.quarantineInstall).put("end", it.end) }))
         .put("apps", JSONArray(s.apps.map { JSONObject().put("packageName", it.packageName).put("label", it.label).put("enabled", it.enabled).put("dailyMinutes", it.dailyMinutes).put("openingMinutes", it.openingMinutes).put("gradualTarget", it.gradualTarget).put("gradualStart", it.gradualStart).put("gradualPaused", it.gradualPaused) }))
@@ -208,6 +227,7 @@ object Repository {
         return FocusState(name = j.optString("name"), intention = j.optString("intention", "Make room for what matters."), goalMinutes = j.optInt("goalMinutes", 120), onboarding = j.optBoolean("onboarding"), disclosure = j.optBoolean("disclosure"),
             theme = j.optString("theme", "System"), haptics = j.optBoolean("haptics", true), reminders = j.optBoolean("reminders", true), hideInsights = j.optBoolean("hideInsights"), reduceMotion = j.optBoolean("reduceMotion"), askReason = j.optBoolean("askReason", false), overrideMinutes = j.optInt("overrideMinutes", 5), cooldownMinutes = j.optInt("cooldownMinutes", 10),
             managedLockdown = j.optBoolean("managedLockdown"), uninstallProtection = j.optBoolean("uninstallProtection"),
+            breakReminders = j.optBoolean("breakReminders", true), breakReminderMinutes = j.optInt("breakReminderMinutes", 45).coerceIn(15, 180),
             blockMessage = j.optJSONObject("blockMessage")?.let { BlockMessage(it.optString("title", "See you later.").take(80), it.optString("body", "Make room for what matters.").take(180), it.optString("emoji", "🌿").take(16), it.optString("art").take(32), it.optString("image").takeIf(BlockingArtwork::validName).orEmpty()) } ?: BlockMessage(),
             lifecycleRules = j.array("lifecycleRules").items { AppLifecycleRule(it.getString("packageName"), it.getString("label"), it.optBoolean("lockUninstall"), it.optBoolean("quarantineInstall"), it.optLong("end")) },
             apps = j.array("apps").items { AppRule(it.getString("packageName"), it.getString("label"), it.optBoolean("enabled", true), it.optInt("dailyMinutes"), it.optInt("openingMinutes"), it.optInt("gradualTarget"), it.optLong("gradualStart"), it.optBoolean("gradualPaused")) },

@@ -6,6 +6,11 @@ import android.appwidget.*
 import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.RectF
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.widget.RemoteViews
@@ -17,6 +22,46 @@ object FocusNotifications {
         it.createNotificationChannel(NotificationChannel(CHANNEL, "FocuLY sessions", NotificationManager.IMPORTANCE_LOW).apply { description = "Session status, completion, and schedule reminders" })
     }
     private fun permitted(ctx: Context) = Build.VERSION.SDK_INT < 33 || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    fun breaksAllowed(ctx: Context): Boolean {
+        val mgr = ctx.getSystemService(NotificationManager::class.java)
+        if (mgr.getNotificationChannel("breaks") == null) mgr.createNotificationChannel(NotificationChannel("breaks", "Gentle break reminders", NotificationManager.IMPORTANCE_DEFAULT).apply { description = "Optional daytime hints after extended app use" })
+        return permitted(ctx) && mgr.areNotificationsEnabled() && mgr.getNotificationChannel("breaks").importance != NotificationManager.IMPORTANCE_NONE
+    }
+    fun catIcon(ctx: Context, art: CatArt): Bitmap {
+        val source = BitmapFactory.decodeResource(ctx.resources, art.drawable, BitmapFactory.Options().apply { inSampleSize = 4 })
+        return Bitmap.createScaledBitmap(source, 192, 192, true).also { if (it !== source) source.recycle() }
+    }
+    private fun catPicture(ctx: Context, art: CatArt): Bitmap {
+        val icon = catIcon(ctx, art)
+        val picture = Bitmap.createBitmap(480, 240, Bitmap.Config.ARGB_8888)
+        Canvas(picture).apply { drawColor(Color.rgb(48, 75, 107)); drawBitmap(icon, null, RectF(128f, 8f, 352f, 232f), android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)) }
+        icon.recycle()
+        return picture
+    }
+    fun breakReminder(ctx: Context, label: String, millis: Long, pkg: String): Boolean {
+        if (!breaksAllowed(ctx)) return false
+        val arts = listOf(CatArt.BREATHE, CatArt.TEA, CatArt.CLOUD, CatArt.BREAK, CatArt.PILLOW)
+        val art = arts[Math.floorMod(pkg.hashCode(), arts.size)]
+        val title = "A little breather from $label?"
+        val body = "${millis / 60_000} minutes today. Rest your eyes, stretch, or give yourself a quiet moment."
+        val quiet = PendingIntent.getBroadcast(ctx, 140, Intent(ctx, BreakReminderReceiver::class.java).setAction("dev.still.QUIET_BREAKS"), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val notification = Notification.Builder(ctx, "breaks").setSmallIcon(R.drawable.ic_still)
+            .setContentTitle(title).setContentText(body).setLargeIcon(catIcon(ctx, art))
+            .setStyle(Notification.BigPictureStyle().bigPicture(catPicture(ctx, art)).setBigContentTitle(title).setSummaryText(body))
+            .setContentIntent(open(ctx, "insights")).setAutoCancel(true).setCategory(Notification.CATEGORY_RECOMMENDATION)
+            .addAction(Notification.Action.Builder(null, "Take a break", open(ctx, "setup")).build())
+            .addAction(Notification.Action.Builder(null, "Quiet today", quiet).build())
+            .addAction(Notification.Action.Builder(null, "Settings", open(ctx, "settings")).build()).build()
+        return runCatching { ctx.getSystemService(NotificationManager::class.java).notify(BreakReminders.NOTIFICATION, notification); true }.getOrDefault(false)
+    }
+    fun protectionAlert(ctx: Context, title: String, body: String) {
+        if (!permitted(ctx)) return
+        val mgr = ctx.getSystemService(NotificationManager::class.java)
+        mgr.createNotificationChannel(NotificationChannel("protection", "Protection changes", NotificationManager.IMPORTANCE_DEFAULT))
+        mgr.notify(141, Notification.Builder(ctx, "protection").setSmallIcon(R.drawable.ic_still).setLargeIcon(catIcon(ctx, CatArt.GUARD))
+            .setContentTitle(title).setContentText(body).setStyle(Notification.BigTextStyle().bigText(body))
+            .setContentIntent(open(ctx, "managed")).setAutoCancel(true).build())
+    }
     fun open(ctx: Context, action: String = "home"): PendingIntent = PendingIntent.getActivity(ctx, action.hashCode(), Intent(ctx, MainActivity::class.java).putExtra("screen", action), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     fun session(ctx: Context) {
         val mgr = manager(ctx)

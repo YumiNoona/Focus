@@ -8,8 +8,21 @@ import android.os.*
 /** Visible, owner-only monitor: Android 8+ restricts manifest package-added broadcasts. */
 class ManagedPolicyService : Service() {
     private val handler = Handler(Looper.getMainLooper())
+    private var noticeVerified: Boolean? = null
+    private fun notification(verified: Boolean) = Notification.Builder(this, "managed-policies").setSmallIcon(R.drawable.ic_still)
+        .setContentTitle(if (verified) "Android blocks FocuLY removal" else "Check FocuLY removal protection")
+        .setContentText(if (verified) "Your boundaries are active. Tap to review protection." else "Open FocuLY to verify the Android removal policy.")
+        .setLargeIcon(FocusNotifications.catIcon(this, CatArt.GUARD))
+        .setContentIntent(FocusNotifications.open(this, "managed")).setOngoing(true).build()
+    private fun refreshNotice() {
+        val verified = ManagedProtection.uninstallBlocked(this)
+        if (verified != noticeVerified) {
+            getSystemService(NotificationManager::class.java).notify(3, notification(verified))
+            noticeVerified = verified
+        }
+    }
     private val reconcile = object : Runnable {
-        override fun run() { if (!running) return; Repository.reconcile(); if (running) handler.postDelayed(this, 2000) }
+        override fun run() { if (!running) return; Repository.reconcile(); if (running) { refreshNotice(); handler.postDelayed(this, 2000) } }
     }
     override fun onCreate() {
         super.onCreate()
@@ -17,10 +30,9 @@ class ManagedPolicyService : Service() {
         if (!ManagedProtection.isOwner(this)) { stopSelf(); return }
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel("managed-policies", "Managed app controls", NotificationManager.IMPORTANCE_LOW))
-        val notification = Notification.Builder(this, "managed-policies").setSmallIcon(R.drawable.ic_still)
-            .setContentTitle("FocuLY app controls are active")
-            .setContentText("Watching installations and policy deadlines on this managed device.")
-            .setContentIntent(FocusNotifications.open(this, "managed")).setOngoing(true).build()
+        val verified = ManagedProtection.uninstallBlocked(this)
+        val notification = notification(verified)
+        noticeVerified = verified
         if (Build.VERSION.SDK_INT >= 34) startForeground(3, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         else startForeground(3, notification)
         running = true; requested = true

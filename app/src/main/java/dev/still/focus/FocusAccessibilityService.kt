@@ -30,6 +30,7 @@ class FocusAccessibilityService : AccessibilityService() {
     private var usage = emptyMap<String, Long>()
     private var usageAt = 0L
     private var readingUsage = false
+    private var usageAttemptAt = 0L
     private var usageDate: LocalDate = LocalDate.now()
     private var screenSeenAt = 0L
     private var overridePending = false
@@ -88,12 +89,17 @@ class FocusAccessibilityService : AccessibilityService() {
             val s = Repository.state.session
             val phase = s?.id.orEmpty()
             if (phase != lastPhase) { lastPhase = phase; FocusNotifications.session(this@FocusAccessibilityService); FocusNotifications.plan(this@FocusAccessibilityService) }
-            if (Repository.state.apps.any { it.enabled && it.dailyMinutes > 0 } && System.currentTimeMillis() - usageAt > 10_000 && !readingUsage && Repository.usageGranted(this@FocusAccessibilityService)) {
+            val needsDaily = Repository.state.apps.any { it.enabled && it.dailyMinutes > 0 }
+            val needsBreaks = interactive && Repository.state.breakReminders
+            if ((needsDaily || needsBreaks) && tickNow - usageAttemptAt > (if (needsDaily) 10_000 else 60_000) && !readingUsage) {
+                usageAttemptAt = tickNow
+                if (Repository.usageGranted(this@FocusAccessibilityService) && (needsDaily || FocusNotifications.breaksAllowed(this@FocusAccessibilityService))) {
                 readingUsage = true
                 Thread {
                     val data = UsageReader.day(this@FocusAccessibilityService)
-                    handler.post { if (instance === this@FocusAccessibilityService) { usage = data; usageAt = System.currentTimeMillis(); usageDate = LocalDate.now(); readingUsage = false; evaluate() } }
+                    handler.post { if (instance === this@FocusAccessibilityService) { usage = data; usageAt = System.currentTimeMillis(); usageDate = LocalDate.now(); readingUsage = false; evaluate(); if (interactive) BreakReminders.evaluate(this@FocusAccessibilityService, data, foreground = foreground) } }
                 }.start()
+                }
             }
             evaluate()
             handler.postDelayed(this, 250)
@@ -105,6 +111,14 @@ class FocusAccessibilityService : AccessibilityService() {
         ProtectionRuntime.connect()
         handler.removeCallbacks(poll)
         handler.post(poll)
+        BreakReminders.schedule(this)
+    }
+    fun packageChanged(pkg: String) {
+        usageAt = 0; usageAttemptAt = 0
+        if (foreground == pkg) {
+            clearOverlay(); foreground = ""; eventPackage = null; website = null; feed = null; openingElapsed = 0L
+        }
+        handler.post { refreshForeground(); evaluate() }
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return

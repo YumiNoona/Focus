@@ -22,7 +22,7 @@ data class TargetApp(val pkg: String, val label: String)
 /** One picker shared by instant blocks and profile/session scopes. No nested app menus. */
 @Composable fun selectableApps(s: FocusState): List<TargetApp>? {
     var installed by remember { mutableStateOf<List<TargetApp>?>(null) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(PackageStatus.revision) {
         installed = withContext(Dispatchers.IO) {
             val ctx = Repository.context
             ctx.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
