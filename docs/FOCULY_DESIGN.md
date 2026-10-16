@@ -49,7 +49,7 @@ The complete prompt set is stored in [illustration-prompts.json](illustration-pr
 
 ### Anatomy corrections — 16 October 2026
 
-The selection (`cat_choose.png`), calendar (`cat_routine.png`), and plant-watering (`cat_focus.png`) scenes were edited with built-in imagegen to remove redundant forelegs. Each pose now has two forelegs, one visible folded hind paw, and the other hind leg naturally occluded. Existing asset names retain all in-app references. Transparent backgrounds, props, palette, and character remain consistent. Exact edit prompts are recorded in the JSON above. Screenshots dated 15 October show the preceding artwork.
+The selection (`cat_choose.png`), calendar (`cat_routine.png`), and plant-watering (`cat_focus.png`) scenes were edited with built-in imagegen to remove redundant forelegs. A follow-up adds the second visible back leg to the selection and watering cats, giving each four visible paws while preserving their existing foreleg poses. The calendar pose retains one visible folded hind paw and an occluded hind leg. Existing asset names retain all in-app references. Transparent backgrounds, props, palette, and character remain consistent. Exact edit prompts, including the follow-up, are recorded in the JSON above. Screenshots dated 15 October show the preceding artwork.
 
 ## Simpler paths — 15 October 2026
 

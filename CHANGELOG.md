@@ -2,6 +2,7 @@
 
 ## Unreleased — illustration corrections, 2026-10-16
 
+- Add a second visible back leg to the selection and plant-watering cats, preserving both existing forepaws and their props.
 - Remove extra forelegs/paws from the selection, calendar, and plant-watering cat illustrations. Preserve their props, character, palette, and transparent backgrounds.
 
 ## Unreleased — flow review, 2026-10-15
