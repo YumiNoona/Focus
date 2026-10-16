@@ -2,6 +2,7 @@
 
 ## Unreleased — glass interface, 2026-10-16
 
+- Make Home's app and website shortcuts illustration-only, with larger centered cats and accessible button labels.
 - Restyle the complete Android interface with a bundled misty lake backdrop, translucent blue glass panels, highlight borders, pale buttons, and coordinated inputs, pickers, dialogs, and charts.
 - Float the existing three-icon dock above the background; retain direct blocking, fixed primary actions, and corrected cat doodles.
 - Use lighter sans-serif headings/body copy while retaining JetBrains Mono timers and small labels. Provide light and deeper dark glass themes.

@@ -227,7 +227,7 @@ class AppTest {
         ui.onNodeWithText("Strict").performScrollTo().assertIsNotEnabled()
     }
     @Test fun homeAppShortcutOpensPickerAndRestoresSelectionWithoutSavingABlock() {
-        ui.onNodeWithText("Block apps").performScrollTo().performClick()
+        ui.onNodeWithContentDescription("Block apps").performScrollTo().performClick()
         ui.onNodeWithText("Search apps").assertIsDisplayed().performTextInput("Scroll")
         ui.waitUntil(5000) { ui.onAllNodesWithText("Scroll Test").fetchSemanticsNodes().isNotEmpty() }
         ui.onNodeWithText("Scroll Test").performClick()
@@ -238,7 +238,7 @@ class AppTest {
         ui.runOnIdle { assertTrue(Repository.state.apps.isEmpty()); assertTrue(Repository.state.blocks.isEmpty()) }
     }
     @Test fun homeWebsiteShortcutAddsAndNormalizesDomainInOneScreen() {
-        ui.onNodeWithText("Block websites").performScrollTo().performClick()
+        ui.onNodeWithContentDescription("Block websites").performScrollTo().performClick()
         ui.onNodeWithText("Website or domain").performTextInput("https://www.reddit.com/r/focus")
         ui.onNodeWithText("Add website").performClick()
         ui.onNodeWithText("reddit.com").assertExists()

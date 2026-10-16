@@ -9,6 +9,7 @@ The 16 October 2026 development design follows the user's glassmorphism referenc
 - Material dialogs use coordinated slate surfaces; selection sheets use translucent slate containers. Inputs, switches, chips, and chart accents share the same blue/white palette.
 - Primary actions use a milky fill, blue text, rounded corners, and a fine edge. Disabled actions remain visibly different. Selected tabs/modes retain both semantic selection state and a distinct blue fill.
 - The dock floats inside the bottom safe area and still has exactly Home, Rules, and Insights. Settings and profile remain in the top header.
+- Home's two blocking shortcuts are illustration-only glass cards with larger centered cats. The entire card is a button, labeled “Block apps” or “Block websites” for screen readers, and opens the corresponding direct setup flow.
 - Standard Android sans-serif makes headings and body text lighter; JetBrains Mono remains on timer displays, captions, and small data labels. The established type scale, 48 dp interaction minimums, scrolling content, and persistent editor actions remain.
 - Light mode uses the softer landscape tint; Dark mode deepens the blue overlay. The background is static and introduces no continuous animation, including when Reduce motion is enabled.
 

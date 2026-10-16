@@ -235,13 +235,12 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
             ActiveBlocks(s, now)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf(Triple("Block apps", "blockApps", R.drawable.cat_block_apps), Triple("Block websites", "blockWebsites", R.drawable.cat_block_websites)).forEach { (title, target, art) ->
-                    GlassSurface(Modifier.weight(1f).heightIn(min = 146.dp).clip(RoundedCornerShape(20.dp)).clickable { nav(target) },
+                    GlassSurface(Modifier.weight(1f).height(152.dp).clip(RoundedCornerShape(20.dp))
+                        .clickable(role = Role.Button) { nav(target) }.semantics { contentDescription = title },
                         shape = RoundedCornerShape(20.dp), color = if (target == "blockApps") FoculyBrand.lilac else FoculyBrand.peach,
                         contentColor = MaterialTheme.colorScheme.onSurface) {
-                        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Image(painterResource(art), null, Modifier.align(Alignment.End).size(72.dp), contentScale = ContentScale.Fit)
-                            Text(title, Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
+                        Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
+                            Image(painterResource(art), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
                         }
                     }
                 }

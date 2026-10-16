@@ -2,6 +2,7 @@
 
 ## Glass interface — 16 October 2026
 
+- After enlarging Home's illustration-only shortcuts, both direct-entry regressions and the simplified-flow gallery pass again (3 focused Android checks). Light/dark Home captures and the signed local preview APK are refreshed; button descriptions retain the app/website labels for accessibility.
 - 22 JVM engine tests and all 24 Android checks pass (19 UI/backend, 1 direct Home blocking integration, 2 PIN, 2 native overlay scenarios) on the isolated Android 15 emulator with Scroll Test installed.
 - Debug/test APK assembly, Android lint, and optimized release assembly pass. The release build remains local; this design update does not publish a new APK release or change the version/signing identity.
 - Cards, onboarding, target sheets, settings, dialogs, primary actions, the dock, native blocking overlays, and the home-screen widget now share the glass direction. The generated backdrop is bundled locally and opaque; no permission or network access was added.

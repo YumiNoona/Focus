@@ -37,7 +37,7 @@ class DirectBlockTest {
             shell("settings put secure accessibility_enabled 1")
             waitFor { Repository.protectionReady() }
 
-            ui.onNodeWithText("Block apps").performScrollTo().performClick()
+            ui.onNodeWithContentDescription("Block apps").performScrollTo().performClick()
             ui.onNodeWithText("Search apps").performTextInput("Scroll")
             ui.waitUntil(5000) { ui.onAllNodesWithText("Scroll Test").fetchSemanticsNodes().isNotEmpty() }
             ui.onNodeWithText("Scroll Test").performClick()
@@ -52,7 +52,7 @@ class DirectBlockTest {
                 assertNull(Repository.state.session)
             }
 
-            ui.onNodeWithText("Block websites").performScrollTo().performClick()
+            ui.onNodeWithContentDescription("Block websites").performScrollTo().performClick()
             ui.onNodeWithText("Website or domain").performTextInput("https://www.reddit.com/r/focus")
             ui.onNodeWithText("Add website").performClick()
             ui.onNodeWithText("1 week").performScrollTo().performClick()
