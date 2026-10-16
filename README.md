@@ -8,7 +8,7 @@
 
 A calm Android app for intentional screen time, focus sessions, and everyday boundaries.
 
-**FocuLY is the new name for Focus.** Version 1.3.0 brings a scenic glass interface, simpler direct blocking, and larger cat illustrations. Existing installations retain their package, saved rules, and signing identity. [Glass design and current screenshots](docs/GLASS_DESIGN.md).
+**FocuLY is the new name for Focus.** Version 1.4.0 adds persistent bans across app reinstalls, illustrated break reminders, and personal blocking artwork to the scenic glass interface. Existing installations retain their package, saved rules, and signing identity. [What's new](CHANGELOG.md).
 
 [![Android CI](https://github.com/YumiNoona/Focus/actions/workflows/android.yml/badge.svg?branch=main)](https://github.com/YumiNoona/Focus/actions/workflows/android.yml)
 [![Latest release](https://img.shields.io/github/v/release/YumiNoona/Focus?style=flat&color=7760BA)](https://github.com/YumiNoona/Focus/releases/latest)
@@ -17,7 +17,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](#design)
 [![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](#privacy)
 
-**[Download v1.3.0](https://github.com/YumiNoona/Focus/releases/tag/v1.3.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
+**[Download v1.4.0](https://github.com/YumiNoona/Focus/releases/tag/v1.4.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
 
 </div>
 
@@ -25,7 +25,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet FocuLY
 
-**Current development:** Personal blocking screens add ten new cat scenes, your own image/sticker, and 24 larger emoji suggestions. Onboarding gains circular progress around Next/Done, and app selection uses a floating Done button. [Customization guide](docs/BLOCKING_ARTWORK.md). These changes follow the published v1.3.0 APK.
+**New in v1.4.0:** Personal blocking screens add ten new cat scenes, your own image/sticker, and 24 larger emoji suggestions. Onboarding gains circular progress around Next/Done, and app selection uses a floating Done button. [Customization guide](docs/BLOCKING_ARTWORK.md).
 
 App bans also retain their original deadlines through target-app reinstalls, and managed devices verify/reapply Android restrictions. Optional illustrated break reminders work for frequently used apps even without saved rules. [Reinstall protection, removal limits, and break reminders](docs/REINSTALL_AND_REMINDERS.md).
 
@@ -39,7 +39,7 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 ## Screenshots
 
-The v1.3.0 gallery shows the glass interface, retained cat doodles, and actual native blocking screens.
+The [v1.4.0 personalization gallery](docs/screenshots/personalization/README.md) shows the new cat artwork, personal stickers, floating controls, and native blocking screens. [Break reminder examples](docs/REINSTALL_AND_REMINDERS.md) show the new settings and an actual Android notification using test-fixture input. The v1.3.0 gallery below records the shared glass interface.
 
 **[Current glass gallery](docs/screenshots/glass/README.md)** · [Design guide](docs/GLASS_DESIGN.md). The [earlier v1.2.0 gallery](docs/screenshots/gallery/README.md) and [HTML gallery](docs/screenshots/gallery/index.html) remain historical records, including managed-device comparisons.
 
@@ -130,8 +130,8 @@ Strict requires a live protection service and an automatic ending. Sessions can 
 
 **Requires Android 9 / API 28 or newer.**
 
-1. Open the [v1.3.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.3.0).
-2. Download **`FocuLY-v1.3.0.apk`** and open it on your Android phone. The same release certificate supports updating an existing Focus installation.
+1. Open the [v1.4.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.4.0).
+2. Download **`FocuLY-v1.4.0.apk`** and open it on your Android phone. The same release certificate supports updating an existing Focus installation.
 3. If Android asks, allow installation from the browser or file manager you are using.
 4. Launch **FocuLY** and follow the four-screen introduction to the permission checklist.
 5. Read the protection disclosure and enable **FocuLY protection** in Android Accessibility settings if you want blocking.

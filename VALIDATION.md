@@ -1,20 +1,27 @@
-# Validation — FocuLY v1.3.0, 16 October 2026
+# Validation — FocuLY v1.4.0, 16 October 2026
 
-## Unreleased reinstall protection and breaks — 16 October 2026
+## v1.4.0 release
+
+- Release metadata is `dev.still.focus`, version `1.4.0`, code `124`, Android 9+, label `FocuLY`. Code 124 advances the official v1.3.0 installation while retaining the existing package and release signing certificate.
+- Release preparation checks all 27 JVM tests, debug assembly, Android lint (0 errors, 64 warnings), optimized signed release assembly, and APK metadata/signature verification. The feature-level Android checks below passed before the version/documentation changes; they were not rerun solely for the version bump.
+- The release combines personal blocking artwork, floating controls, persistent bans across target reinstalls, verified managed protection, and illustrated break reminders. Ordinary-phone administrator removal remains controlled by Android.
+- The release certificate SHA-256 is `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`. The GitHub release includes `FocuLY-v1.4.0.apk` and `SHA256SUMS.txt` for the final binary.
+
+## Reinstall protection and breaks — 16 October 2026
 
 - All 27 JVM tests pass (22 engine and 5 new reminder/reinstall policy cases). All 28 ordinary-emulator Android regressions pass, including real fixture removal/reinstall for manual, day, week, and Strict-timer bans, retained end dates/state, resumed overlays, expiry, illustrated notification posting/actions, deduplication, Quiet today, and disabling.
 - Both managed-device tests pass on the separate device-owner Android 15 emulator. They verify actual package uninstall refusal, post-install quarantine, repair of suspension despite unchanged cached targets, FocuLY removal refusal during a Normal day ban, verified notification wording, clock/user-control restrictions, and policy release/expiry.
 - Debug/test assembly, Android lint (0 errors; warnings remain), optimized signed release assembly, and the existing release certificate verification pass. No new runtime permission or network access is added. The private reminder history is cleared by Delete local data.
 - Notification screenshots use explicit fixture usage input, not invented user history. The Settings capture and actual expanded Android notification are recorded with [coverage and platform limits](docs/REINSTALL_AND_REMINDERS.md).
-- The signed local build is `outputs/FocuLY-protection-preview.apk`. No new GitHub release is published. Physical OnePlus Nord CE 2 verification remains outstanding; normal administrator access cannot enforce OS uninstall blocking.
+- These changes are included in v1.4.0. Physical OnePlus Nord CE 2 verification remains outstanding; normal administrator access cannot enforce OS uninstall blocking.
 
-## Unreleased personalization — 16 October 2026
+## Personalization — 16 October 2026
 
 - 22 JVM engine tests, Android lint (0 errors; existing warnings remain), debug/test APK assembly, optimized release assembly, and the existing release signature check pass.
 - The 24 existing Android functional checks pass. Two new artwork checks pass after fixing Save/feedback overlap: system-picker result handling, private PNG import and alpha/size bounds, draft recreation, emoji selection, message export round-trip, removal, invalid input rejection, built-in selection, and Strict save rejection. The four-step onboarding check passes again.
 - The opt-in personalization capture test passes on the isolated Android 15 emulator: all four onboarding steps, expanded options, floating app selection, artwork choices, emoji controls, imported-image preview, 130% text size, and an actual native blocking popup using the imported sticker. Its [12 current captures and ten-cat overview](docs/screenshots/personalization/README.md) are separate from the published v1.3.0 gallery.
 - All ten generated assets retain transparent alpha and were visually inspected for coherent anatomy. Prompts and built-in imagegen provenance are recorded in [illustration-prompts.json](docs/illustration-prompts.json). No broad storage/media permission was added. Physical OnePlus and manual screen-reader reviews remain separate.
-- The signed local build is `outputs/FocuLY-personalization-preview.apk`. This development update does not publish a new release.
+- These changes are included in v1.4.0; the earlier local preview was `outputs/FocuLY-personalization-preview.apk`.
 
 ## v1.3.0 release
 
