@@ -23,8 +23,7 @@ import androidx.compose.ui.unit.sp
 @Composable fun FoculyOnboarding(done: () -> Unit) {
     var step by rememberSaveable { mutableIntStateOf(0) }
     BackHandler(step > 0) { step-- }
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background,
-        contentColor = MaterialTheme.colorScheme.onBackground) {
+    Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize().safeDrawingPadding()
         .padding(horizontal = 20.dp).padding(top = 12.dp, bottom = 12.dp)) {
         if (step == 3) {
@@ -38,9 +37,9 @@ import androidx.compose.ui.unit.sp
                 "Keep time for what matters.",
                 "Choose what stays out."
             )[step]
-            Surface(Modifier.weight(1f).fillMaxWidth(), shape = RoundedCornerShape(32.dp), color = color, contentColor = FoculyBrand.ink) {
+            GlassSurface(Modifier.weight(1f).fillMaxWidth(), shape = RoundedCornerShape(32.dp), color = color, contentColor = MaterialTheme.colorScheme.onSurface) {
                 Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(title, fontFamily = Mono, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 38.sp)
+                    Text(title, fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 38.sp)
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                         CatDoodle(art, Modifier.fillMaxSize().graphicsLayer(scaleX = 1.18f, scaleY = 1.18f))
                     }

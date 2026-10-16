@@ -61,7 +61,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
 }
 
 @Composable fun SelectionCard(title: String, subtitle: String, icon: ImageVector, selected: Boolean, enabled: Boolean = true, tile: Boolean = false, onSelect: () -> Unit) {
-    Surface(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onSelect),
+    GlassSurface(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onSelect),
         shape = RoundedCornerShape(18.dp), color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant) {
         if (tile) Column(Modifier.heightIn(min = 124.dp).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary); if (selected) Icon(Icons.Outlined.CheckCircle, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary) else Spacer(Modifier.size(20.dp)) }
@@ -76,7 +76,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
 }
 
 @Composable fun ActionCard(title: String, subtitle: String, icon: ImageVector, confirmed: Boolean = false, action: () -> Unit) {
-    Surface(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).clickable(role = Role.Button, onClick = action), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+    GlassSurface(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).clickable(role = Role.Button, onClick = action), shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
         Row(Modifier.padding(18.dp).heightIn(min = 36.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
             Column(Modifier.weight(1f)) { Text(title, style = MaterialTheme.typography.titleSmall); Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -88,7 +88,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
 @Composable fun ModeCards(mode: FocusMode, manual: Boolean = false, select: (FocusMode) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FocusMode.entries.forEach { option ->
-            Surface(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).selectable(mode == option, enabled = !manual || option != FocusMode.STRICT, role = Role.RadioButton, onClick = { select(option) }),
+            GlassSurface(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).selectable(mode == option, enabled = !manual || option != FocusMode.STRICT, role = Role.RadioButton, onClick = { select(option) }),
                 color = if (mode == option) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(18.dp)) {
                 Column(Modifier.padding(horizontal = 8.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(when (option) { FocusMode.GENTLE -> Icons.Outlined.NotificationsNone; FocusMode.STANDARD -> Icons.Outlined.Shield; FocusMode.STRICT -> Icons.Outlined.Lock }, null, tint = if (manual && option == FocusMode.STRICT) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .4f) else MaterialTheme.colorScheme.primary)
@@ -217,7 +217,7 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
                 }
             }
         }
-        Surface(color = MaterialTheme.colorScheme.background) {
+        GlassSurface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Caption("${targets.size} selected · ${mode.label} · ${blockDeadline(preview, now)}")
                 val chooseFirst = kind == BlockKind.APPS && targets.isEmpty()

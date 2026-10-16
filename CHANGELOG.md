@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — glass interface, 2026-10-16
+
+- Restyle the complete Android interface with a bundled misty lake backdrop, translucent blue glass panels, highlight borders, pale buttons, and coordinated inputs, pickers, dialogs, and charts.
+- Float the existing three-icon dock above the background; retain direct blocking, fixed primary actions, and corrected cat doodles.
+- Use lighter sans-serif headings/body copy while retaining JetBrains Mono timers and small labels. Provide light and deeper dark glass themes.
+- Carry the design into onboarding, native Normal/Resistant/Strict overlays, and the home-screen widget without changing protection behavior or adding permissions.
+
 ## Unreleased — illustration corrections, 2026-10-16
 
 - Add a second visible back leg to the selection and plant-watering cats, preserving both existing forepaws and their props.

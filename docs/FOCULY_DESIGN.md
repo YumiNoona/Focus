@@ -1,5 +1,7 @@
 # FocuLY visual direction
 
+The current development interface follows the user's newer glassmorphism reference. See [the glass design guide](GLASS_DESIGN.md) for the shared scenic background, translucent controls, updated typography, and screenshots. The pastel direction below documents the earlier v1.2.0 design and the retained mascot system.
+
 FocuLY uses the user's original `public/logo.png` for its launcher icon and in-app wordmark. The raster is copied unchanged into `app/src/main/res/drawable-nodpi/foculy_logo.png`. The Android package, saved data, administrator component, and signing certificate remain unchanged for updates from Focus.
 
 ## Four onboarding screens

@@ -44,7 +44,7 @@ data class TargetApp(val pkg: String, val label: String)
     close: () -> Unit, allSelected: Boolean? = null, changeAll: ((Boolean) -> Unit)? = null
 ) {
     var query by rememberSaveable { mutableStateOf("") }
-    ModalBottomSheet(onDismissRequest = close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    ModalBottomSheet(onDismissRequest = close, containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .94f), sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).imePadding().padding(horizontal = 22.dp).padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -86,7 +86,7 @@ val supportedFeeds = listOf("YouTube Shorts", "Instagram Reels", "Facebook Reels
     var error by rememberSaveable { mutableStateOf(false) }
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = LocalFocusManager.current
-    ModalBottomSheet(onDismissRequest = close, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+    ModalBottomSheet(onDismissRequest = close, containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .94f), sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
         Column(Modifier.fillMaxWidth().heightIn(max = 580.dp).imePadding().padding(horizontal = 22.dp).padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

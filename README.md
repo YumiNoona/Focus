@@ -25,7 +25,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet FocuLY
 
-**Current development:** Home shortcuts open block setup directly, focus targets use shared selection sheets, and primary actions stay visible. Four additional cat doodles accompany selection, feeds, routines, and appearance. These changes follow the published v1.2.0 APK; see the [flow guide and current screenshots](docs/SIMPLER_FLOWS.md).
+**Current development:** A complete glass interface brings a misty lake backdrop, translucent blue panels, pale buttons, and a floating three-icon dock. Direct Home shortcuts, shared target sheets, persistent actions, and corrected cat doodles remain. These changes follow the published v1.2.0 APK; see the [glass design and current screenshots](docs/GLASS_DESIGN.md) and [simpler flows](docs/SIMPLER_FLOWS.md).
 
 **New in v1.2.0:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages with mode previews, direct Shorts/Reels actions, and individual managed app controls. Distinct doodles accompany reminders, patience, Strict boundaries, growing focus, breaks, and completion.
 
@@ -35,20 +35,20 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 ## Screenshots
 
-The gallery shows FocuLY's four onboarding screens, cat doodles, and actual blocking screens from the v1.2.0 source.
+The current development gallery shows the glass interface, retained cat doodles, and actual native blocking screens.
 
-**[Full screen gallery](docs/screenshots/gallery/README.md)** · [Searchable local HTML gallery](docs/screenshots/gallery/index.html). This gallery documents an earlier build and includes onboarding, permission disclosure, principal editors, settings sections, blocking modes, warnings, completion, and managed-device comparisons.
+**[Current glass gallery](docs/screenshots/glass/README.md)** · [Design guide](docs/GLASS_DESIGN.md). The [earlier v1.2.0 gallery](docs/screenshots/gallery/README.md) and [HTML gallery](docs/screenshots/gallery/index.html) remain historical records, including managed-device comparisons.
 
 <table>
   <tr>
     <td align="center"><b>Home</b></td>
-    <td align="center"><b>Your rules</b></td>
+    <td align="center"><b>Block setup</b></td>
     <td align="center"><b>FocuLY session</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/home.png" alt="FocuLY home with profile, settings, start button, and three-icon dock" width="250" /></td>
-    <td><img src="docs/screenshots/rules.png" alt="FocuLY app restrictions and always-allowed controls" width="250" /></td>
-    <td><img src="docs/screenshots/session.png" alt="Active focus timer and session controls" width="250" /></td>
+    <td><img src="docs/screenshots/glass/04-home.jpg" alt="Glass Home with profile, settings, start button, and three-icon dock" width="250" /></td>
+    <td><img src="docs/screenshots/glass/25-block-apps.jpg" alt="App blocking with visible durations and resistance choices" width="250" /></td>
+    <td><img src="docs/screenshots/glass/30-active-session.jpg" alt="Active glass focus timer and session controls" width="250" /></td>
   </tr>
   <tr>
     <td align="center"><b>Dark theme</b></td>
@@ -56,9 +56,9 @@ The gallery shows FocuLY's four onboarding screens, cat doodles, and actual bloc
     <td align="center"><b>Intentional pause</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/dark.png" alt="FocuLY dark theme" width="250" /></td>
-    <td><img src="docs/screenshots/insights.png" alt="FocuLY session and usage insights" width="250" /></td>
-    <td><img src="docs/screenshots/blocking.png" alt="Accessibility interruption over a selected test app" width="250" /></td>
+    <td><img src="docs/screenshots/glass/31-dark-home.jpg" alt="FocuLY dark glass theme" width="250" /></td>
+    <td><img src="docs/screenshots/glass/18-insights.jpg" alt="FocuLY session and usage insights" width="250" /></td>
+    <td><img src="docs/screenshots/glass/27-normal-popup.jpg" alt="Glass accessibility interruption over a selected test app" width="250" /></td>
   </tr>
 </table>
 
@@ -67,16 +67,16 @@ Screenshots are captured from the actual Android app in an emulator. Scroll Test
 <details>
 <summary>Independent blocks and compact setup</summary>
 
-<img src="docs/screenshots/block-setup.png" alt="Card choices for today, a day, a week, minutes, or until manually unblocked, with a persistent action button" width="250" />
-<img src="docs/screenshots/active-blocks.png" alt="Persistent manual app block on Home with an Unblock action" width="250" />
-<img src="docs/screenshots/settings.png" alt="Compact protection setup and expandable settings" width="250" />
+<img src="docs/screenshots/glass/25-block-apps.jpg" alt="Choices for today, a day, a week, minutes, or until manually unblocked, with a persistent action button" width="250" />
+<img src="docs/screenshots/glass/26-active-blocks.jpg" alt="Persistent manual app block on Home with an Unblock action" width="250" />
+<img src="docs/screenshots/glass/19-settings-health.jpg" alt="Glass protection setup and settings" width="250" />
 
 These screens are captured from the Android app; independent blocks also work without a focus session.
 
 </details>
 
 <details>
-<summary>Optional uninstall and managed-device controls</summary>
+<summary>Optional uninstall and managed-device controls (earlier design)</summary>
 
 <img src="docs/screenshots/uninstall.png" alt="Personal-phone administrator setup and uninstall-resistance limits" width="250" />
 <img src="docs/screenshots/managed.png" alt="Verified device-owner uninstall protection and managed Strict controls" width="250" />
@@ -166,7 +166,7 @@ The [validation record](VALIDATION.md) separates verified behavior from remainin
 
 ## Design
 
-Warm off-white backgrounds, near-black text, muted violet accents, quiet rounded surfaces, and generous whitespace. JetBrains Mono is bundled locally and used throughout the app.
+A misty lake backdrop, translucent blue-grey cards, fine glass edges, pale primary buttons, and a floating three-icon dock. Clear sans-serif headings and body copy pair with bundled JetBrains Mono timers and small labels. Light and deeper dark glass themes keep the same navigation and direct blocking flows. See [the design guide](docs/GLASS_DESIGN.md).
 
 - **Type scale:** 44 / 28 / 24 / 20 / 18 / 16 / 14 / 12 sp.
 - **Spacing:** 4 dp grid; 24 dp page and card padding; 24 dp section gaps.

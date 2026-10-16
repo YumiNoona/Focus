@@ -48,7 +48,7 @@ import kotlinx.coroutines.withContext
     val notifications = Build.VERSION.SDK_INT < 33 || ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     if (onboarding) Page {
         Heading("Make space for focus.")
-        Surface(shape = RoundedCornerShape(28.dp), color = FoculyBrand.lilac, contentColor = FoculyBrand.ink) {
+        GlassSurface(shape = RoundedCornerShape(28.dp), color = FoculyBrand.lilac, contentColor = MaterialTheme.colorScheme.onSurface) {
             Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(if (ready) "You're ready." else "A quieter screen.", style = MaterialTheme.typography.titleLarge,

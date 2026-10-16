@@ -45,9 +45,9 @@ fun CatArt.tint(): Color = when (this) {
     else -> FoculyBrand.lime
 }
 
-/** A light backing keeps black doodle strokes readable with either app theme. */
+/** A milky glass backing separates black doodle strokes from the landscape. */
 @Composable fun DoodleBadge(art: CatArt, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = RoundedCornerShape(24.dp), color = art.tint()) {
+    GlassSurface(modifier, shape = RoundedCornerShape(24.dp), color = Color.White.copy(alpha = .18f)) {
         CatDoodle(art, Modifier.padding(8.dp))
     }
 }
@@ -63,9 +63,9 @@ fun CatArt.tint(): Color = when (this) {
     Image(painterResource(art.drawable), null, modifier, contentScale = ContentScale.Fit)
 }
 
-/** Pastel surfaces keep the original black ink readable in light and dark themes. */
+/** Decorative artwork remains secondary to the text on a tinted glass panel. */
 @Composable fun DoodleCard(art: CatArt, title: String, detail: String, tint: Color = FoculyBrand.lime) {
-    Surface(shape = RoundedCornerShape(28.dp), color = tint, contentColor = FoculyBrand.ink) {
+    GlassSurface(shape = RoundedCornerShape(28.dp), color = tint, contentColor = MaterialTheme.colorScheme.onSurface) {
         Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

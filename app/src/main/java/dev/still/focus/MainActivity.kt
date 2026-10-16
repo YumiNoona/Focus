@@ -127,7 +127,7 @@ class MainActivity : ComponentActivity() {
         return
     }
     if (route == "welcome") { FoculyOnboarding { route = "settings" }; return }
-    Scaffold(containerColor = MaterialTheme.colorScheme.background,
+    Scaffold(containerColor = Color.Transparent,
         topBar = { Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) },
         bottomBar = { if (route in mainRoutes) Dock(route, nav) }
     ) { padding ->
@@ -177,13 +177,14 @@ class MainActivity : ComponentActivity() {
             }
         } else IconButton(back) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
         if (root) Spacer(Modifier.weight(1f))
-        else Text(when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontFamily = Mono, fontSize = 18.sp)
-        if (root) IconButton(settings) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) } else Spacer(Modifier.width(48.dp))
+        else Text(when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium)
+        if (root) IconButton(settings, Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) } else Spacer(Modifier.width(48.dp))
     }
 }
 @Composable fun Dock(route: String, nav: (String) -> Unit) {
-    Surface(color = MaterialTheme.colorScheme.background) {
-        Row(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 36.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+    Box(Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 10.dp)) {
+    GlassSurface(shape = RoundedCornerShape(28.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             listOf(Triple("home", "Home", Icons.Outlined.Home), Triple("rules", "Rules", Icons.Outlined.Tune), Triple("insights", "Insights", Icons.Outlined.BarChart)).forEach { (key, label, icon) ->
                 Box(Modifier.size(width = 68.dp, height = 52.dp).clip(RoundedCornerShape(20.dp)).background(if (route == key) MaterialTheme.colorScheme.primaryContainer else Color.Transparent).clickable { nav(key) }.semantics { contentDescription = label; selected = route == key }, contentAlignment = Alignment.Center) {
                     Icon(icon, null, Modifier.size(25.dp), tint = if (route == key) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
@@ -191,15 +192,26 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+    }
 }
 @Composable fun Page(content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
 @Composable fun Caption(text: String) { Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 @Composable fun Heading(title: String, subtitle: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) } } }
-@Composable fun Primary(text: String, enabled: Boolean = true, icon: ImageVector? = Icons.AutoMirrored.Outlined.ArrowForward, action: () -> Unit) { val haptic = LocalHapticFeedback.current; Button({ if (Repository.state.haptics) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); action() }, Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = enabled, shape = RoundedCornerShape(18.dp), contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)) { Text(text, Modifier.weight(1f)); icon?.let { Icon(it, null, Modifier.size(24.dp)) } } }
-@Composable fun SoftCard(content: @Composable ColumnScope.() -> Unit) { Surface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface) { Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content) } }
+@Composable fun Primary(text: String, enabled: Boolean = true, icon: ImageVector? = Icons.AutoMirrored.Outlined.ArrowForward, action: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    Button({ if (Repository.state.haptics) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress); action() },
+        Modifier.fillMaxWidth().heightIn(min = 56.dp), enabled = enabled, shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xE6F2F7FF), contentColor = Color(0xFF204875),
+            disabledContainerColor = Color.White.copy(alpha = .10f), disabledContentColor = Color.White.copy(alpha = .55f)),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = if (enabled) .72f else .16f)),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)) {
+        Text(text, Modifier.weight(1f)); icon?.let { Icon(it, null, Modifier.size(24.dp)) }
+    }
+}
+@Composable fun SoftCard(content: @Composable ColumnScope.() -> Unit) { GlassSurface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface) { Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content) } }
 @Composable fun ToggleRow(title: String, description: String, checked: Boolean, enabled: Boolean = true, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onChange).semantics { contentDescription = title }, verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f).padding(end = 12.dp)) { Text(title, style = MaterialTheme.typography.bodyLarge); if (description.isNotBlank()) Text(description, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; Switch(checked, null, enabled = enabled) } }
 @Composable fun LinkRow(title: String, detail: String, icon: ImageVector = Icons.Outlined.ChevronRight, action: () -> Unit) { Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = action).padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(title, style = MaterialTheme.typography.bodyLarge); if (detail.isNotBlank()) Text(detail, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }; Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) } }
-@Composable fun Input(label: String, value: String, onChange: (String) -> Unit, numeric: Boolean = false, supporting: String? = null) { val keyboard = LocalSoftwareKeyboardController.current; val focus = LocalFocusManager.current; OutlinedTextField(value, onChange, Modifier.fillMaxWidth(), label = { Text(label) }, shape = RoundedCornerShape(16.dp), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text, imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }), supportingText = supporting?.let { { Text(it) } }) }
+@Composable fun Input(label: String, value: String, onChange: (String) -> Unit, numeric: Boolean = false, supporting: String? = null) { val keyboard = LocalSoftwareKeyboardController.current; val focus = LocalFocusManager.current; OutlinedTextField(value, onChange, Modifier.fillMaxWidth(), label = { Text(label) }, shape = RoundedCornerShape(18.dp), colors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.White.copy(alpha = .10f), unfocusedContainerColor = Color.White.copy(alpha = .06f)), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text, imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); focus.clearFocus() }), supportingText = supporting?.let { { Text(it) } }) }
 @Composable fun ChoiceRow(options: List<String>, selected: String, choose: (String) -> Unit) { Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { options.forEach { FilterChip(selected == it, { choose(it) }, label = { Text(it) }) } } }
 fun clock(millis: Long): String { val sec = (millis.coerceAtLeast(0) + 999) / 1000; return if (sec >= 3600) "%d:%02d:%02d".format(sec / 3600, sec / 60 % 60, sec % 60) else "%02d:%02d".format(sec / 60, sec % 60) }
 fun duration(millis: Long): String { val m = millis / 60_000; return if (m >= 60) "${m / 60}h ${m % 60}m" else "${m}m" }
@@ -223,18 +235,18 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
             ActiveBlocks(s, now)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf(Triple("Block apps", "blockApps", R.drawable.cat_block_apps), Triple("Block websites", "blockWebsites", R.drawable.cat_block_websites)).forEach { (title, target, art) ->
-                    Surface(Modifier.weight(1f).heightIn(min = 146.dp).clip(RoundedCornerShape(20.dp)).clickable { nav(target) },
+                    GlassSurface(Modifier.weight(1f).heightIn(min = 146.dp).clip(RoundedCornerShape(20.dp)).clickable { nav(target) },
                         shape = RoundedCornerShape(20.dp), color = if (target == "blockApps") FoculyBrand.lilac else FoculyBrand.peach,
-                        contentColor = FoculyBrand.ink) {
+                        contentColor = MaterialTheme.colorScheme.onSurface) {
                         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Image(painterResource(art), null, Modifier.align(Alignment.End).size(72.dp), contentScale = ContentScale.Fit)
                             Text(title, Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.titleSmall, color = FoculyBrand.ink, maxLines = 2)
+                                style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
                         }
                     }
                 }
             }
-            Surface(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).clickable { nav("blockFeeds") }, color = FoculyBrand.lime, contentColor = FoculyBrand.ink, shape = RoundedCornerShape(22.dp)) {
+            GlassSurface(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).clickable { nav("blockFeeds") }, color = FoculyBrand.lime, contentColor = MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(22.dp)) {
                 Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     CatDoodle(CatArt.FEEDS, Modifier.size(72.dp))
                     Column(Modifier.weight(1f)) { Text("Shorts & Reels", style = MaterialTheme.typography.titleMedium); Text("Pause the endless scroll", style = MaterialTheme.typography.bodySmall) }
@@ -246,15 +258,15 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Find your rhythm", style = MaterialTheme.typography.titleMedium)
                 s.profiles.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    pair.forEach { p -> Surface(Modifier.weight(1f).heightIn(min = 156.dp).clip(RoundedCornerShape(20.dp)).clickable { start(p) },
-                        shape = RoundedCornerShape(20.dp), color = profileArt(p).tint(), contentColor = FoculyBrand.ink) {
+                    pair.forEach { p -> GlassSurface(Modifier.weight(1f).heightIn(min = 156.dp).clip(RoundedCornerShape(20.dp)).clickable { start(p) },
+                        shape = RoundedCornerShape(20.dp), color = profileArt(p).tint(), contentColor = MaterialTheme.colorScheme.onSurface) {
                         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Image(painterResource(profileArt(p).drawable), null,
                                 Modifier.align(Alignment.End).size(64.dp), contentScale = ContentScale.Fit)
                             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                                Text(p.name, style = MaterialTheme.typography.titleSmall, color = FoculyBrand.ink, maxLines = 2)
+                                Text(p.name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
                                 Text("${profileDuration(p.minutes)} · ${p.mode.label}", style = MaterialTheme.typography.bodySmall,
-                                    color = FoculyBrand.ink.copy(alpha = .76f))
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .76f))
                             }
                         }
                     } }; if (pair.size == 1) Spacer(Modifier.weight(1f))
@@ -266,7 +278,7 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
             Box(Modifier.fillMaxWidth().height(250.dp), contentAlignment = Alignment.Center) {
                 val accent = MaterialTheme.colorScheme.primary
                 val line = MaterialTheme.colorScheme.outlineVariant
-                Canvas(Modifier.size(230.dp)) { drawCircle(line, style = Stroke(2.dp.toPx())); val progress = if (session.end == 0L) .85f else ((session.end - now).toFloat() / (session.end - session.start)).coerceIn(0f, 1f); drawArc(accent, -90f, 360 * progress, false, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round)) }
+                Canvas(Modifier.size(230.dp).clip(CircleShape).background(Color.White.copy(alpha = .06f)).border(1.dp, Color.White.copy(alpha = .20f), CircleShape)) { drawCircle(line, style = Stroke(6.dp.toPx())); val progress = if (session.end == 0L) .85f else ((session.end - now).toFloat() / (session.end - session.start)).coerceIn(0f, 1f); drawArc(accent, -90f, 360 * progress, false, style = Stroke(7.dp.toPx(), cap = StrokeCap.Round)) }
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(if (session.end == 0L) clock(now - session.start) else clock(session.remaining(now)), style = MaterialTheme.typography.displayLarge)
                     Caption(if (session.end == 0L) "TIME IN FOCUS" else "REMAINING")
@@ -312,7 +324,7 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
                 Primary("Choose distracting apps", icon = Icons.Outlined.Add) { nav("picker") }
                 if (s.apps.isNotEmpty()) Primary("Block selected apps", enabled = s.apps.any { it.enabled && it.packageName !in s.allowlist }, icon = Icons.Outlined.Lock) { block(BlockKind.APPS, null) }
                 if (s.apps.isEmpty()) DoodleCard(CatArt.PAUSE, "Choose your first app.", "A small pause can make a big difference.", FoculyBrand.blush)
-                s.apps.forEach { app -> Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                s.apps.forEach { app -> GlassSurface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     AppBadge(app.packageName)
                     Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).clickable { block(BlockKind.APPS, setOf(app.packageName)) }.padding(horizontal = 12.dp, vertical = 10.dp)) { Text(app.label, style = MaterialTheme.typography.titleSmall); Text(buildList { add("Tap to block"); if (app.dailyMinutes > 0) add("${app.allowance(System.currentTimeMillis())}m/day"); if (app.openingMinutes > 0) add("${app.openingMinutes}m/visit") }.joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     IconButton({ block(BlockKind.APPS, setOf(app.packageName)) }, enabled = app.enabled && app.packageName !in s.allowlist) { Icon(Icons.Outlined.LockClock, "Block ${app.label}", Modifier.size(20.dp)) }
@@ -458,7 +470,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         }
         if (!editing) ChoiceRow(s.profiles.map { it.name }, name) { choice -> s.profiles.find { it.name == choice }?.let { p -> profileId = p.id; name = p.name; minutes = p.minutes.toString(); intention = p.intention; mode = p.mode.name; scopedApps = p.apps; scopedDomains = p.domains; allApps = p.useAllApps; allDomains = p.useAllDomains; art = p.art; customTime = p.minutes !in setOf(0, 25, 50, 90, 1_440, 10_080) } }
         if (editing) {
-            Surface(shape = RoundedCornerShape(24.dp), color = FoculyBrand.lilac, contentColor = FoculyBrand.ink) {
+            GlassSurface(shape = RoundedCornerShape(24.dp), color = FoculyBrand.lilac, contentColor = MaterialTheme.colorScheme.onSurface) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     CatDoodle(CatArt.entries.firstOrNull { it.name == art } ?: CatArt.FOCUS, Modifier.size(88.dp))
                     Column { Text(name.ifBlank { "Your focus" }, style = MaterialTheme.typography.titleMedium); Text(profileDuration(minutes.toIntOrNull() ?: 50), style = MaterialTheme.typography.bodyMedium) }
@@ -466,7 +478,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(CatArt.FOCUS, CatArt.STUDY, CatArt.GUARD, CatArt.BREAK, CatArt.PAUSE, CatArt.CHOOSE, CatArt.FEEDS, CatArt.ROUTINE, CatArt.TUNE).forEach { option ->
-                    Surface(Modifier.size(60.dp).clip(RoundedCornerShape(18.dp)).clickable { art = option.name }
+                    GlassSurface(Modifier.size(60.dp).clip(RoundedCornerShape(18.dp)).clickable { art = option.name }
                         .semantics { contentDescription = "${option.name.lowercase()} illustration"; selected = art == option.name },
                         shape = RoundedCornerShape(18.dp), color = if (art == option.name) FoculyBrand.lilac else MaterialTheme.colorScheme.surfaceVariant) {
                         CatDoodle(option, Modifier.padding(8.dp))
@@ -496,7 +508,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         if (!editing && s.session != null) Text("End your current session before starting another.", color = MaterialTheme.colorScheme.error)
     }
     }
-    Surface(color = MaterialTheme.colorScheme.background) {
+    GlassSurface(color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Caption("${profileDuration(minutes.toIntOrNull() ?: 0)} · ${FocusMode.valueOf(mode).label}")
             Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null) && (!strictNeedsAcknowledgement || strictAcknowledged), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
@@ -556,7 +568,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         OutlinedButton(add, Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = canEdit, shape = RoundedCornerShape(18.dp)) {
             Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(10.dp)); Text("Create profile")
         }
-        s.profiles.forEach { p -> Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant,
+        s.profiles.forEach { p -> GlassSurface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurface) {
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 DoodleBadge(profileArt(p), Modifier.size(52.dp))
@@ -697,8 +709,8 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             if (record.end > record.start) record.focusedMillis * overlap / (record.end - record.start) else 0L
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Surface(Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) { Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Caption("FOCUS TODAY"); Text(duration(focused), style = MaterialTheme.typography.headlineMedium); Text("Logged sessions", style = MaterialTheme.typography.bodySmall) } }
-            Surface(Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Caption("COMPLETED"); Text(records.count { it.completed && it.end in dayStart until dayEnd }.toString(), style = MaterialTheme.typography.headlineMedium); Text("FocuLY sessions", style = MaterialTheme.typography.bodySmall) } }
+            GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.primaryContainer) { Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Caption("FOCUS TODAY"); Text(duration(focused), style = MaterialTheme.typography.headlineMedium); Text("Logged sessions", style = MaterialTheme.typography.bodySmall) } }
+            GlassSurface(Modifier.weight(1f), shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant) { Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) { Caption("COMPLETED"); Text(records.count { it.completed && it.end in dayStart until dayEnd }.toString(), style = MaterialTheme.typography.headlineMedium); Text("FocuLY sessions", style = MaterialTheme.typography.bodySmall) } }
         }
         val progress = (focused.toFloat() / (s.goalMinutes * 60_000L)).coerceIn(0f, 1f)
         Caption("YOUR PERSONAL GUIDE · ${s.goalMinutes} MINUTES")

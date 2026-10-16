@@ -165,27 +165,31 @@ class FocusAccessibilityService : AccessibilityService() {
         else if (overlayKey != "$foreground:${reason.explanation}:${reason.mode}:${reason.until}") { clearOverlay(); showOverlay(reason) }
     }
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
-    private fun background(color: Int, radius: Int = 18) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat() }
+    private fun background(color: Int, radius: Int = 24) = GradientDrawable().apply { setColor(color); cornerRadius = dp(radius).toFloat(); setStroke(dp(1), Color.parseColor("#66FFFFFF")) }
     private fun showOverlay(restriction: Restriction) {
         if (overlay != null) return
         val blockedPackage = foreground
         val state = Repository.state
         val dark = state.theme == "Dark" || (state.theme == "System" && resources.configuration.uiMode and 0x30 == 0x20)
-        val bg = Color.parseColor(if (dark) "#191D19" else "#FBFAF5")
-        val ink = Color.parseColor(if (dark) "#F2F0E6" else "#202520")
-        val secondary = Color.parseColor(if (dark) "#C1C3B8" else "#66665F")
-        val violet = ink
+        val bg = Color.parseColor("#204875")
+        val ink = Color.WHITE
+        val secondary = Color.parseColor("#F1F5FC")
+        val violet = Color.parseColor("#D2E6FF")
         val mono = resources.getFont(R.font.jetbrains_mono)
-        val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(56), dp(28), dp(40)); setBackgroundColor(bg) }
-        val scroll = ScrollView(this).apply { isFillViewport = true; addView(container) }
+        val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(28), dp(56), dp(28), dp(40)); setBackgroundColor(Color.TRANSPARENT) }
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            background = nativeGlassScene(this@FocusAccessibilityService, dark, if (restriction.mode == FocusMode.GENTLE) dp(24).toFloat() else 0f)
+            addView(container)
+        }
         fun text(value: String, size: Float, color: Int = ink): TextView = TextView(this).apply {
-            this.text = value; textSize = size; setTextColor(color); typeface = mono
+            this.text = value; textSize = size; setTextColor(color); typeface = Typeface.create("sans-serif", Typeface.NORMAL)
             setLineSpacing(dp(5).toFloat(), 1f); layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(20) }
         }.also(container::addView)
         fun button(value: String, primary: Boolean = false, click: () -> Unit): Button = Button(this).apply {
             this.text = value; isAllCaps = false; typeface = mono; textSize = 14f
             setTextColor(if (primary) bg else violet)
-            background = background(if (primary) violet else Color.TRANSPARENT)
+            background = background(Color.parseColor(if (primary) "#E6F2F7FF" else "#335A7DA3"))
             elevation = 0f; stateListAnimator = null
             minHeight = dp(56)
             layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) }
@@ -195,7 +199,7 @@ class FocusAccessibilityService : AccessibilityService() {
         ImageView(this).apply {
             val art = restriction.mode.catArt()
             setImageResource(art.drawable); scaleType = ImageView.ScaleType.FIT_CENTER
-            background = background(art.tint().toArgb())
+            background = background(Color.parseColor("#33FFFFFF"))
             setPadding(dp(8), dp(8), dp(8), dp(8))
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             layoutParams = LinearLayout.LayoutParams(-1, dp(if (restriction.mode == FocusMode.GENTLE) 86 else 120)).apply { bottomMargin = dp(16) }
@@ -269,7 +273,7 @@ class FocusAccessibilityService : AccessibilityService() {
         val params = WindowManager.LayoutParams(if (normal) (resources.displayMetrics.widthPixels * .92).toInt() else -1, if (normal) -2 else -1, WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY, 0, android.graphics.PixelFormat.TRANSLUCENT)
         params.gravity = Gravity.CENTER
         if (normal) { params.flags = params.flags or WindowManager.LayoutParams.FLAG_DIM_BEHIND; params.dimAmount = .45f }
-        if (normal) { container.setPadding(dp(24), dp(24), dp(24), dp(24)); container.background = background(bg, 24) }
+        if (normal) { container.setPadding(dp(24), dp(24), dp(24), dp(24)) }
         params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         overlayKey = "$foreground:${restriction.explanation}:${restriction.mode}:${restriction.until}"
         overlay = scroll

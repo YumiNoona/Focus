@@ -1,5 +1,15 @@
 # Validation — FocuLY v1.2.0, 14 October 2026
 
+## Glass interface — 16 October 2026
+
+- 22 JVM engine tests and all 24 Android checks pass (19 UI/backend, 1 direct Home blocking integration, 2 PIN, 2 native overlay scenarios) on the isolated Android 15 emulator with Scroll Test installed.
+- Debug/test APK assembly, Android lint, and optimized release assembly pass. The release build remains local; this design update does not publish a new APK release or change the version/signing identity.
+- Cards, onboarding, target sheets, settings, dialogs, primary actions, the dock, native blocking overlays, and the home-screen widget now share the glass direction. The generated backdrop is bundled locally and opaque; no permission or network access was added.
+- Native scenarios verify Normal visits, Resistant waiting/reasons, Strict enforcement/expiry, transient windows, independent blocks, and parked-overlay refresh/consent withdrawal with the new renderer.
+- The [glass design guide](docs/GLASS_DESIGN.md) records rendering choices, older-Android fallback, the background prompt, and actual emulator captures. Physical OnePlus testing remains outstanding.
+- All three opt-in gallery tests pass: full pages/native overlays, simplified flows with keyboard and 130% text size, and real completion/dark-focus milestones. The published development gallery exports 45 actual views plus an overview; raw PNGs remain local.
+- The local preview APK verifies with the existing release certificate SHA-256 `BEEE1A11A24A40F99110F85124CB096F30CBC0CAFAA06DBFFF8B4420AFAECA00`.
+
 ## Subsequent development review — 15 October 2026
 
 The [simpler-flow iteration](docs/SIMPLER_FLOWS.md) adds four cat doodles, direct Home blocking, shared target sheets, visible duration choices, and persistent primary actions. Updated Android regressions cover direct entry without saved targets, normalized website drafts, picker restoration, profile scopes, and returning from permissions. Its [current screenshot set](docs/screenshots/simple/README.md) is separate from the historical release gallery below.
