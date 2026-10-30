@@ -91,32 +91,7 @@ Widget or tile → Session setup or current session
 
 ## Build and tests
 
-Open this folder in Android Studio, let it discover your Android SDK, and use JDK 17 or newer. The bundled wrapper uses Gradle 8.14.3, Android Gradle Plugin 8.13.1, Kotlin 2.2.21, and a pinned Compose BOM. Install Android SDK 36.
-
-```powershell
-.\gradlew.bat assembleDebug
-.\gradlew.bat testDebugUnitTest
-.\gradlew.bat connectedDebugAndroidTest
-.\gradlew.bat lintDebug
-```
-
-The generated APK is at `app/build/outputs/apk/debug/app-debug.apk`. Connected tests require an Android device or emulator.
-
-Important files:
-
-- `Engine.kt`: pure rules, schedule, domain, session, and allowance logic.
-- `Repository.kt`: persisted state, JSON export, and Android usage-event aggregation.
-- `FocusAccessibilityService.kt`: user-consented app/website/feed enforcement and interruption overlay.
-- `ProtectionRuntime.kt`: live connection health and observed/blocked foreground state.
-- `ManagedProtection.kt`: optional administration and journaled Android device-owner policies.
-- `Integrations.kt`: notification scheduling, reboot receiver, Quick Settings tile, widget.
-- `MainActivity.kt`: app screens, forms, navigation, permission explanations.
-- `BlockScreens.kt`: standalone block setup, active groups, duration/mode cards, and expandable details.
-- `Theme.kt`: colors and typography.
-- `EngineTest.kt`: rules tests.
-- `AppTest.kt`: connected Android UI and persistence tests.
-- `ProtectionScenarioTest.kt`: real installed-app accessibility regression on isolated emulators.
-- `test-fixture/`: separate local distraction app; never bundled in FocuLY.
+The [development guide](DEVELOPMENT.md) covers the SDK/JDK setup, debug and signed release builds, source map, and isolated emulator checks. The [validation record](VALIDATION.md) separates verified behavior from remaining device coverage.
 
 ## Before distribution
 
@@ -129,4 +104,4 @@ Android and Google Play references used for the implementation:
 - [Android app widgets](https://developer.android.com/develop/ui/views/appwidgets/overview)
 - [Google Play AccessibilityService requirements](https://support.google.com/googleplay/android-developer/answer/10964491)
 
-JetBrains Mono is distributed under the SIL Open Font License; see [FONT-LICENSE.txt](../FONT-LICENSE.txt).
+JetBrains Mono is distributed under the SIL Open Font License; see [FONT-LICENSE.txt](legal/FONT-LICENSE.txt).

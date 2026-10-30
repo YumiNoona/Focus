@@ -20,7 +20,7 @@ Device owner is a provisioning role for a dedicated device. Focus cannot grant i
 For a fresh developer emulator that meets Android's provisioning prerequisites, install Focus and assign the role:
 
 ```bash
-adb install FocuLY-v1.0.0.apk
+adb install FocuLY-v1.0.1.apk
 adb shell dpm set-device-owner dev.still.focus/.FocusAdminReceiver
 ```
 

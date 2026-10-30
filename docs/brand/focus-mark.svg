@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Focus mark">
-  <rect width="128" height="128" rx="34" fill="#7760BA"/>
-  <g fill="none" stroke="#F9F8F4" stroke-width="8" stroke-linecap="round">
-    <path d="M40 44v40M64 32v64M88 44v40"/>
-  </g>
-</svg>

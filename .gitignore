@@ -59,6 +59,8 @@ google-services.json
 *.aar
 
 # Archives, local exports, emulator data and debug logs
+/local-work/
+/outputs/
 *.zip
 *.7z
 *.tar
@@ -83,7 +85,7 @@ $RECYCLE.BIN/
 
 # Keep the Gradle wrapper binary and intentional documentation images tracked.
 !gradle/wrapper/gradle-wrapper.jar
-# docs/screenshots/*.png are product documentation, not generated build files.
+# Intentional images under docs/screenshots/ are product documentation.
 
 # Standalone Vercel website dependencies and generated output
 web/node_modules/
