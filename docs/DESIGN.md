@@ -1,6 +1,6 @@
 # FocuLY — glass interface
 
-The glass design follows the user's reference: a calm scenic backdrop, translucent blue-grey panels, fine light edges, white text, and pale primary actions. The 30 October v1.0.0 refresh follows Stash's floating dock treatment while retaining the FocuLY logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows.
+The fresh v1.0.0 (Android build 127) uses a scenic backdrop, translucent blue-grey panels, fine light edges, white text, and pale primary actions. Matching floating top and bottom chrome follow Stash's see-through treatment while retaining the FocuLY logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows.
 
 ## Shared material
 
@@ -10,9 +10,12 @@ The glass design follows the user's reference: a calm scenic backdrop, transluce
 - Primary actions use a milky fill, blue text, rounded corners, and a fine edge. Disabled actions remain visibly different. Selected tabs/modes retain both semantic selection state and a distinct blue fill.
 - The dock is a separate overlay inside the bottom safe area, with a maximum 360 dp width, 72 dp capsule height, low-opacity tint, fine rim, soft shadow, and open space around it. It still has exactly Home, Rules, and Insights. Settings and profile remain in the top header. Scrolling cards pass visibly behind it; the shared page's trailing inset lets its last control scroll clear of the capsule.
 - Its selected pill slides over 180 ms using a placement-phase offset rather than recomposing the dock every animation frame. Reduce motion snaps directly; haptic feedback follows its existing preference. Each destination exposes a selected tab role and a 56 dp-high target. Repeated taps preserve position, and usage readings are shared across tabs.
+- The 64 dp header shares the dock's glass edges and open margins, with a stronger translucent blue tint to keep its title/icons readable over pale cards. Home, Rules, Insights, and Settings scroll behind it, with leading scroll space to place the first control below the header. The system status area stays clear of scrolling app text; fixed editor layouts retain a safe top inset. Profile and Settings keep their root positions; nested screens use Back.
+- Settings replaces the System/Light/Dark chip row with a 48 dp sun/moon switch in the header. A selected dark-mode state is exposed to accessibility. The whole screen's palette and backdrop blend over 440 ms without remounting content, losing text input, or moving scroll position; the icon crossfades. Reduce motion snaps instantly, and system animation preferences are respected.
 - Home's two blocking shortcuts are illustration-only glass cards with larger centered cats. The entire card is a button, labeled “Block apps” or “Block websites” for screen readers, and opens the corresponding direct setup flow.
 - Standard Android sans-serif makes headings and body text lighter; JetBrains Mono remains on timer displays, captions, and small data labels. The established type scale, 48 dp interaction minimums, scrolling content, and persistent editor actions remain.
 - Light mode uses the softer landscape tint; Dark mode deepens the blue overlay. The background is static and introduces no continuous animation, including when Reduce motion is enabled.
+- Fresh installations start in Light. Existing System preferences resolve once to the current Android light/dark appearance and are stored explicitly; later system appearance changes do not override the manual choice. The Settings credit begins with “Made” and keeps Veil linked to its website.
 
 ## Native blocking and widget
 

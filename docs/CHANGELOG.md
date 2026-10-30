@@ -1,6 +1,15 @@
 # Changelog
 
-## [1.0.1](https://github.com/YumiNoona/Focus/releases/tag/v1.0.1) — 2026-10-30
+## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — fresh glass-header build, 2026-10-30
+
+- Replace the appearance chip row with a top-right Settings sun/moon switch. Smoothly blend the existing screen's palette and backdrop over 440 ms; preserve forms and scroll state. Reduce motion snaps instantly.
+- Share translucent chrome between the header and three-icon dock. Root pages and Settings scroll behind the top bar with leading safe space; fixed editor controls keep their top inset. Profile remains top left and Settings top right on main pages.
+- Start new installs in Light and migrate old System choices once to the current Android appearance. Persist explicit Light/Dark choices independently of later system changes.
+- Capitalize the Settings footer to “Made with 💜 by Veil,” keeping the existing website link.
+- Replace all earlier GitHub releases with this fresh v1.0.0, using Android version code 127 and the existing package/signing identity for in-place updates.
+- Explicitly disable release debugging. Check the actual signed production app on an emulator; CI now verifies release variants and publishes reports without debug APK artifacts.
+
+## Historical 1.0.1 — 2026-10-30
 
 - Keep README as the only root Markdown file. Move contributor/security policies into `.github`, supporting documentation into `docs`, legal notices into `docs/legal`, and the signing example into `config`.
 - Remove superseded planning notes, obsolete branding, and duplicate historical screenshot galleries. Retain the current dock/personalization galleries and representative block setup, blocking, and reminder captures; earlier material remains available in Git history.
@@ -8,7 +17,7 @@
 - Keep local emulator/release archives outside the source tree and explicitly ignore regenerated local work/output folders.
 - Publish Android version code 126 with the existing package/signing certificate. Application behavior is unchanged from the new v1.0.0.
 
-## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — 2026-10-30
+## Historical 1.0.0 (Android code 125) — 2026-10-30
 
 - Restart the public FocuLY release series at v1.0.0 and replace earlier GitHub releases, retaining source history and the official signing key. Internal Android version code 125 allows updates from former builds, including v1.4.0 (124), without deleting saved data.
 - Rework the three-icon dock after inspecting Stash: a translucent capsule, fine highlight rim, soft shadow, and clear margins. Content now scrolls behind the dock instead of stopping at a reserved footer area; trailing scroll space keeps final actions reachable.

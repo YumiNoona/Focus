@@ -15,13 +15,13 @@ import androidx.compose.foundation.*
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.*
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.semantics.Role
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
         navigationSequence = savedInstanceState?.getInt("navigationSequence") ?: 0
         enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
-        setContent { StillTheme(Repository.state.theme) { StillApp(requestedScreen, navigationSequence) } }
+        setContent { StillTheme(Repository.state.theme, Repository.state.reduceMotion) { StillApp(requestedScreen, navigationSequence) } }
     }
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); requestedScreen = intent.getStringExtra("screen") ?: "home"; navigationSequence++ }
     override fun onSaveInstanceState(outState: Bundle) {
@@ -136,13 +136,15 @@ class MainActivity : ComponentActivity() {
         return
     }
     if (route == "welcome") { FoculyOnboarding { route = "settings" }; return }
+    val floatingHeader = route in mainRoutes || route == "settings"
     Box(Modifier.fillMaxSize()) {
     Scaffold(containerColor = Color.Transparent,
-        topBar = { Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) }
+        topBar = { if (!floatingHeader) Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) }
     ) { padding ->
-        val pageInsets = PaddingValues(top = padding.calculateTopPadding(), bottom = if (route in mainRoutes) 0.dp else padding.calculateBottomPadding())
+        val pageInsets = PaddingValues(top = if (floatingHeader) WindowInsets.statusBars.asPaddingValues().calculateTopPadding() else padding.calculateTopPadding(), bottom = if (route in mainRoutes) 0.dp else padding.calculateBottomPadding())
+        val headerClearance = if (floatingHeader) 80.dp else 0.dp
         val dockClearance = if (route in mainRoutes) 96.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
-        CompositionLocalProvider(LocalPageBottomInset provides dockClearance) {
+        CompositionLocalProvider(LocalPageTopInset provides headerClearance, LocalPageBottomInset provides dockClearance) {
         Box(Modifier.fillMaxSize().padding(pageInsets).consumeWindowInsets(pageInsets)) {
             screenState.SaveableStateProvider(route) {
             when (route) {
@@ -174,6 +176,7 @@ class MainActivity : ComponentActivity() {
         }
     }
     if (route in mainRoutes) Dock(route, nav, Modifier.align(Alignment.BottomCenter))
+    if (floatingHeader) Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back)
     }
     if (timerDialog) AlertDialog(onDismissRequest = { timerDialog = false }, title = { Text("Enable protection", fontFamily = Mono) }, text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DoodleBadge(CatArt.REMINDER, Modifier.fillMaxWidth().height(88.dp))
@@ -184,18 +187,38 @@ class MainActivity : ComponentActivity() {
 
 @Composable fun Header(route: String, name: String, profile: () -> Unit, settings: () -> Unit, back: () -> Unit) {
     val root = route in listOf("home", "rules", "insights")
-    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (root) IconButton(profile) {
-            Box(Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 8.dp), contentAlignment = Alignment.TopCenter) {
+    FloatingGlassChrome(Modifier.widthIn(max = 360.dp).fillMaxWidth().height(64.dp), highContrast = true) {
+    Row(Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (root) IconButton(profile, Modifier.size(48.dp)) {
                 if (name.isBlank()) Icon(Icons.Outlined.Person, "Profile", Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                 else Text(name.first().uppercase(), fontFamily = Mono, color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { contentDescription = "Profile" })
-            }
-        } else IconButton(back) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-        if (root) Spacer(Modifier.weight(1f))
-        else Text(when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium)
-        if (root) IconButton(settings, Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) } else Spacer(Modifier.width(48.dp))
+        } else IconButton(back, Modifier.size(48.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
+        Text(if (root) "FocuLY" else when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium,
+            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        when {
+            root -> IconButton(settings, Modifier.size(48.dp)) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) }
+            route == "settings" -> AppearanceToggle()
+            else -> Spacer(Modifier.width(48.dp))
+        }
+    }
+    }
     }
 }
+@Composable private fun AppearanceToggle() {
+    val dark = LocalGlassDark.current
+    val haptic = LocalHapticFeedback.current
+    Box(Modifier.size(48.dp).clip(CircleShape)
+        .toggleable(value = dark, role = Role.Switch, onValueChange = { nextDark ->
+            if (Repository.state.haptics) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+            Repository.update { it.copy(theme = if (nextDark) "Dark" else "Light") }
+        }).semantics { contentDescription = "Dark mode"; stateDescription = if (dark) "Dark" else "Light" }, contentAlignment = Alignment.Center) {
+        Crossfade(dark, animationSpec = tween(if (Repository.state.reduceMotion) 0 else 180), label = "Appearance icon") { enabled ->
+            Icon(if (enabled) Icons.Outlined.DarkMode else Icons.Outlined.LightMode, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+private val LocalPageTopInset = staticCompositionLocalOf { 0.dp }
 private val LocalPageBottomInset = staticCompositionLocalOf { 0.dp }
 
 /** A separate transparent overlay lets the page scroll behind the capsule, like Stash. */
@@ -206,12 +229,8 @@ private val LocalPageBottomInset = staticCompositionLocalOf { 0.dp }
     val haptic = LocalHapticFeedback.current
     val shape = RoundedCornerShape(36.dp)
     Box(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
-        BoxWithConstraints(Modifier.widthIn(max = 360.dp).fillMaxWidth().height(72.dp)
-            .shadow(12.dp, shape, ambientColor = Color(0x24324B70), spotColor = Color(0x24324B70))
-            .clip(shape)
-            .background(Brush.verticalGradient(if (dark) listOf(Color(0x245F7BA2), Color(0x30263D5C)) else listOf(Color(0x38FFFFFF), Color(0x162F527C))))
-            .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = .55f), Color(0x227EBACB), Color(0x66B9BAE8))), shape)
-            .padding(8.dp)) {
+        FloatingGlassChrome(Modifier.widthIn(max = 360.dp).fillMaxWidth().height(72.dp), shape) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp)) {
             val itemWidth = maxWidth / destinations.size
             val selectionOffset = animateDpAsState(itemWidth * selectedIndex,
                 animationSpec = if (Repository.state.reduceMotion) snap() else tween(180), label = "Dock selection")
@@ -232,9 +251,10 @@ private val LocalPageBottomInset = staticCompositionLocalOf { 0.dp }
                 }
             }
         }
+        }
     }
 }
-@Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp, bottom = bottomPadding + LocalPageBottomInset.current), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
+@Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp + LocalPageTopInset.current, bottom = bottomPadding + LocalPageBottomInset.current), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
 @Composable fun Caption(text: String) { Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 @Composable fun Heading(title: String, subtitle: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) } } }
 @Composable fun Primary(text: String, enabled: Boolean = true, icon: ImageVector? = Icons.AutoMirrored.Outlined.ArrowForward, action: () -> Unit) {
@@ -708,7 +728,6 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         }
         SoftCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("Appearance", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); DoodleBadge(CatArt.TUNE, Modifier.size(68.dp)) }
-            ChoiceRow(listOf("System", "Light", "Dark"), s.theme) { value -> Repository.update { it.copy(theme = value) } }
             ToggleRow("Reduce motion", "", s.reduceMotion) { value -> Repository.update { it.copy(reduceMotion = value) } }
             ToggleRow("Haptic feedback", "", s.haptics) { value -> Repository.update { it.copy(haptics = value) } }
             ToggleRow("Completion & routine reminders", "", s.reminders) { value -> Repository.update { it.copy(reminders = value) }; FocusNotifications.plan(ctx) }
@@ -730,7 +749,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         }
         DetailsCard("Essential access", "Phone, home & settings stay available", Icons.Outlined.HealthAndSafety) { Text("Android settings control accessibility on ordinary phones. Device-owner management adds OS app suspension and uninstall policies. Strict has no in-app early exit.", style = MaterialTheme.typography.bodyMedium) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            Text("made with 💜 by ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Made with 💜 by ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Veil", Modifier.heightIn(min = 48.dp).clickable { uriHandler.openUri("https://venusapp.in") }
                 .wrapContentHeight(Alignment.CenterVertically).semantics { contentDescription = "Veil website" },
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary,

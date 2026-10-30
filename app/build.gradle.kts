@@ -19,8 +19,8 @@ android {
         applicationId = "dev.still.focus"
         minSdk = 28
         targetSdk = 36
-        versionCode = 126
-        versionName = "1.0.1"
+        versionCode = 127
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true }
@@ -37,6 +37,7 @@ android {
     }
     buildTypes {
         release {
+            isDebuggable = false
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

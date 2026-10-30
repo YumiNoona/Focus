@@ -7,8 +7,8 @@ Open an issue describing the behavior you want to change before a large contribu
 1. Clone the repository and open it in Android Studio.
 2. Install Android SDK 36 and use JDK 17 or newer.
 3. Let Android Studio create your local SDK configuration, or set `ANDROID_HOME`.
-4. Run `./gradlew testDebugUnitTest lintDebug assembleDebug`.
-5. For UI checks, connect a device or emulator and run `./gradlew connectedDebugAndroidTest`.
+4. Run `./gradlew testReleaseUnitTest lintRelease assembleRelease`.
+5. Check the signed production APK on an isolated emulator; keep test data and private credentials out of Git.
 
 Use `gradlew.bat` on Windows. Keep changes focused and explain the trigger, resulting behavior, and verification in pull requests.
 
@@ -23,4 +23,4 @@ Use `gradlew.bat` on Windows. Keep changes focused and explain the trigger, resu
 - Do not add analytics, accounts, network transmission, or browsing-content storage without explicit product review.
 - Keep signing keys, machine paths, build outputs, and personal exports out of Git.
 
-The CI workflow checks JVM tests, Android lint, and debug assembly. See the [development guide](../docs/DEVELOPMENT.md) and [validation record](../docs/VALIDATION.md) for isolated emulator setup and coverage.
+The CI workflow checks release-variant JVM tests, Android lint, and optimized release assembly. It publishes validation reports only; final APK downloads are signed production releases. See the [development guide](../docs/DEVELOPMENT.md) and [validation record](../docs/VALIDATION.md) for emulator setup and coverage.

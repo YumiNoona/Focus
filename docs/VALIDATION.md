@@ -1,6 +1,19 @@
 # Validation
 
-## v1.0.1 — repository cleanup, 30 October 2026
+## Fresh v1.0.0 — production glass-header refresh, 30 October 2026
+
+Android metadata is `dev.still.focus`, version `1.0.0`, code **127**, Android 9+. This replaces prior releases while retaining the official signing key and stored rules. The final APK is optimized with R8, resource shrinking, and debugging explicitly disabled. No debug app APK is generated or published for this refresh; CI checks release variants and uploads reports only.
+
+- All 27 release-variant JVM tests pass (22 engine, 5 reminder/removal policy). Release lint reports 0 errors and 65 warnings, including existing style/dependency suggestions. Signed release assembly and APK metadata/certificate verification pass.
+- Updated an actual official production installation (code 125) to code 127 on the isolated Android 15 emulator. The saved website and onboarding remain. The old System choice, tested with Android dark mode enabled, migrates to explicit Dark. Changing Android to Light and restarting FocuLY preserves that explicit choice.
+- The top-right Settings switch toggles both ways; the old System/Light/Dark chips are absent. Settings scroll position stays unchanged across theme switches, including with Reduce motion enabled. Captured palette samples include a real intermediate shade between dark and light; this confirms a rendered transition, not a frame-rate guarantee.
+- The capitalized Made footer and Veil website control are present. Header actions and the last profile remain reachable at 130% text size. Home/Rules/Insights/Settings scroll beneath the shared glass chrome; status-bar padding keeps scrolling text out of system icons.
+- Accepted the disclosure in the production app and enabled accessibility on the emulator. Saved a one-minute Strict block through the app's real target/duration/mode/acknowledgment flow. Launching Scroll Test produces a real accessibility overlay before and after changing theme in Settings. After expiry the fixture opens without that overlay. Theme changes do not weaken the active block.
+- Android UI hierarchy capture temporarily suppresses other accessibility services, so blocking checks use ordinary physical taps, window-state inspection, and real screenshots after reconnection. They do not confuse an automation-induced disconnection with a product bypass. No private app-state injection or debug instrumentation is used for these production UI checks.
+
+Physical OnePlus and current third-party feed/browser review remain outstanding. The ordinary-phone uninstall limits below still apply. Current [header/dock and Settings captures](screenshots/dock/README.md) come from the signed production app; older coverage below is historical rather than a claim that every connected test was rerun for this refresh.
+
+## Historical v1.0.1 — repository cleanup, 30 October 2026
 
 This release changes documentation/layout and Android version metadata only; protection logic, UI, package `dev.still.focus`, storage keys, and the official signing identity are unchanged from v1.0.0. Android version code 126 supports an in-place update from 125 and former builds.
 

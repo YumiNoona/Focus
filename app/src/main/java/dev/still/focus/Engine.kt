@@ -87,7 +87,7 @@ data class BlockMessage(val title: String = "See you later.",
     val art: String = "", val image: String = "")
 data class FocusState(val name: String = "", val intention: String = "Make room for what matters.",
     val goalMinutes: Int = 120, val onboarding: Boolean = false, val disclosure: Boolean = false,
-    val theme: String = "System", val haptics: Boolean = true, val reminders: Boolean = true,
+    val theme: String = "Light", val haptics: Boolean = true, val reminders: Boolean = true,
     val hideInsights: Boolean = false, val reduceMotion: Boolean = false, val askReason: Boolean = false,
     val overrideMinutes: Int = 5, val cooldownMinutes: Int = 10,
     val managedLockdown: Boolean = false, val uninstallProtection: Boolean = false,

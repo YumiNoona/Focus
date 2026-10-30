@@ -53,7 +53,7 @@ Setup now uses compact permission action cards, expandable explanations, app ico
 | Permission recovery | Live heartbeat, last observed app, failed overlay feedback, battery/app-info links, one-minute selected-app test |
 | Profile | Local name, default intention, goal, custom focus profiles |
 | Privacy | Local storage, no accounts/ads/analytics/network permission, export, deletion, consent withdrawal |
-| Appearance | System/light/dark theme, haptics, reduced-motion preference, hidden insights |
+| Appearance | Top-right Settings light/dark switch, smooth color transitions, haptics, reduced motion, hidden insights |
 
 ### Scope and reliability
 
@@ -91,7 +91,7 @@ Widget or tile → Session setup or current session
 
 ## Build and tests
 
-The [development guide](DEVELOPMENT.md) covers the SDK/JDK setup, debug and signed release builds, source map, and isolated emulator checks. The [validation record](VALIDATION.md) separates verified behavior from remaining device coverage.
+The [development guide](DEVELOPMENT.md) covers the SDK/JDK setup, signed production release builds, source map, and isolated emulator checks. The [validation record](VALIDATION.md) separates verified behavior from remaining device coverage.
 
 ## Before distribution
 

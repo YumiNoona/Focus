@@ -25,6 +25,11 @@ object Repository {
         if (ready) return
         context = ctx.applicationContext
         state = runCatching { decode(context.getSharedPreferences("still", 0).getString("state", "{}")!!) }.getOrDefault(FocusState())
+        if (state.theme !in setOf("Light", "Dark")) {
+            val wasSystemDark = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            state = state.copy(theme = if (state.theme == "System" && wasSystemDark) "Dark" else "Light")
+            context.getSharedPreferences("still", 0).edit().putString("state", encode(state).toString()).apply()
+        }
         state.session?.takeIf { it.profile.mode == FocusMode.STRICT && RulesEngine.selectedRuleCount(state, it.profile) == 0 }?.let { legacy ->
             state = state.copy(session = legacy.copy(profile = legacy.profile.copy(mode = FocusMode.STANDARD)))
             context.getSharedPreferences("still", 0).edit().putString("state", encode(state).toString()).apply()
@@ -225,7 +230,7 @@ object Repository {
     private fun decode(raw: String): FocusState {
         val j = JSONObject(raw)
         return FocusState(name = j.optString("name"), intention = j.optString("intention", "Make room for what matters."), goalMinutes = j.optInt("goalMinutes", 120), onboarding = j.optBoolean("onboarding"), disclosure = j.optBoolean("disclosure"),
-            theme = j.optString("theme", "System"), haptics = j.optBoolean("haptics", true), reminders = j.optBoolean("reminders", true), hideInsights = j.optBoolean("hideInsights"), reduceMotion = j.optBoolean("reduceMotion"), askReason = j.optBoolean("askReason", false), overrideMinutes = j.optInt("overrideMinutes", 5), cooldownMinutes = j.optInt("cooldownMinutes", 10),
+            theme = j.optString("theme", "Light"), haptics = j.optBoolean("haptics", true), reminders = j.optBoolean("reminders", true), hideInsights = j.optBoolean("hideInsights"), reduceMotion = j.optBoolean("reduceMotion"), askReason = j.optBoolean("askReason", false), overrideMinutes = j.optInt("overrideMinutes", 5), cooldownMinutes = j.optInt("cooldownMinutes", 10),
             managedLockdown = j.optBoolean("managedLockdown"), uninstallProtection = j.optBoolean("uninstallProtection"),
             breakReminders = j.optBoolean("breakReminders", true), breakReminderMinutes = j.optInt("breakReminderMinutes", 45).coerceIn(15, 180),
             blockMessage = j.optJSONObject("blockMessage")?.let { BlockMessage(it.optString("title", "See you later.").take(80), it.optString("body", "Make room for what matters.").take(180), it.optString("emoji", "🌿").take(16), it.optString("art").take(32), it.optString("image").takeIf(BlockingArtwork::validName).orEmpty()) } ?: BlockMessage(),
