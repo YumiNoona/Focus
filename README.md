@@ -43,10 +43,6 @@ A misty lake backdrop and translucent cards frame a floating, see-through dock. 
   </tr>
 </table>
 
-[Dock, dark mode, and large text](docs/screenshots/dock/README.md) · [Personalization and onboarding](docs/screenshots/personalization/README.md) · [Break notifications](docs/REINSTALL_AND_REMINDERS.md)
-
-Screenshots are real Android emulator captures. Scroll Test is a separate fixture; usage history is not fabricated. The block setup/overlay reference captures predate the dock refresh and show the shared glass material.
-
 ## Documentation
 
 | Guide | Contents |
@@ -59,9 +55,6 @@ Screenshots are real Android emulator captures. Scroll Test is a separate fixtur
 | [Design](docs/DESIGN.md) | Glass materials, typography, dock, and artwork provenance |
 | [Development](docs/DEVELOPMENT.md) / [validation](docs/VALIDATION.md) | Build, signing, isolated tests, and verified coverage |
 
-```
 <p align="center">
   Built With 💙 Made By <a href="https://venusapp.in">Veil</a>
 </p>
-
-
