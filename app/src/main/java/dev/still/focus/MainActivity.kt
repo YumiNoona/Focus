@@ -13,12 +13,15 @@ import androidx.activity.compose.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.*
@@ -56,6 +59,7 @@ import kotlinx.coroutines.*
 import java.time.*
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import dev.chrisbanes.haze.hazeSource
 
 class MainActivity : ComponentActivity() {
     var requestedScreen by mutableStateOf("home")
@@ -194,7 +198,7 @@ class MainActivity : ComponentActivity() {
                 if (name.isBlank()) Icon(Icons.Outlined.Person, "Profile", Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                 else Text(name.first().uppercase(), fontFamily = Mono, color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { contentDescription = "Profile" })
         } else IconButton(back, Modifier.size(48.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-        Text(if (root) "FocuLY" else when (route) { "block" -> "block setup"; "profile" -> "your space"; "settings" -> "preferences"; "managed" -> "device protection"; "lifecycle" -> "app boundaries"; "pin" -> "admin PIN"; "messages" -> "blocking screen"; "permissions" -> "setup checklist"; "setup" -> "make room"; "profileEdit" -> "focus profile"; "schedule" -> "schedule"; "allowlist" -> "always allowed"; "appRule" -> "app rules"; else -> "choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium,
+        Text(if (root) "FocuLY" else when (route) { "block" -> "Block setup"; "profile" -> "Your space"; "settings" -> "Settings"; "managed" -> "Device protection"; "lifecycle" -> "App boundaries"; "pin" -> "Admin PIN"; "messages" -> "Blocking screen"; "permissions" -> "Permissions"; "setup" -> "Setup"; "profileEdit" -> "Focus profile"; "schedule" -> "Schedule"; "allowlist" -> "Always allowed"; "appRule" -> "App rules"; else -> "Choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium,
             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         when {
             root -> IconButton(settings, Modifier.size(48.dp)) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) }
@@ -254,7 +258,11 @@ private val LocalPageBottomInset = staticCompositionLocalOf { 0.dp }
         }
     }
 }
-@Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp + LocalPageTopInset.current, bottom = bottomPadding + LocalPageBottomInset.current), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
+@Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) {
+    val frost = LocalFrostState.current
+    val source = if (frost != null) Modifier.hazeSource(frost, zIndex = 1f, key = "page") else Modifier
+    Column(Modifier.fillMaxSize().then(source).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp + LocalPageTopInset.current, bottom = bottomPadding + LocalPageBottomInset.current), verticalArrangement = Arrangement.spacedBy(18.dp), content = content)
+}
 @Composable fun Caption(text: String) { Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 @Composable fun Heading(title: String, subtitle: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) } } }
 @Composable fun Primary(text: String, enabled: Boolean = true, icon: ImageVector? = Icons.AutoMirrored.Outlined.ArrowForward, action: () -> Unit) {
@@ -266,6 +274,30 @@ private val LocalPageBottomInset = staticCompositionLocalOf { 0.dp }
         border = BorderStroke(1.dp, Color.White.copy(alpha = if (enabled) .72f else .16f)),
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)) {
         Text(text, Modifier.weight(1f)); icon?.let { Icon(it, null, Modifier.size(24.dp)) }
+    }
+}
+@Composable fun FrostedPrimary(text: String, enabled: Boolean = true, icon: ImageVector = Icons.Outlined.PlayArrow,
+    supportingText: String? = null, sceneOnly: Boolean = false, action: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale = animateFloatAsState(if (pressed && enabled) .98f else 1f,
+        animationSpec = if (Repository.state.reduceMotion) snap() else tween(120), label = "Glass action press")
+    val haptic = LocalHapticFeedback.current
+    val shape = RoundedCornerShape(30.dp)
+    FloatingGlassChrome(Modifier.fillMaxWidth().graphicsLayer { scaleX = scale.value; scaleY = scale.value }
+        .alpha(if (enabled) 1f else .45f), shape, highContrast = true, sceneOnly = sceneOnly) {
+        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).clip(shape)
+            .clickable(interactionSource = interaction, indication = LocalIndication.current, enabled = enabled, role = Role.Button) {
+                if (Repository.state.haptics) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                action()
+            }.padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                supportingText?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Color(0xFFE0EBFA)) }
+            }
+            Icon(icon, null, Modifier.size(26.dp), tint = Color.White)
+        }
     }
 }
 @Composable fun SoftCard(content: @Composable ColumnScope.() -> Unit) { GlassSurface(shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface) { Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content) } }
@@ -280,6 +312,8 @@ fun profileDuration(minutes: Int) = when (minutes) {
     0 -> "Open-ended"
     10_080 -> "1 week"
     1_440 -> "1 day"
+    60 -> "1 hour"
+    1 -> "1 minute"
     else -> if (minutes >= 60 && minutes % 60 == 0) "${minutes / 60} hours" else "$minutes minutes"
 }
 fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name == profile.art } ?: CatArt.FOCUS
@@ -291,7 +325,7 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
         val session = s.session
         if (session == null) {
             DoodleCard(CatArt.PAUSE, "Make room.", "A little more you.", FoculyBrand.blush)
-            Primary("Start focus", icon = Icons.Outlined.PlayArrow) { start(s.profiles.firstOrNull() ?: FocusState.defaults().first()) }
+            FrostedPrimary("Start focus", sceneOnly = true) { start(s.profiles.firstOrNull() ?: FocusState.defaults().first()) }
             ActiveBlocks(s, now)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf(Triple("Block apps", "blockApps", R.drawable.cat_block_apps), Triple("Block websites", "blockWebsites", R.drawable.cat_block_websites)).forEach { (title, target, art) ->
@@ -317,11 +351,11 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("Find your rhythm", style = MaterialTheme.typography.titleMedium)
                 s.profiles.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    pair.forEach { p -> GlassSurface(Modifier.weight(1f).heightIn(min = 156.dp).clip(RoundedCornerShape(20.dp)).clickable { start(p) },
+                    pair.forEach { p -> GlassSurface(Modifier.weight(1f).heightIn(min = 220.dp).clip(RoundedCornerShape(20.dp)).clickable { start(p) },
                         shape = RoundedCornerShape(20.dp), color = profileArt(p).tint(), contentColor = MaterialTheme.colorScheme.onSurface) {
                         Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Image(painterResource(profileArt(p).drawable), null,
-                                Modifier.align(Alignment.End).size(64.dp), contentScale = ContentScale.Fit)
+                                Modifier.fillMaxWidth().height(124.dp), contentScale = ContentScale.Fit)
                             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                 Text(p.name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
                                 Text("${profileDuration(p.minutes)} · ${p.mode.label}", style = MaterialTheme.typography.bodySmall,
@@ -523,15 +557,14 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     fun configured() = Profile(profileId, name.trim(), minutes.toIntOrNull() ?: 50, intention.trim(), FocusMode.valueOf(mode), scopedApps, scopedDomains, allApps, allDomains, art)
     val draftProfile = configured()
     val strictNeedsAcknowledgement = mode == "STRICT" && (!editing || original?.mode != FocusMode.STRICT)
-    Column(Modifier.fillMaxSize().imePadding()) {
-    Box(Modifier.weight(1f)) {
+    Box(Modifier.fillMaxSize().imePadding()) {
+    CompositionLocalProvider(LocalPageBottomInset provides (LocalPageBottomInset.current + 140.dp)) {
     Page {
         if (editing) Heading(if (original == null) "New profile." else "Edit profile.")
         else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Make room.", Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium)
+            Text(name, Modifier.weight(1f), style = MaterialTheme.typography.headlineMedium)
             DoodleBadge(profileArt(draftProfile), Modifier.size(80.dp))
         }
-        if (!editing) ChoiceRow(s.profiles.map { it.name }, name) { choice -> s.profiles.find { it.name == choice }?.let { p -> profileId = p.id; name = p.name; minutes = p.minutes.toString(); intention = p.intention; mode = p.mode.name; scopedApps = p.apps; scopedDomains = p.domains; allApps = p.useAllApps; allDomains = p.useAllDomains; art = p.art; customTime = p.minutes !in setOf(0, 25, 50, 90, 1_440, 10_080) } }
         if (editing) {
             GlassSurface(shape = RoundedCornerShape(24.dp), color = FoculyBrand.lilac, contentColor = MaterialTheme.colorScheme.onSurface) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -571,10 +604,12 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         if (!editing && s.session != null) Text("End your current session before starting another.", color = MaterialTheme.colorScheme.error)
     }
     }
-    GlassSurface(color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Caption("${profileDuration(minutes.toIntOrNull() ?: 0)} · ${FocusMode.valueOf(mode).label}")
-            Primary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus", valid && (editing || s.session == null) && (!strictNeedsAcknowledgement || strictAcknowledged), if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow) { if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention) }
+    Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp)) {
+        FrostedPrimary(if (editing) "Save profile" else if (mode == "STRICT") "Start strict session" else "Start focus",
+            valid && (editing || s.session == null) && (!strictNeedsAcknowledgement || strictAcknowledged),
+            if (editing) Icons.Outlined.Check else Icons.Outlined.PlayArrow,
+            supportingText = "${profileDuration(minutes.toIntOrNull() ?: 0)} · ${FocusMode.valueOf(mode).label}") {
+            if (editing) onSave(configured()) else onStart(configured(), minutes.toInt(), intention)
         }
     }
     }
@@ -672,6 +707,8 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     var accessibility by remember { mutableStateOf(Repository.protectionGranted()) }
     var connected by remember { mutableStateOf(ProtectionRuntime.live()) }
     var batteryExempt by remember { mutableStateOf(false) }
+    var admin by remember { mutableStateOf(ManagedProtection.adminEnabled(ctx)) }
+    var preciseEnding by remember { mutableStateOf(ManagedProtection.preciseEnding(ctx)) }
     var consent by remember { mutableStateOf(false) }
     var delete by remember { mutableStateOf(false) }
     var exportStatus by remember { mutableStateOf("") }
@@ -682,55 +719,49 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             exportStatus = withContext(Dispatchers.IO) { runCatching { ctx.contentResolver.openOutputStream(uri)?.use { it.write(Repository.export().toByteArray()) } ?: error("Could not open the destination") }.fold({ "Your data was exported." }, { "Export failed. Choose a different destination." }) }
         }
     }
-    LaunchedEffect(Unit) { while (true) { usage = Repository.usageGranted(); accessibility = Repository.protectionGranted(); connected = ProtectionRuntime.live(); breakNoticesAllowed = FocusNotifications.breaksAllowed(ctx); batteryExempt = ctx.getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName); delay(1000) } }
+    LaunchedEffect(Unit) { while (true) { usage = Repository.usageGranted(); accessibility = Repository.protectionGranted(); connected = ProtectionRuntime.live(); breakNoticesAllowed = FocusNotifications.breaksAllowed(ctx); batteryExempt = ctx.getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName); admin = ManagedProtection.adminEnabled(ctx); preciseEnding = ManagedProtection.preciseEnding(ctx); delay(1000) } }
     Page {
-        Heading("Keep it yours.")
-        SoftCard {
-            Caption("PROTECTION HEALTH")
+        DetailsCard("Permissions", if (connected && s.disclosure) "Protection connected" else "Connect blocking when you're ready", Icons.Outlined.Shield) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 Icon(if (connected && s.disclosure) Icons.Outlined.VerifiedUser else Icons.Outlined.Shield, null, tint = MaterialTheme.colorScheme.primary)
-                Text(if (connected && s.disclosure) "Protection connected" else "Connect protection", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                Text(if (connected && s.disclosure) "Blocking is ready" else "Blocking is off", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 CatDoodle(CatArt.GUARD, Modifier.size(60.dp))
             }
             if (accessibility && !connected) Text("Service disconnected. Toggle FocuLY off and on in Android Accessibility settings.", style = MaterialTheme.typography.bodyMedium)
             if (ProtectionRuntime.lastError.isNotBlank()) Text(ProtectionRuntime.lastError, color = MaterialTheme.colorScheme.error)
-            ActionCard("Protection setup", "${if (usage) "Usage connected" else "Usage optional"} · ${if (batteryExempt) "Background unrestricted" else "Check battery"}", Icons.Outlined.Shield, connected && s.disclosure) { nav("permissions") }
-        }
-        DetailsCard("Setup details", "Permissions & recovery", Icons.Outlined.Info) {
-            LinkRow("App information", "Restricted settings & background access") { Repository.openAppInfo() }
-            LinkRow("Notification permission", "Session updates", Icons.Outlined.NotificationsNone) {
-                if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            ActionCard("App & feed protection", if (connected && s.disclosure) "Connected" else "Required for blocking", Icons.Outlined.Shield, connected && s.disclosure) {
+                if (s.disclosure) Repository.openAccessibility() else consent = true
+            }
+            ActionCard("Usage access", if (usage) "Connected" else "Optional · budgets and insights", Icons.Outlined.Timer, usage) { Repository.openUsage() }
+            ActionCard("Notifications", if (breakNoticesAllowed) "Allowed" else "Check permission and channels", Icons.Outlined.NotificationsNone, breakNoticesAllowed) {
+                if (Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 else ctx.startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName))
             }
+            ActionCard("Background activity", if (batteryExempt) "Unrestricted" else "Review battery settings", Icons.Outlined.BatteryChargingFull, batteryExempt) { Repository.openBatterySettings() }
+            ActionCard("Uninstall resistance", if (admin) "Administrator active" else "Optional Android administration", Icons.Outlined.AdminPanelSettings, admin) {
+                if (admin) nav("managed") else ManagedProtection.requestAdmin(ctx)
+            }
+            if (ManagedProtection.isOwner(ctx)) ActionCard("Precise session endings", if (preciseEnding) "Allowed" else "Required for managed Strict", Icons.Outlined.Alarm, preciseEnding) { ManagedProtection.openPreciseEnding(ctx) }
+            LinkRow("App information", "Restricted settings & recovery") { Repository.openAppInfo() }
             if (android.os.Build.MANUFACTURER.equals("OnePlus", true) || android.os.Build.MANUFACTURER.equals("OPPO", true)) Text("OxygenOS: allow background activity in FocuLY's App Info → Battery settings. Menu names vary.", style = MaterialTheme.typography.bodyMedium)
             TextButton({ consent = true }) { Text("Read protection disclosure") }
             if (s.disclosure) TextButton({ if (Repository.update { it.copy(disclosure = false) }) { FocusAccessibilityService.instance?.clearOverlay(); FocusNotifications.session(ctx) } }, enabled = !RulesEngine.strictActive(s, System.currentTimeMillis())) { Text("Withdraw consent") }
         }
-        ActionCard("Uninstall & managed protection", "Optional Android administration", Icons.Outlined.Lock) { nav("managed") }
-        ActionCard("FocuLY admin PIN", if (AdminPin.configured()) "PIN is set" else "Protect device controls", Icons.Outlined.Password, AdminPin.configured()) { nav("pin") }
+        ActionCard("Device protection", "Uninstall rules, app controls & PIN", Icons.Outlined.Lock) { nav("managed") }
         ActionCard("Your blocking screen", "Message, emoji & live preview", Icons.Outlined.EmojiEmotions) { nav("messages") }
-        ActionCard("Welcome to FocuLY", "Meet your little focus companions", Icons.Outlined.AutoAwesome) { nav("welcome") }
-        SoftCard {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CatDoodle(CatArt.BREATHE, Modifier.size(64.dp)); Spacer(Modifier.width(12.dp))
-                Text("A little breather.", style = MaterialTheme.typography.titleMedium)
-            }
+        DetailsCard("Reminders", if (s.breakReminders) "Gentle breaks · ${s.breakReminderMinutes}m" else "Gentle breaks are off", Icons.Outlined.NotificationsNone) {
             ToggleRow("Gentle break reminders", "A friendly nudge, even for apps you haven't blocked.", s.breakReminders) { value -> Repository.update { it.copy(breakReminders = value) } }
             if (s.breakReminders) {
                 ChoiceRow(listOf("30m", "45m", "60m", "90m"), "${s.breakReminderMinutes}m") { value -> Repository.update { it.copy(breakReminderMinutes = value.removeSuffix("m").toInt()) } }
                 Text("Per app, per day · 8am–10pm · at most 3 reminders a day. No new blocks are created.", style = MaterialTheme.typography.bodySmall)
-                if (!usage) TextButton({ Repository.openUsage() }) { Text("Connect usage access") }
-                if (!breakNoticesAllowed) TextButton({
-                    if (Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    else ctx.startActivity(Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, ctx.packageName).putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, "breaks"))
-                }) { Text("Allow break notifications") }
+                if (!usage || !breakNoticesAllowed) Text("Enable Usage access and Notifications under Permissions above.", style = MaterialTheme.typography.bodySmall)
             }
+            ToggleRow("Completion & routine reminders", "", s.reminders) { value -> Repository.update { it.copy(reminders = value) }; FocusNotifications.plan(ctx) }
         }
         SoftCard {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) { Text("Appearance", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); DoodleBadge(CatArt.TUNE, Modifier.size(68.dp)) }
             ToggleRow("Reduce motion", "", s.reduceMotion) { value -> Repository.update { it.copy(reduceMotion = value) } }
             ToggleRow("Haptic feedback", "", s.haptics) { value -> Repository.update { it.copy(haptics = value) } }
-            ToggleRow("Completion & routine reminders", "", s.reminders) { value -> Repository.update { it.copy(reminders = value) }; FocusNotifications.plan(ctx) }
             ToggleRow("Hide insights", "", s.hideInsights) { value -> Repository.update { it.copy(hideInsights = value) } }
         }
         DetailsCard("Intentional visits", "Normal preferences · Resistant uses a pause", Icons.Outlined.Timer) {
@@ -747,7 +778,6 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             if (exportStatus.isNotEmpty()) Text(exportStatus, style = MaterialTheme.typography.bodyMedium)
             LinkRow("Delete my data", "Available outside Strict", Icons.Outlined.Delete) { delete = true }
         }
-        DetailsCard("Essential access", "Phone, home & settings stay available", Icons.Outlined.HealthAndSafety) { Text("Android settings control accessibility on ordinary phones. Device-owner management adds OS app suspension and uninstall policies. Strict has no in-app early exit.", style = MaterialTheme.typography.bodyMedium) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Text("Made with 💜 by ", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Veil", Modifier.heightIn(min = 48.dp).clickable { uriHandler.openUri("https://venusapp.in") }

@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import dev.chrisbanes.haze.HazeInputScale
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
 
 /** A bundled soft-focus scene keeps the material consistent on Android 9+. */
 @Composable fun GlassBackdrop(modifier: Modifier = Modifier) {
@@ -35,13 +38,24 @@ import androidx.compose.ui.unit.dp
 }
 
 /** Shared see-through chrome for the floating header and dock. */
-@Composable fun FloatingGlassChrome(modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(36.dp), highContrast: Boolean = false,
+@Composable fun FloatingGlassChrome(modifier: Modifier = Modifier, shape: Shape = RoundedCornerShape(36.dp), highContrast: Boolean = false, sceneOnly: Boolean = false,
     content: @Composable BoxScope.() -> Unit) {
     val dark = LocalGlassDarkProgress.current
+    val frost = LocalFrostState.current
+    val background = MaterialTheme.colorScheme.background
+    val blur = if (frost != null) Modifier.hazeEffect(frost) {
+        backgroundColor = background
+        blurRadius = 24.dp
+        noiseFactor = .035f
+        inputScale = HazeInputScale.Auto
+        tints = listOf(HazeTint(lerp(Color(0x18203C5E), Color(0x30182D48), dark)))
+        if (sceneOnly) canDrawArea = { it.key == "scene" }
+    } else Modifier
     Box(modifier.shadow(12.dp, shape, ambientColor = Color(0x24324B70), spotColor = Color(0x24324B70))
         .clip(shape)
-        .background(Brush.verticalGradient(if (highContrast) listOf(lerp(Color(0xBF203C5E), Color(0xBF182D48), dark),
-            lerp(Color(0xBF18334F), Color(0xBF13273F), dark)) else listOf(lerp(Color(0x38FFFFFF), Color(0x245F7BA2), dark),
+        .then(blur)
+        .background(Brush.verticalGradient(if (highContrast) listOf(lerp(Color(0xA8234163), Color(0xAD182D48), dark),
+            lerp(Color(0xA8203854), Color(0xAD13273F), dark)) else listOf(lerp(Color(0x38FFFFFF), Color(0x245F7BA2), dark),
             lerp(Color(0x162F527C), Color(0x30263D5C), dark))))
         .border(BorderStroke(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = .55f), Color(0x227EBACB), Color(0x66B9BAE8)))), shape),
         content = content)

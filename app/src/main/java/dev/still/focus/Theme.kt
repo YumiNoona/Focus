@@ -16,10 +16,14 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 val Mono = FontFamily(Font(R.font.jetbrains_mono))
 val LocalGlassDark = staticCompositionLocalOf { false }
 val LocalGlassDarkProgress = compositionLocalOf { 0f }
+val LocalFrostState = staticCompositionLocalOf<HazeState?> { null }
 
 private fun glassColors(dark: Float) = darkColorScheme(
     primary = Color(0xFFD2E6FF), onPrimary = Color(0xFF173B65),
@@ -58,13 +62,14 @@ private val FoculyTypography = Typography(
 /** Animate one screen's palette, keeping forms, focus, and scroll state mounted. */
 @Composable fun StillTheme(theme: String = "Light", reduceMotion: Boolean = false, content: @Composable () -> Unit) {
     val dark = theme == "Dark"
+    val frost = rememberHazeState()
     val progress by animateFloatAsState(if (dark) 1f else 0f,
         animationSpec = if (reduceMotion) snap() else tween(440, easing = FastOutSlowInEasing),
         label = "Screen appearance")
-    CompositionLocalProvider(LocalGlassDark provides dark, LocalGlassDarkProgress provides progress) {
+    CompositionLocalProvider(LocalGlassDark provides dark, LocalGlassDarkProgress provides progress, LocalFrostState provides frost) {
         MaterialTheme(colorScheme = glassColors(progress), typography = FoculyTypography) {
             Box(Modifier.fillMaxSize()) {
-                GlassBackdrop()
+                GlassBackdrop(Modifier.hazeSource(frost, zIndex = 0f, key = "scene"))
                 CompositionLocalProvider(LocalContentColor provides Color.White) {
                     ProvideTextStyle(MaterialTheme.typography.bodyLarge, content = content)
                 }

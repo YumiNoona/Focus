@@ -15,7 +15,7 @@ An Android app for focus sessions, everyday boundaries, and intentional screen t
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](docs/DESIGN.md)
 [![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](.github/SECURITY.md)
 
-**[Download v1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0)** · **[What's new](docs/CHANGELOG.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)**
+**[Download v1.0.1](https://github.com/YumiNoona/Focus/releases/tag/v1.0.1)** · **[What's new](docs/CHANGELOG.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)**
 
 </div>
 
@@ -30,7 +30,7 @@ An Android app for focus sessions, everyday boundaries, and intentional screen t
 - Get optional illustrated break reminders for heavily used apps, including apps without a saved rule.
 - View locally measured usage and session history, with widgets, a Quick Settings tile, and permission health.
 
-A misty lake backdrop and translucent cards frame matching see-through top and bottom bars. Exactly **three icons — Home, Rules, Insights** — sit at the bottom; Profile stays top left and Settings top right. A sun/moon toggle at the top right of Settings switches light/dark appearance with a smooth screen color transition. Reduce motion makes transitions instant.
+A misty lake backdrop frames frosted top/bottom bars and floating focus actions. Exactly **three icons — Home, Rules, Insights** — sit at the bottom; Profile stays top left and Settings top right. Settings groups permissions in one dropdown, and the four rhythm cards feature larger cat illustrations. The sun/moon switch blends light/dark appearance smoothly; Reduce motion makes transitions instant.
 
 ## Screenshots
 

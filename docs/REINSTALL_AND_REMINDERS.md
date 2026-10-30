@@ -25,7 +25,7 @@ See the [managed-device guide](MANAGED_DEVICE.md) for dedicated-device setup. Do
 
 ## Illustrated break notifications
 
-In **Settings → A little breather**, turn **Gentle break reminders** on/off and choose 30, 45, 60, or 90 minutes of daily use per app. The default is 45 minutes. Reminders include apps with no saved blocking rule, but exclude essential/system access, nonlaunchable apps, and apps already blocked at evaluation time.
+In **Settings → Reminders**, turn **Gentle break reminders** on/off and choose 30, 45, 60, or 90 minutes of daily use per app. The default is 45 minutes. **Settings → Permissions** holds Usage access and Notifications together. Reminders include apps with no saved blocking rule, but exclude essential/system access, nonlaunchable apps, and apps already blocked at evaluation time.
 
 FocuLY uses Android Usage Access on-device and requires notification permission. A separate notification channel can be muted in Android. No account, network access, or new broad permission is introduced. Each notification contains a cat illustration, the app name, measured minutes, **Take a break**, **Quiet today**, and **Settings** actions. It creates no block, launches no app automatically, and imposes no overlay.
 

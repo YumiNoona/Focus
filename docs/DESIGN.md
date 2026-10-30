@@ -1,13 +1,13 @@
 # FocuLY — glass interface
 
-The fresh v1.0.0 (Android build 127) uses a scenic backdrop, translucent blue-grey panels, fine light edges, white text, and pale primary actions. Matching floating top and bottom chrome follow Stash's see-through treatment while retaining the FocuLY logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows.
+FocuLY v1.0.1 (Android build 128) uses a scenic backdrop, frosted blue-grey chrome, fine light edges, and white text. Matching floating bars and focus actions soften the app content underneath while retaining the logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows.
 
 ## Shared material
 
 - `GlassBackdrop` draws a bundled misty lake behind the whole Compose interface, with a blue tonal veil. Android 12+ adds a background-only blur; earlier Android versions retain the soft-focus asset and translucent materials.
 - `GlassSurface` supplies consistent rounded clipping, a subtle shaded fill, and a diagonal highlight border. Cards, summaries, target/mode choices, illustration badges, onboarding, and fixed editor footers share it.
 - Material dialogs use coordinated slate surfaces; selection sheets use translucent slate containers. Inputs, switches, chips, and chart accents share the same blue/white palette.
-- Primary actions use a milky fill, blue text, rounded corners, and a fine edge. Disabled actions remain visibly different. Selected tabs/modes retain both semantic selection state and a distinct blue fill.
+- Home's Start focus and the Setup/editor action use the same frosted material as the bars, with sharp labels, a fine highlight rim, and a restrained press response. The Setup action floats over scrolling content, with summary information inside the capsule and sufficient trailing space for the final controls. Other primary actions retain their milky fill. Disabled actions remain visibly different and cannot be clicked.
 - The dock is a separate overlay inside the bottom safe area, with a maximum 360 dp width, 72 dp capsule height, low-opacity tint, fine rim, soft shadow, and open space around it. It still has exactly Home, Rules, and Insights. Settings and profile remain in the top header. Scrolling cards pass visibly behind it; the shared page's trailing inset lets its last control scroll clear of the capsule.
 - Its selected pill slides over 180 ms using a placement-phase offset rather than recomposing the dock every animation frame. Reduce motion snaps directly; haptic feedback follows its existing preference. Each destination exposes a selected tab role and a 56 dp-high target. Repeated taps preserve position, and usage readings are shared across tabs.
 - The 64 dp header shares the dock's glass edges and open margins, with a stronger translucent blue tint to keep its title/icons readable over pale cards. Home, Rules, Insights, and Settings scroll behind it, with leading scroll space to place the first control below the header. The system status area stays clear of scrolling app text; fixed editor layouts retain a safe top inset. Profile and Settings keep their root positions; nested screens use Back.
@@ -16,6 +16,16 @@ The fresh v1.0.0 (Android build 127) uses a scenic backdrop, translucent blue-gr
 - Standard Android sans-serif makes headings and body text lighter; JetBrains Mono remains on timer displays, captions, and small data labels. The established type scale, 48 dp interaction minimums, scrolling content, and persistent editor actions remain.
 - Light mode uses the softer landscape tint; Dark mode deepens the blue overlay. The background is static and introduces no continuous animation, including when Reduce motion is enabled.
 - Fresh installations start in Light. Existing System preferences resolve once to the current Android light/dark appearance and are stored explicitly; later system appearance changes do not override the manual choice. The Settings credit begins with “Made” and keeps Veil linked to its website.
+
+## Frosted blur and simpler flows
+
+The bars and focus actions use [Haze](https://github.com/chrisbanes/haze/tree/1.6.10) to sample only registered FocuLY drawing layers, with a 24 dp blur, restrained noise, translucent blue tint, and a light rim. Background/scrolling content are registered separately so foreground icons and text remain sharp. The inline Home action samples the scenic layer only, avoiding a feedback loop through its own parent page. The floating Setup action can blur its sibling scrolling form. Automatic input scaling reduces the blur's working resolution.
+
+Real background blur is enabled on Android 12+; Android 9–11 retain the library's frosted scrim fallback rather than forcing its experimental older-device renderer. This is a liquid-glass-inspired treatment, not Apple's private material or a refraction shader. No foreign app/window is sampled, captured, or transmitted. Haze is pinned to a version compatible with the project's existing Compose/Kotlin stack; its Apache license is bundled in the APK assets.
+
+Settings has one Permissions dropdown with direct Android access controls, one Device protection entry for policies/PIN, a Reminders group, and appearance/privacy controls. The welcome replay and informational Essential access row are removed; essential-app exceptions remain enforced. First-time onboarding and recovery setup are retained where needed to finish a pending blocking action.
+
+Page headings use sentence case, including Setup and Settings. Setup names the selected profile once instead of repeating Home's four-preset strip. Home's rhythm art has a 124 dp-high area (formerly 64 dp) within larger cards; titles and durations keep room to grow with text size.
 
 ## Native blocking and widget
 

@@ -119,6 +119,7 @@ class ScreenshotGalleryTest {
         automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
         Assume.assumeTrue(shell("getprop ro.kernel.qemu").trim() == "1")
         open("settings")
+        ui.onNodeWithText("Reminders").performScrollTo().performClick()
         ui.onNodeWithText("Gentle break reminders").performScrollTo(); scrollPage(420f)
         shot("break-settings")
         open("home")

@@ -79,10 +79,10 @@ class AppTest {
         // Preserve the launcher intent filter so ActivityScenario can follow the next recreation.
         ui.activityRule.scenario.onActivity { it.startActivity(android.content.Intent(it.intent).putExtra("screen", "settings").setFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)) }
         // A recreated activity may briefly detach its Compose root while the intent is delivered.
-        ui.waitUntil(5000) { runCatching { ui.onAllNodesWithText("PROTECTION HEALTH").fetchSemanticsNodes().isNotEmpty() }.getOrDefault(false) }
-        ui.onNodeWithText("PROTECTION HEALTH").assertExists()
+        ui.waitUntil(5000) { runCatching { ui.onAllNodesWithText("Permissions").fetchSemanticsNodes().isNotEmpty() }.getOrDefault(false) }
+        ui.onNodeWithText("Permissions").assertExists()
         ui.activityRule.scenario.recreate()
-        ui.onNodeWithText("PROTECTION HEALTH").assertExists()
+        ui.onNodeWithText("Permissions").assertExists()
     }
     @Test fun onboardingHasFourStepsAndCleanFinish() {
         ui.runOnIdle { Repository.update { FocusState() } }
@@ -120,7 +120,7 @@ class AppTest {
         ui.onNodeWithText("Your profiles").assertIsDisplayed()
         ui.onNodeWithContentDescription("Back").performClick()
         ui.onNodeWithContentDescription("Settings").performClick()
-        ui.onNodeWithText("PROTECTION HEALTH").assertExists()
+        ui.onNodeWithText("Permissions").assertExists()
         ui.onNodeWithContentDescription("Rules").assertDoesNotExist()
     }
     @Test fun websiteEntryNormalizesAndPersists() {

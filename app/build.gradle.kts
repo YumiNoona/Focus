@@ -19,11 +19,12 @@ android {
         applicationId = "dev.still.focus"
         minSdk = 28
         targetSdk = 36
-        versionCode = 127
-        versionName = "1.0.0"
+        versionCode = 128
+        versionName = "1.0.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true }
+    sourceSets.getByName("main").assets.srcDir(rootProject.file("docs/legal"))
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     signingConfigs {
         if (releaseStore != null) {
@@ -53,6 +54,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("dev.chrisbanes.haze:haze:1.6.10")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation(platform("androidx.compose:compose-bom:2025.10.01"))

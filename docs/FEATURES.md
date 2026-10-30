@@ -84,7 +84,7 @@ Rules → Schedules → Routine editor → Overlap explanation
 Insights → Daily summary / Usage chart / Recent sessions
 Profile → Name / Intention / Goal / FocuLY profile editor
 Settings → Permissions / Appearance / Visits / Privacy / Export / Delete
-Settings → Uninstall & managed protection → Android administration / Device-owner controls
+Settings → Device protection → Android administration / Device-owner controls / PIN
 Restricted app → Blocking screen → Return home / Intentional visit / Emergency access
 Widget or tile → Session setup or current session
 ```

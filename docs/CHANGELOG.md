@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/YumiNoona/Focus/releases/tag/v1.0.1) — frosted chrome and simpler Settings, 2026-10-30
+
+- Add real in-app background blur to the dock, header, and floating focus actions using Haze, with a frosted fallback on older Android versions. Preserve sharp controls, highlights, safe areas, reduced motion, and disabled/Strict guards.
+- Consolidate permission access into one Settings dropdown; group reminders and device policies/PIN. Remove the welcome replay, Essential access information row, duplicate setup/health cards, and repeated permission shortcuts.
+- Capitalize page headings, show the selected profile once in Setup, and remove its redundant preset strip. Enlarge the four Home rhythm illustrations from 64 dp to 124 dp-high areas with roomier cards.
+- Float the Setup focus action over scrolling content without a rectangular footer; keep final form controls reachable. Correct singular hour/minute labels.
+- Bundle dependency/font licenses in APK assets. Publish an optimized, officially signed, non-debuggable production APK with Android version code 128.
+
 ## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — fresh glass-header build, 2026-10-30
 
 - Replace the appearance chip row with a top-right Settings sun/moon switch. Smoothly blend the existing screen's palette and backdrop over 440 ms; preserve forms and scroll state. Reduce motion snaps instantly.

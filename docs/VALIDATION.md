@@ -1,5 +1,17 @@
 # Validation
 
+## v1.0.1 — frosted chrome and simpler Settings, 30 October 2026
+
+The signed production app uses version `1.0.1`, Android code **128**, and the existing package/certificate. R8 and resource shrinking remain enabled; debugging is disabled. No debug app APK is built or distributed for this iteration.
+
+- All 27 release JVM tests pass; release lint reports 0 errors and 66 warnings. Production assembly succeeds. Haze/font licenses and notices are bundled in APK assets.
+- Updated the official production installation on the isolated Android 15 emulator without resetting its saved website or onboarding. The header, dock, and floating focus action render actual in-app background blur while controls remain sharp. Android 9–11 use Haze's scrim fallback; these versions were not exercised for this change.
+- Expanded the single Permissions dropdown, checked its ordinary-phone access controls, opened Android Usage access, and returned successfully. Reminders exposes both break and completion/routine preferences. Welcome replay, Essential access, and duplicated setup/health shortcuts are removed from Settings.
+- Opened Personal time from the enlarged rhythm cards. Setup shows the chosen profile once; the final Websites target opens and saves its existing selection. Strict's glass action remains disabled until acknowledged. The Normal glass action starts a real session that interrupts Scroll Test with an accessibility overlay; ending the session returns to Home.
+- Checked light/dark chrome, reduced motion, retained Settings scroll during theme toggles, and status-area clearance. At 130% text, the last rhythm card opens and the final Websites control scrolls above the floating action and physically opens. Captures include these enlarged-text states.
+
+The updated [production captures](screenshots/dock/README.md) document this iteration. Historical protection/reinstall and managed-device checks below retain their original scope; this visual refresh does not establish new bypass resistance.
+
 ## Fresh v1.0.0 — production glass-header refresh, 30 October 2026
 
 Android metadata is `dev.still.focus`, version `1.0.0`, code **127**, Android 9+. This replaces prior releases while retaining the official signing key and stored rules. The final APK is optimized with R8, resource shrinking, and debugging explicitly disabled. No debug app APK is generated or published for this refresh; CI checks release variants and uploads reports only.

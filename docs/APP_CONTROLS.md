@@ -13,7 +13,7 @@ The FocuLY admin PIN guards device-control changes, consent withdrawal, and loca
 
 Device-owner installs run a visible foreground policy monitor while app policies or Strict rules are active. It keeps a dynamic package receiver alive and reconciles deadlines every two seconds. Android 8+ restricts manifest-only package-added receivers. On Android 11+, FocuLY also requests that Android disable force-stop/data-clear controls for FocuLY while these policies are active. Rules can still be removed inside FocuLY with the appropriate PIN outside Strict; older Android and administrator tooling have additional limitations.
 
-Open Settings → Uninstall & managed protection → Individual app controls. Choose a known app, a selected installed app, or enter its exact package ID.
+Open Settings → Device protection → Individual app controls. Choose a known app, a selected installed app, or enter its exact package ID.
 
 - **Pause after installation:** suspend the app when present, including after later Play Store or APK installation. The download and installation are not prevented. There can be a short delay between installation and the package-added receiver applying policy.
 - **Keep installed:** Android blocks uninstalling that individual package while its rule is active.
