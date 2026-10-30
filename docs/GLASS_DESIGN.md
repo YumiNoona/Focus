@@ -1,6 +1,6 @@
 # FocuLY — glass interface
 
-The v1.3.0 design follows the user's glassmorphism reference: a calm scenic backdrop, translucent blue-grey panels, fine light edges, white text, and pale primary actions. The existing FocuLY logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows are retained.
+The glass design follows the user's reference: a calm scenic backdrop, translucent blue-grey panels, fine light edges, white text, and pale primary actions. The 30 October v1.0.0 refresh follows Stash's floating dock treatment while retaining the FocuLY logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows.
 
 ## Shared material
 
@@ -8,7 +8,8 @@ The v1.3.0 design follows the user's glassmorphism reference: a calm scenic back
 - `GlassSurface` supplies consistent rounded clipping, a subtle shaded fill, and a diagonal highlight border. Cards, summaries, target/mode choices, illustration badges, onboarding, and fixed editor footers share it.
 - Material dialogs use coordinated slate surfaces; selection sheets use translucent slate containers. Inputs, switches, chips, and chart accents share the same blue/white palette.
 - Primary actions use a milky fill, blue text, rounded corners, and a fine edge. Disabled actions remain visibly different. Selected tabs/modes retain both semantic selection state and a distinct blue fill.
-- The dock floats inside the bottom safe area and still has exactly Home, Rules, and Insights. Settings and profile remain in the top header.
+- The dock is a separate overlay inside the bottom safe area, with a maximum 360 dp width, 72 dp capsule height, low-opacity tint, fine rim, soft shadow, and open space around it. It still has exactly Home, Rules, and Insights. Settings and profile remain in the top header. Scrolling cards pass visibly behind it; the shared page's trailing inset lets its last control scroll clear of the capsule.
+- Its selected pill slides over 180 ms using a placement-phase offset rather than recomposing the dock every animation frame. Reduce motion snaps directly; haptic feedback follows its existing preference. Each destination exposes a selected tab role and a 56 dp-high target. Repeated taps preserve position, and usage readings are shared across tabs.
 - Home's two blocking shortcuts are illustration-only glass cards with larger centered cats. The entire card is a button, labeled “Block apps” or “Block websites” for screen readers, and opens the corresponding direct setup flow.
 - Standard Android sans-serif makes headings and body text lighter; JetBrains Mono remains on timer displays, captions, and small data labels. The established type scale, 48 dp interaction minimums, scrolling content, and persistent editor actions remain.
 - Light mode uses the softer landscape tint; Dark mode deepens the blue overlay. The background is static and introduces no continuous animation, including when Reduce motion is enabled.

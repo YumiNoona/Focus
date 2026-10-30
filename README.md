@@ -8,7 +8,7 @@
 
 A calm Android app for intentional screen time, focus sessions, and everyday boundaries.
 
-**FocuLY is the new name for Focus.** Version 1.4.0 adds persistent bans across app reinstalls, illustrated break reminders, and personal blocking artwork to the scenic glass interface. Existing installations retain their package, saved rules, and signing identity. [What's new](CHANGELOG.md).
+**FocuLY is the new name for Focus.** The new v1.0.0 brings a floating, see-through dock inspired by Stash, with smoother tab selection and scrolling behind the glass. It includes persistent bans across app reinstalls, illustrated break reminders, and personal blocking artwork. [What's new](CHANGELOG.md).
 
 [![Android CI](https://github.com/YumiNoona/Focus/actions/workflows/android.yml/badge.svg?branch=main)](https://github.com/YumiNoona/Focus/actions/workflows/android.yml)
 [![Latest release](https://img.shields.io/github/v/release/YumiNoona/Focus?style=flat&color=7760BA)](https://github.com/YumiNoona/Focus/releases/latest)
@@ -17,7 +17,7 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](#design)
 [![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](#privacy)
 
-**[Download v1.4.0](https://github.com/YumiNoona/Focus/releases/tag/v1.4.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
+**[Download v1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0)** · **[Features](docs/FEATURES.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)** · **[Report an issue](https://github.com/YumiNoona/Focus/issues)**
 
 </div>
 
@@ -25,13 +25,15 @@ A calm Android app for intentional screen time, focus sessions, and everyday bou
 
 ## Meet FocuLY
 
-**New in v1.4.0:** Personal blocking screens add ten new cat scenes, your own image/sticker, and 24 larger emoji suggestions. Onboarding gains circular progress around Next/Done, and app selection uses a floating Done button. [Customization guide](docs/BLOCKING_ARTWORK.md).
+**New v1.0.0 — 30 October 2026:** A lighter transparent dock floats above the page, with open margins, a fine glass rim, and a sliding selection pill. Cards scroll underneath it, while trailing space keeps the last action reachable. Home, Rules, and Insights retain their positions and scroll state. Reduce motion disables the selection animation, and tab switching shares usage readings instead of triggering extra queries. [Dock screenshots](docs/screenshots/dock/README.md).
+
+**Included customization:** Personal blocking screens offer ten additional cat scenes, your own image/sticker, and 24 larger emoji suggestions. Onboarding uses circular progress around Next/Done, and app selection has a floating Done button. [Customization guide](docs/BLOCKING_ARTWORK.md).
 
 App bans also retain their original deadlines through target-app reinstalls, and managed devices verify/reapply Android restrictions. Optional illustrated break reminders work for frequently used apps even without saved rules. [Reinstall protection, removal limits, and break reminders](docs/REINSTALL_AND_REMINDERS.md).
 
-**New in v1.3.0:** A complete glass interface brings a misty lake backdrop, translucent blue panels, pale buttons, and a floating three-icon dock. Larger illustration-only Home cards open app and website blocking directly, with accessible labels. Shared target sheets, persistent actions, corrected cat doodles, and fixes for restoring drafts and refreshing blocking screens make everyday setup smoother. See the [glass design and current screenshots](docs/GLASS_DESIGN.md) and [simpler flows](docs/SIMPLER_FLOWS.md).
+**Glass interface:** A misty lake backdrop, translucent blue panels, and pale buttons frame the app. Larger illustration-only Home cards open app and website blocking directly, with accessible labels. Shared target sheets, persistent actions, corrected cat doodles, and draft restoration make everyday setup smoother. See the [glass design](docs/GLASS_DESIGN.md) and [simpler flows](docs/SIMPLER_FLOWS.md).
 
-**New in v1.2.0:** independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages with mode previews, direct Shorts/Reels actions, and individual managed app controls. Distinct doodles accompany reminders, patience, Strict boundaries, growing focus, breaks, and completion.
+**Everyday boundaries:** Independent blocks, permission onboarding, FocuLY admin PIN, custom blocking messages with mode previews, direct Shorts/Reels actions, and individual managed app controls. Distinct doodles accompany reminders, patience, Strict boundaries, growing focus, breaks, and completion.
 
 FocuLY helps you choose what deserves your attention and make room for it. Start a quiet session, give distracting apps a daily allowance, or put focus on a recurring schedule. When a distraction appears, a calm interruption gives you a chance to return to what you intended to do.
 
@@ -39,9 +41,9 @@ The interface has exactly **three bottom-dock icons: Home, Rules, and Insights**
 
 ## Screenshots
 
-The [v1.4.0 personalization gallery](docs/screenshots/personalization/README.md) shows the new cat artwork, personal stickers, floating controls, and native blocking screens. [Break reminder examples](docs/REINSTALL_AND_REMINDERS.md) show the new settings and an actual Android notification using test-fixture input. The v1.3.0 gallery below records the shared glass interface.
+The [current dock gallery](docs/screenshots/dock/README.md) shows the see-through capsule, scrolling content, dark mode, and large text. The [personalization gallery](docs/screenshots/personalization/README.md) records cat artwork, personal stickers, floating controls, and native blocking screens. [Break reminder examples](docs/REINSTALL_AND_REMINDERS.md) include an actual Android notification using test-fixture input. The earlier gallery below records the shared glass interface.
 
-**[Current glass gallery](docs/screenshots/glass/README.md)** · [Design guide](docs/GLASS_DESIGN.md). The [earlier v1.2.0 gallery](docs/screenshots/gallery/README.md) and [HTML gallery](docs/screenshots/gallery/index.html) remain historical records, including managed-device comparisons.
+**[Floating dock gallery](docs/screenshots/dock/README.md)** · [Earlier glass gallery](docs/screenshots/glass/README.md) · [Design guide](docs/GLASS_DESIGN.md). The [earlier v1.2.0 gallery](docs/screenshots/gallery/README.md) and [HTML gallery](docs/screenshots/gallery/index.html) remain historical records, including managed-device comparisons.
 
 <table>
   <tr>
@@ -50,7 +52,7 @@ The [v1.4.0 personalization gallery](docs/screenshots/personalization/README.md)
     <td align="center"><b>FocuLY session</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/glass/04-home.jpg" alt="Glass Home with profile, settings, start button, and three-icon dock" width="250" /></td>
+    <td><img src="docs/screenshots/dock/dock-01-home.jpg" alt="Home with profile, settings, and the new see-through floating dock" width="250" /></td>
     <td><img src="docs/screenshots/glass/25-block-apps.jpg" alt="App blocking with visible durations and resistance choices" width="250" /></td>
     <td><img src="docs/screenshots/glass/30-active-session.jpg" alt="Active glass focus timer and session controls" width="250" /></td>
   </tr>
@@ -60,8 +62,8 @@ The [v1.4.0 personalization gallery](docs/screenshots/personalization/README.md)
     <td align="center"><b>Intentional pause</b></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/glass/31-dark-home.jpg" alt="FocuLY dark glass theme" width="250" /></td>
-    <td><img src="docs/screenshots/glass/18-insights.jpg" alt="FocuLY session and usage insights" width="250" /></td>
+    <td><img src="docs/screenshots/dock/dock-05-dark-home.jpg" alt="Dark Home with the new floating glass dock" width="250" /></td>
+    <td><img src="docs/screenshots/dock/dock-04-insights.jpg" alt="Insights and selected floating dock destination" width="250" /></td>
     <td><img src="docs/screenshots/glass/27-normal-popup.jpg" alt="Glass accessibility interruption over a selected test app" width="250" /></td>
   </tr>
 </table>
@@ -130,8 +132,8 @@ Strict requires a live protection service and an automatic ending. Sessions can 
 
 **Requires Android 9 / API 28 or newer.**
 
-1. Open the [v1.4.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.4.0).
-2. Download **`FocuLY-v1.4.0.apk`** and open it on your Android phone. The same release certificate supports updating an existing Focus installation.
+1. Open the [v1.0.0 release](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0).
+2. Download **`FocuLY-v1.0.0.apk`** and open it on your Android phone. The same release certificate supports updating an existing Focus installation.
 3. If Android asks, allow installation from the browser or file manager you are using.
 4. Launch **FocuLY** and follow the four-screen introduction to the permission checklist.
 5. Read the protection disclosure and enable **FocuLY protection** in Android Accessibility settings if you want blocking.
@@ -141,7 +143,7 @@ Strict requires a live protection service and an automatic ending. Sessions can 
 
 Some Android versions place additional restrictions on accessibility access for sideloaded apps. If needed, allow restricted settings from FocuLY’s system App Info screen before enabling protection.
 
-The APK is release-signed for GitHub distribution and uses the same certificate as v1.0.0, so it installs as an update and preserves local data. It has not been submitted to Google Play. Debug builds and the earlier Still preview use different certificates. There is no JSON import feature.
+The public release series restarts at **v1.0.0 on 30 October 2026**. Earlier GitHub releases were removed at the maintainer's request; development history remains in Git. This APK has internal Android version code **125**, higher than the former v1.4.0 (124), and retains the official signing certificate, so it installs as an update and preserves local data. Do not uninstall the official app first. It has not been submitted to Google Play. Debug builds and the earlier Still preview use different certificates. There is no JSON import feature.
 
 ## Permissions, explained
 

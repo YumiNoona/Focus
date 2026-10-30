@@ -12,10 +12,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.*
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -59,6 +66,7 @@ class MainActivity : ComponentActivity() {
         requestedScreen = savedInstanceState?.getString("requestedScreen") ?: intent.getStringExtra("screen") ?: "home"
         navigationSequence = savedInstanceState?.getInt("navigationSequence") ?: 0
         enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
         setContent { StillTheme(Repository.state.theme) { StillApp(requestedScreen, navigationSequence) } }
     }
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); requestedScreen = intent.getStringExtra("screen") ?: "home"; navigationSequence++ }
@@ -100,7 +108,8 @@ class MainActivity : ComponentActivity() {
         if (appliedNavigation != navigationSequence) { route = requested; appliedNavigation = navigationSequence }
     }
     LaunchedEffect(Unit) { while (true) { now = System.currentTimeMillis(); Repository.reconcile(); delay(1000) } }
-    LaunchedEffect(route, now / 15_000) { usage = withContext(Dispatchers.IO) { UsageReader.day(Repository.context) }; usageReady = true }
+    // Share one usage snapshot across tabs instead of querying Android on every dock tap.
+    LaunchedEffect(now / 15_000) { usage = withContext(Dispatchers.IO) { UsageReader.day(Repository.context) }; usageReady = true }
     val mainRoutes = listOf("home", "rules", "insights")
     val back: () -> Unit = { route = when (route) { "block" -> blockParent; "setup" -> sessionParent; "settings" -> settingsParent; "permissions" -> permissionParent; "profile" -> profileParent; "pin" -> pinParent; "profileEdit" -> "profile"; "managed", "messages", "welcome" -> "settings"; "lifecycle" -> "managed"; "picker", "allowlist", "schedule", "appRule" -> "rules"; else -> "home" } }
     BackHandler(route !in mainRoutes, onBack = back)
@@ -127,11 +136,14 @@ class MainActivity : ComponentActivity() {
         return
     }
     if (route == "welcome") { FoculyOnboarding { route = "settings" }; return }
+    Box(Modifier.fillMaxSize()) {
     Scaffold(containerColor = Color.Transparent,
-        topBar = { Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) },
-        bottomBar = { if (route in mainRoutes) Dock(route, nav) }
+        topBar = { Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) }
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
+        val pageInsets = PaddingValues(top = padding.calculateTopPadding(), bottom = if (route in mainRoutes) 0.dp else padding.calculateBottomPadding())
+        val dockClearance = if (route in mainRoutes) 96.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() else 0.dp
+        CompositionLocalProvider(LocalPageBottomInset provides dockClearance) {
+        Box(Modifier.fillMaxSize().padding(pageInsets).consumeWindowInsets(pageInsets)) {
             screenState.SaveableStateProvider(route) {
             when (route) {
                 "home" -> Home(s, now, usage, usageReady, nav, startSession, { stopDialog = true })
@@ -159,6 +171,9 @@ class MainActivity : ComponentActivity() {
             }
             }
         }
+        }
+    }
+    if (route in mainRoutes) Dock(route, nav, Modifier.align(Alignment.BottomCenter))
     }
     if (timerDialog) AlertDialog(onDismissRequest = { timerDialog = false }, title = { Text("Enable protection", fontFamily = Mono) }, text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         DoodleBadge(CatArt.REMINDER, Modifier.fillMaxWidth().height(88.dp))
@@ -181,20 +196,45 @@ class MainActivity : ComponentActivity() {
         if (root) IconButton(settings, Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant).border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) } else Spacer(Modifier.width(48.dp))
     }
 }
-@Composable fun Dock(route: String, nav: (String) -> Unit) {
-    Box(Modifier.navigationBarsPadding().padding(horizontal = 20.dp, vertical = 10.dp)) {
-    GlassSurface(shape = RoundedCornerShape(28.dp)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            listOf(Triple("home", "Home", Icons.Outlined.Home), Triple("rules", "Rules", Icons.Outlined.Tune), Triple("insights", "Insights", Icons.Outlined.BarChart)).forEach { (key, label, icon) ->
-                Box(Modifier.size(width = 68.dp, height = 52.dp).clip(RoundedCornerShape(20.dp)).background(if (route == key) MaterialTheme.colorScheme.primaryContainer else Color.Transparent).clickable { nav(key) }.semantics { contentDescription = label; selected = route == key }, contentAlignment = Alignment.Center) {
-                    Icon(icon, null, Modifier.size(25.dp), tint = if (route == key) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+private val LocalPageBottomInset = staticCompositionLocalOf { 0.dp }
+
+/** A separate transparent overlay lets the page scroll behind the capsule, like Stash. */
+@Composable fun Dock(route: String, nav: (String) -> Unit, modifier: Modifier = Modifier) {
+    val dark = LocalGlassDark.current
+    val destinations = remember { listOf(Triple("home", "Home", Icons.Outlined.Home), Triple("rules", "Rules", Icons.Outlined.Tune), Triple("insights", "Insights", Icons.Outlined.BarChart)) }
+    val selectedIndex = destinations.indexOfFirst { it.first == route }.coerceAtLeast(0)
+    val haptic = LocalHapticFeedback.current
+    val shape = RoundedCornerShape(36.dp)
+    Box(modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+        BoxWithConstraints(Modifier.widthIn(max = 360.dp).fillMaxWidth().height(72.dp)
+            .shadow(12.dp, shape, ambientColor = Color(0x24324B70), spotColor = Color(0x24324B70))
+            .clip(shape)
+            .background(Brush.verticalGradient(if (dark) listOf(Color(0x245F7BA2), Color(0x30263D5C)) else listOf(Color(0x38FFFFFF), Color(0x162F527C))))
+            .border(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = .55f), Color(0x227EBACB), Color(0x66B9BAE8))), shape)
+            .padding(8.dp)) {
+            val itemWidth = maxWidth / destinations.size
+            val selectionOffset = animateDpAsState(itemWidth * selectedIndex,
+                animationSpec = if (Repository.state.reduceMotion) snap() else tween(180), label = "Dock selection")
+            Box(Modifier.offset { IntOffset(selectionOffset.value.roundToPx(), 0) }.width(itemWidth).fillMaxHeight().padding(horizontal = 4.dp)
+                .clip(RoundedCornerShape(28.dp)).background(Color.White.copy(alpha = if (dark) .12f else .17f))
+                .border(1.dp, Color.White.copy(alpha = .22f), RoundedCornerShape(28.dp)))
+            Row(Modifier.fillMaxSize().selectableGroup()) {
+                destinations.forEach { (key, label, icon) ->
+                    Box(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(28.dp))
+                        .selectable(selected = route == key, role = Role.Tab, onClick = {
+                            if (route != key) {
+                                if (Repository.state.haptics) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                nav(key)
+                            }
+                        }).semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
+                        Icon(icon, null, Modifier.size(26.dp), tint = if (route == key) Color.White else Color(0xDDF1F5FC))
+                    }
                 }
             }
         }
     }
-    }
 }
-@Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp, bottom = bottomPadding), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
+@Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp, bottom = bottomPadding + LocalPageBottomInset.current), verticalArrangement = Arrangement.spacedBy(18.dp), content = content) }
 @Composable fun Caption(text: String) { Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 @Composable fun Heading(title: String, subtitle: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) } } }
 @Composable fun Primary(text: String, enabled: Boolean = true, icon: ImageVector? = Icons.AutoMirrored.Outlined.ArrowForward, action: () -> Unit) {

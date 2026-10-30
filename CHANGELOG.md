@@ -1,6 +1,18 @@
 # Changelog
 
-## [1.4.0](https://github.com/YumiNoona/Focus/releases/tag/v1.4.0) — 2026-10-16
+## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — 2026-10-30
+
+- Restart the public FocuLY release series at v1.0.0 and replace earlier GitHub releases, retaining source history and the official signing key. Internal Android version code 125 allows updates from former builds, including v1.4.0 (124), without deleting saved data.
+- Rework the three-icon dock after inspecting Stash: a translucent capsule, fine highlight rim, soft shadow, and clear margins. Content now scrolls behind the dock instead of stopping at a reserved footer area; trailing scroll space keeps final actions reachable.
+- Slide the selected tab's glass pill over 180 ms, respect Reduce motion and haptic settings, expose Android tab selection semantics, and keep taps on the current tab from resetting its position.
+- Share usage snapshots across tabs instead of making another Android usage query on each navigation tap. Remove the Android navigation contrast scrim on supported versions.
+- Retain the complete blocking, personalization, onboarding, managed protection, and break reminder features documented below.
+
+## Earlier development history
+
+The entries below record retired releases. Their downloads were removed on 30 October 2026; this history does not describe separate currently published releases. The original 14 October v1.0.0 is distinct from the new 30 October v1.0.0.
+
+## Historical 1.4.0 — 2026-10-16
 
 ### Reinstall protection and break reminders
 
@@ -18,7 +30,7 @@
 - Add personal image/sticker selection through Android's file picker, private local copies, transparent image support, bounded resizing, and shared preview/native-overlay rendering. Animated images use a still frame.
 - Offer 24 larger emoji/symbol suggestions and keep the custom blocking screen's Save action visible. Artwork choices persist with existing messages; Strict still prevents customization changes.
 
-## [1.3.0](https://github.com/YumiNoona/Focus/releases/tag/v1.3.0) — 2026-10-16
+## Historical 1.3.0 — 2026-10-16
 
 ### Glass interface
 
@@ -46,7 +58,7 @@
 - Add keyboard-operated website previews, linked tab panels, Escape/outside-click mobile-menu dismissal, and remove collapsed menu links from keyboard focus.
 - Add regression checks for recreation, profile persistence, empty-state recovery, and parked-overlay updates. See [review and validation](docs/FLOW_REVIEW_2026-10-15.md).
 
-## [1.2.0](https://github.com/YumiNoona/Focus/releases/tag/v1.2.0) — 2026-10-14
+## Historical 1.2.0 — 2026-10-14
 
 - Add six distinct transparent cat doodles for reminders, Resistant waiting, Strict boundaries, active focus, Pomodoro breaks, and completion, bringing the illustration set to nine scenes.
 - Use mode-specific artwork in native blocking screens, early-ending and unblocking warnings, locked rules, and the custom-message preview. Keep black ink readable on pastel backings in dark mode.
@@ -78,7 +90,7 @@
 
 Website/feed detection remains experimental; ordinary-phone Android settings still control accessibility.
 
-## [1.1.0](https://github.com/YumiNoona/Focus/releases/tag/v1.1.0) — 2026-10-14
+## Historical 1.1.0 — 2026-10-14
 
 - Repair foreground tracking: recheck application windows continuously, ignore keyboards and accessibility overlays, and use usage-event fallback when windows are unavailable.
 - Show live protection health, observed app, connection/overlay failures, explicit timer-only status, battery links, and a one-minute real-app test.
@@ -91,7 +103,7 @@ Website/feed detection remains experimental; ordinary-phone Android settings sti
 
 Selective websites/feeds remain experimental. Physical OnePlus Nord CE 2 verification remains outstanding; ordinary-phone Strict cannot prevent Android permission revocation.
 
-## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — 2026-10-14
+## Historical 1.0.0 — 2026-10-14
 
 First public Focus release, developed from the earlier Still preview.
 

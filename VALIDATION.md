@@ -1,6 +1,20 @@
-# Validation — FocuLY v1.4.0, 16 October 2026
+# Validation — FocuLY v1.0.0 restart, 30 October 2026
 
-## v1.4.0 release
+The public version series restarts at v1.0.0 on 30 October. Internal Android version code 125 is higher than the retired v1.4.0 (124); package `dev.still.focus` and the release certificate remain unchanged. Prior entries below are historical checks, not currently available releases.
+
+## Floating dock refresh — 30 October 2026
+
+- Inspected Stash's `StashDock` implementation and applied its translucent capsule, open margins, fine rim, and soft shadow to FocuLY's existing three destinations.
+- Root content scrolls behind the dock. Shared trailing padding includes the capsule and navigation safe area, so final actions can scroll above it. Non-root editors retain their existing safe-area layout.
+- The selection pill uses a placement-phase animated offset, snaps when Reduce motion is enabled, and respects the haptic preference. Repeated taps preserve the current page; usage snapshots are shared across tabs.
+- Android navigation contrast scrims are disabled on API 29+; the dock retains tab roles, selected semantics, icon descriptions, and 56 dp-high tap targets.
+- All 27 JVM tests pass. Debug/test assembly, optimized signed release assembly, and Android lint pass (0 errors, 64 existing warnings). The release certificate verifies against the official SHA-256 recorded below.
+- The 20 checks in `AppTest` and `DirectBlockTest` pass across the initial run and a focused recheck. Three initial failures were test synchronization/overlay clearance: the recreation wait now tolerates its briefly detached Compose root, and two flow taps explicitly scroll their targets above the floating capsule before injecting a physical touch. The recheck passes those three cases and the new gallery check. A real Scroll Test app is interrupted after saving a Home app block; no protection engine or policy change was made.
+- The opt-in floating-dock gallery passes with eight actual captures: Home, scroll-through, Rules, Insights, dark/reduced-motion Home, dark scrolling, 130% text, and final profile actions. The last profile is physically tapped after verifying clearance above the dock. [Captures](docs/screenshots/dock/README.md).
+- On a fresh disposable Android 15 emulator, installed the former official v1.4.0 (124), completed onboarding, and saved `upgrade-check.example` through the UI. Installing this officially signed v1.0.0 (125) with update mode succeeds; onboarding and the saved website remain. Android reports the new name/code. This verifies upgrade compatibility despite the public version-number reset.
+- Earlier GitHub release metadata and APK/checksum assets were archived locally before replacement. Physical OnePlus review, manual screen-reader interaction, Android 9–14 device coverage, and three-button navigation review remain outstanding for this refresh.
+
+## Historical v1.4.0 release
 
 - Release metadata is `dev.still.focus`, version `1.4.0`, code `124`, Android 9+, label `FocuLY`. Code 124 advances the official v1.3.0 installation while retaining the existing package and release signing certificate.
 - Release preparation checks all 27 JVM tests, debug assembly, Android lint (0 errors, 64 warnings), optimized signed release assembly, and APK metadata/signature verification. The feature-level Android checks below passed before the version/documentation changes; they were not rerun solely for the version bump.

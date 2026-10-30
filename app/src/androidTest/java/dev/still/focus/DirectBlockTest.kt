@@ -63,7 +63,7 @@ class DirectBlockTest {
                 assertEquals(BlockPeriod.WEEK, Repository.state.blocks.single { it.kind == BlockKind.WEBSITES }.period)
             }
 
-            ui.onNodeWithText("Shorts & Reels").performScrollTo().performClick()
+            ui.onNodeWithText("Shorts & Reels").performScrollClearOfDock(ui).performClick()
             ui.onNodeWithContentDescription("YouTube Shorts").performClick()
             ui.onNodeWithText("Normal").performScrollTo().performClick()
             ui.onNodeWithText("Block now").performClick()

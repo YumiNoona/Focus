@@ -84,6 +84,36 @@ class ScreenshotGalleryTest {
             ui.onNodeWithText("Done · 1 selected").performClick()
         } finally { shell("settings put system font_scale $fontScale"); ui.runOnIdle { Repository.update { original } }; open("home") }
     }
+    @Test fun captureFloatingDock() {
+        Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
+        automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+        Assume.assumeTrue(shell("getprop ro.kernel.qemu").trim() == "1")
+        assertFalse(RulesEngine.strictActive(Repository.state, System.currentTimeMillis()))
+        val original = Repository.state
+        val fontScale = shell("settings get system font_scale").trim().toFloatOrNull() ?: 1f
+        val demo = FocusState(onboarding = true, apps = listOf(AppRule("dev.still.fixture", "Scroll Test")))
+        try {
+            ui.runOnIdle { Repository.update { demo.copy(theme = "Light") } }
+            open("home"); shot("dock-01-home")
+            scrollPage(350f); shot("dock-02-scroll-through")
+            ui.onNodeWithContentDescription("Rules").performClick()
+            ui.onNodeWithContentDescription("Rules").assertIsSelected(); shot("dock-03-rules")
+            ui.onNodeWithContentDescription("Insights").performClick()
+            ui.onNodeWithContentDescription("Insights").assertIsSelected(); shot("dock-04-insights")
+            ui.runOnIdle { Repository.update { demo.copy(theme = "Dark", reduceMotion = true) } }
+            open("home"); shot("dock-05-dark-home")
+            scrollPage(350f); shot("dock-06-dark-scroll")
+            shell("settings put system font_scale 1.3"); Thread.sleep(1500)
+            ui.runOnIdle { Repository.update { demo.copy(theme = "Light") } }
+            open("home"); shot("dock-07-large-text")
+            ui.onNodeWithText("Personal time").performScrollClearOfDock(ui); shot("dock-08-last-actions")
+            ui.onNodeWithText("Personal time").performClick()
+            ui.onNodeWithContentDescription("Rules").assertDoesNotExist()
+        } finally {
+            shell("settings put system font_scale $fontScale")
+            ui.runOnIdle { Repository.update { original } }; open("home")
+        }
+    }
     @Test fun captureBreakSettings() {
         Assume.assumeTrue(InstrumentationRegistry.getArguments().getString("gallery") == "true")
         automation = instrumentation.getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)

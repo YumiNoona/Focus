@@ -78,7 +78,8 @@ class AppTest {
         }
         // Preserve the launcher intent filter so ActivityScenario can follow the next recreation.
         ui.activityRule.scenario.onActivity { it.startActivity(android.content.Intent(it.intent).putExtra("screen", "settings").setFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)) }
-        ui.waitUntil(5000) { ui.onAllNodesWithText("PROTECTION HEALTH").fetchSemanticsNodes().isNotEmpty() }
+        // A recreated activity may briefly detach its Compose root while the intent is delivered.
+        ui.waitUntil(5000) { runCatching { ui.onAllNodesWithText("PROTECTION HEALTH").fetchSemanticsNodes().isNotEmpty() }.getOrDefault(false) }
         ui.onNodeWithText("PROTECTION HEALTH").assertExists()
         ui.activityRule.scenario.recreate()
         ui.onNodeWithText("PROTECTION HEALTH").assertExists()
@@ -103,10 +104,17 @@ class AppTest {
         ui.runOnIdle { assertTrue(Repository.state.onboarding) }
     }
     @Test fun navigationHasExactlyThreeDockDestinationsAndHeaderActions() {
-        ui.onNodeWithContentDescription("Home").assertExists()
+        ui.onNodeWithContentDescription("Home").assertIsSelected()
+        ui.onNodeWithText("Shorts & Reels").performScrollTo()
+        ui.onNodeWithContentDescription("Home").performClick()
+        ui.onNodeWithText("Shorts & Reels").assertIsDisplayed()
         ui.onNodeWithContentDescription("Rules").assertExists().performClick()
+        ui.onNodeWithContentDescription("Rules").assertIsSelected()
         ui.onNodeWithText("Your time.\nYour rules.").assertIsDisplayed()
+        ui.onNodeWithContentDescription("Home").performClick()
+        ui.onNodeWithText("Shorts & Reels").assertIsDisplayed()
         ui.onNodeWithContentDescription("Insights").performClick()
+        ui.onNodeWithContentDescription("Insights").assertIsSelected()
         ui.onNodeWithText("Notice your rhythm.").assertIsDisplayed()
         ui.onNodeWithContentDescription("Profile").performClick()
         ui.onNodeWithText("Your profiles").assertIsDisplayed()
@@ -124,7 +132,7 @@ class AppTest {
         ui.runOnIdle { assertEquals(setOf("reddit.com"), Repository.state.domains) }
     }
     @Test fun timerOnlyWarningIsExplicitAndSessionStarts() {
-        ui.onNodeWithText("Deep work").performScrollTo().performClick()
+        ui.onNodeWithText("Deep work").performScrollClearOfDock(ui).performClick()
         ui.onNodeWithText("Start focus").assertIsDisplayed().performClick()
         ui.onNodeWithText("Blocking needs your consent and a connected Android accessibility service. You can enable it now, or explicitly start a timer without blocking.").assertExists()
         ui.onNodeWithText("Timer only").performClick()
