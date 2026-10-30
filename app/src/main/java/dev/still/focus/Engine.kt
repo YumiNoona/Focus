@@ -97,7 +97,7 @@ data class FocusState(val name: String = "", val intention: String = "Make room 
     val feeds: Set<String> = emptySet(), val allowlist: Set<String> = emptySet(),
     val profiles: List<Profile> = defaults(), val schedules: List<Schedule> = emptyList(),
     val session: Session? = null, val blocks: List<BlockPlan> = emptyList(), val history: List<SessionRecord> = emptyList(),
-    val overrides: List<OverrideRecord> = emptyList()) {
+    val overrides: List<OverrideRecord> = emptyList(), val avatarImage: String = "") {
     companion object { fun defaults() = listOf(
         Profile("deep", "Deep work", 50, "One thing at a time."),
         Profile("study", "Study", 50, "Make space to learn.", art = "STUDY"),

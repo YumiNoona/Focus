@@ -49,7 +49,7 @@ object Repository {
                 next.lifecycleRules != state.lifecycleRules && next.lifecycleRules != state.lifecycleRules.filter { it.alive(System.currentTimeMillis()) } ||
                 state.disclosure && !next.disclosure)) return fail("Unlock device controls with your FocuLY PIN first.")
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) {
-            val protected = state.copy(name = next.name, intention = next.intention, goalMinutes = next.goalMinutes,
+            val protected = state.copy(name = next.name, avatarImage = next.avatarImage, intention = next.intention, goalMinutes = next.goalMinutes,
                 theme = next.theme, haptics = next.haptics, reminders = next.reminders, hideInsights = next.hideInsights, reduceMotion = next.reduceMotion,
                 breakReminders = next.breakReminders, breakReminderMinutes = next.breakReminderMinutes,
                 history = next.history, session = if (state.session?.alive(System.currentTimeMillis()) == false) next.session else state.session,
@@ -212,7 +212,7 @@ object Repository {
             j.optBoolean("useAllDomains", j.array("domains").length() == 0), art)
     }
     private fun encode(s: FocusState): JSONObject = JSONObject()
-        .put("name", s.name).put("intention", s.intention).put("goalMinutes", s.goalMinutes).put("onboarding", s.onboarding).put("disclosure", s.disclosure)
+        .put("name", s.name).put("avatarImage", s.avatarImage).put("intention", s.intention).put("goalMinutes", s.goalMinutes).put("onboarding", s.onboarding).put("disclosure", s.disclosure)
         .put("theme", s.theme).put("haptics", s.haptics).put("reminders", s.reminders).put("hideInsights", s.hideInsights).put("reduceMotion", s.reduceMotion).put("askReason", s.askReason)
         .put("overrideMinutes", s.overrideMinutes).put("cooldownMinutes", s.cooldownMinutes)
         .put("managedLockdown", s.managedLockdown).put("uninstallProtection", s.uninstallProtection)
@@ -229,7 +229,7 @@ object Repository {
         .put("overrides", JSONArray(s.overrides.map { JSONObject().put("packageName", it.packageName).put("at", it.at).put("until", it.until).put("reason", it.reason) }))
     private fun decode(raw: String): FocusState {
         val j = JSONObject(raw)
-        return FocusState(name = j.optString("name"), intention = j.optString("intention", "Make room for what matters."), goalMinutes = j.optInt("goalMinutes", 120), onboarding = j.optBoolean("onboarding"), disclosure = j.optBoolean("disclosure"),
+        return FocusState(name = j.optString("name"), avatarImage = j.optString("avatarImage").takeIf(BlockingArtwork::validName).orEmpty(), intention = j.optString("intention", "Make room for what matters."), goalMinutes = j.optInt("goalMinutes", 120), onboarding = j.optBoolean("onboarding"), disclosure = j.optBoolean("disclosure"),
             theme = j.optString("theme", "Light"), haptics = j.optBoolean("haptics", true), reminders = j.optBoolean("reminders", true), hideInsights = j.optBoolean("hideInsights"), reduceMotion = j.optBoolean("reduceMotion"), askReason = j.optBoolean("askReason", false), overrideMinutes = j.optInt("overrideMinutes", 5), cooldownMinutes = j.optInt("cooldownMinutes", 10),
             managedLockdown = j.optBoolean("managedLockdown"), uninstallProtection = j.optBoolean("uninstallProtection"),
             breakReminders = j.optBoolean("breakReminders", true), breakReminderMinutes = j.optInt("breakReminderMinutes", 45).coerceIn(15, 180),

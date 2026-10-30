@@ -1,5 +1,17 @@
 # Validation
 
+## Unreleased — Home, editor headers, and Profile, 30 October 2026
+
+All 27 release JVM tests pass; release lint reports 0 errors and 66 warnings, and signed production assembly succeeds. Checked the actual production variant on the isolated Android 15 emulator:
+
+- Home has no greeting, Make room card, or separate Start focus action; rhythm cards still open Setup.
+- Setup and Block setup have lighter floating headers with content scrolling behind the frosted capsules. The zero-selection summary remains centered and readable at 160% text size, with its ending on a separate wrapping line.
+- About you opens expanded above Create profile and the saved profiles. Profile photos import through Android's real photo picker, appear in the root avatar, survive force-stop/restart, and can be removed persistently.
+- Saving a different custom blocking image preserves the saved profile photo. Removing the profile photo preserves that blocking image. The tests use bundled logo/cat fixtures, not personal pictures.
+- Create profile remains reachable below the personal controls; a new profile saves and deletes through its actual controls. See the [current Home, Profile, and enlarged-summary captures](screenshots/flow-refinements.jpg).
+
+This is a source refinement after the published v1.0.1; no replacement GitHub release is created for it. Historical enforcement and physical-device coverage below retain their original scope.
+
 ## v1.0.1 — frosted chrome and simpler Settings, 30 October 2026
 
 The signed production app uses version `1.0.1`, Android code **128**, and the existing package/certificate. R8 and resource shrinking remain enabled; debugging is disabled. No debug app APK is built or distributed for this iteration.

@@ -72,7 +72,8 @@ object BlockingArtwork {
     }
 
     fun prune(ctx: Context, keep: Set<String>) {
-        directory(ctx).listFiles()?.filter { fileName.matches(it.name) && it.name !in keep }?.forEach { it.delete() }
+        val retained = keep + Repository.state.blockMessage.image + Repository.state.avatarImage
+        directory(ctx).listFiles()?.filter { fileName.matches(it.name) && it.name !in retained }?.forEach { it.delete() }
     }
     fun art(message: BlockMessage, mode: FocusMode) = CatArt.entries.firstOrNull { it.name == message.art } ?: mode.catArt()
 }

@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import java.time.*
@@ -219,7 +220,12 @@ fun blockDeadline(plan: BlockPlan, now: Long): String {
         }
         GlassSurface(color = MaterialTheme.colorScheme.background) {
             Column(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Caption("${targets.size} selected · ${mode.label} · ${blockDeadline(preview, now)}")
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("${targets.size} selected · ${mode.label}", Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(blockDeadline(preview, now), Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 val chooseFirst = kind == BlockKind.APPS && targets.isEmpty()
                 Primary(if (chooseFirst) "Choose apps" else if (!ready) "Connect protection" else "Block now",
                     (chooseFirst || valid && (mode != FocusMode.STRICT || acknowledged)) && !RulesEngine.strictActive(s, now), Icons.Outlined.Lock) {

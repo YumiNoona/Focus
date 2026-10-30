@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — clearer Home and profile flow
+
+- Remove Home's greeting, Make room card, and duplicate Start focus button; keep direct block shortcuts and rhythm profiles.
+- Let Setup and Block setup scroll behind lighter, frosted headers. Center the selection/mode and ending on separate wrapping lines.
+- Move About you to the top of Profile without a dropdown, followed by Create profile and saved/default profiles. Add a private photo picker, root-avatar preview, and photo removal; preserve saved blocking artwork during photo changes.
+
 ## [1.0.1](https://github.com/YumiNoona/Focus/releases/tag/v1.0.1) — frosted chrome and simpler Settings, 2026-10-30
 
 - Add real in-app background blur to the dock, header, and floating focus actions using Haze, with a frosted fallback on older Android versions. Preserve sharp controls, highlights, safe areas, reduced motion, and disabled/Strict guards.

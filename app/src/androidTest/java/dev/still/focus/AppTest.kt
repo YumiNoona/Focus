@@ -56,7 +56,7 @@ class AppTest {
         ui.onNodeWithText("Add a routine").performClick()
         ui.onNodeWithText("Save routine").performScrollTo().assertIsNotEnabled()
         ui.onNodeWithText("Create a profile").performScrollTo().performClick()
-        ui.onNodeWithText("Your profiles").assertIsDisplayed()
+        ui.onNodeWithText("Your profiles").performScrollTo().assertIsDisplayed()
         ui.onNodeWithContentDescription("Back").performClick()
         ui.onNodeWithText("Routine name").assertExists()
     }
@@ -117,7 +117,7 @@ class AppTest {
         ui.onNodeWithContentDescription("Insights").assertIsSelected()
         ui.onNodeWithText("Notice your rhythm.").assertIsDisplayed()
         ui.onNodeWithContentDescription("Profile").performClick()
-        ui.onNodeWithText("Your profiles").assertIsDisplayed()
+        ui.onNodeWithText("Your profiles").performScrollTo().assertIsDisplayed()
         ui.onNodeWithContentDescription("Back").performClick()
         ui.onNodeWithContentDescription("Settings").performClick()
         ui.onNodeWithText("Permissions").assertExists()
@@ -142,7 +142,7 @@ class AppTest {
     @Test fun profileCanBeCreatedWithWeekAndTargetsThenDeleted() {
         ui.runOnIdle { Repository.update { it.copy(apps = listOf(AppRule("dev.still.fixture", "Scroll Test")), domains = setOf("example.com")) } }
         ui.onNodeWithContentDescription("Profile").performClick()
-        ui.onNodeWithText("Create profile").performClick()
+        ui.onNodeWithText("Create profile").performScrollTo().performClick()
         ui.onNodeWithText("Name").performTextReplacement("Week pause")
         ui.onNodeWithText("Name").performImeAction()
         ui.onNode(hasText("1 week") and hasClickAction()).performScrollTo().performClick().assertIsSelected()

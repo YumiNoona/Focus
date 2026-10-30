@@ -140,7 +140,7 @@ class MainActivity : ComponentActivity() {
         return
     }
     if (route == "welcome") { FoculyOnboarding { route = "settings" }; return }
-    val floatingHeader = route in mainRoutes || route == "settings"
+    val floatingHeader = route in mainRoutes || route in listOf("settings", "setup", "block")
     Box(Modifier.fillMaxSize()) {
     Scaffold(containerColor = Color.Transparent,
         topBar = { if (!floatingHeader) Header(route, s.name, { profileParent = route; route = "profile" }, { settingsParent = route; route = "settings" }, back) }
@@ -192,11 +192,10 @@ class MainActivity : ComponentActivity() {
 @Composable fun Header(route: String, name: String, profile: () -> Unit, settings: () -> Unit, back: () -> Unit) {
     val root = route in listOf("home", "rules", "insights")
     Box(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 24.dp, vertical = 8.dp), contentAlignment = Alignment.TopCenter) {
-    FloatingGlassChrome(Modifier.widthIn(max = 360.dp).fillMaxWidth().height(64.dp), highContrast = true) {
+    FloatingGlassChrome(Modifier.widthIn(max = 360.dp).fillMaxWidth().height(64.dp), highContrast = route !in listOf("setup", "block")) {
     Row(Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         if (root) IconButton(profile, Modifier.size(48.dp)) {
-                if (name.isBlank()) Icon(Icons.Outlined.Person, "Profile", Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-                else Text(name.first().uppercase(), fontFamily = Mono, color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { contentDescription = "Profile" })
+                ProfileAvatar(name, Repository.state.avatarImage, Modifier.size(28.dp).semantics { contentDescription = "Profile" })
         } else IconButton(back, Modifier.size(48.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
         Text(if (root) "FocuLY" else when (route) { "block" -> "Block setup"; "profile" -> "Your space"; "settings" -> "Settings"; "managed" -> "Device protection"; "lifecycle" -> "App boundaries"; "pin" -> "Admin PIN"; "messages" -> "Blocking screen"; "permissions" -> "Permissions"; "setup" -> "Setup"; "profileEdit" -> "Focus profile"; "schedule" -> "Schedule"; "allowlist" -> "Always allowed"; "appRule" -> "App rules"; else -> "Choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium,
             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
@@ -320,12 +319,8 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
 
 @Composable fun Home(s: FocusState, now: Long, usage: Map<String, Long>, usageReady: Boolean, nav: (String) -> Unit, start: (Profile) -> Unit, stop: () -> Unit) {
     Page {
-        val hour = LocalTime.now().hour
-        Caption("${when (hour) { in 5..11 -> "GOOD MORNING"; in 12..17 -> "GOOD AFTERNOON"; else -> "GOOD EVENING" }}${if (s.name.isBlank()) "" else ", ${s.name.uppercase()}"}")
         val session = s.session
         if (session == null) {
-            DoodleCard(CatArt.PAUSE, "Make room.", "A little more you.", FoculyBrand.blush)
-            FrostedPrimary("Start focus", sceneOnly = true) { start(s.profiles.firstOrNull() ?: FocusState.defaults().first()) }
             ActiveBlocks(s, now)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 listOf(Triple("Block apps", "blockApps", R.drawable.cat_block_apps), Triple("Block websites", "blockWebsites", R.drawable.cat_block_websites)).forEach { (title, target, art) ->
@@ -660,8 +655,44 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
     var goal by rememberSaveable { mutableStateOf(s.goalMinutes.toString()) }
     var pendingDelete by remember { mutableStateOf<Profile?>(null) }
     var menuFor by remember { mutableStateOf<String?>(null) }
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var importing by remember { mutableStateOf(false) }
+    var photoStatus by remember { mutableStateOf("") }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) scope.launch {
+            importing = true
+            val result = withContext(Dispatchers.IO) { runCatching { BlockingArtwork.importImage(ctx, uri) } }
+            result.onSuccess { image ->
+                if (Repository.update { it.copy(avatarImage = image) }) {
+                    withContext(Dispatchers.IO) { BlockingArtwork.prune(ctx, emptySet()) }
+                    photoStatus = "Photo updated."
+                } else photoStatus = "Couldn't save your photo. Try again."
+            }.onFailure { photoStatus = if (it is IllegalArgumentException) it.message.orEmpty() else "Couldn't open this photo. Try another image." }
+            importing = false
+        }
+    }
     val canEdit = !RulesEngine.strictActive(s, System.currentTimeMillis())
     Page {
+        SoftCard {
+            Text("About you", style = MaterialTheme.typography.headlineMedium)
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ProfileAvatar(s.name, s.avatarImage, Modifier.size(80.dp))
+                Column(Modifier.weight(1f)) {
+                    TextButton({ photoPicker.launch("image/*") }, enabled = !importing) { Text(if (importing) "Adding photo…" else "Change photo") }
+                    if (s.avatarImage.isNotEmpty()) TextButton({
+                        if (Repository.update { it.copy(avatarImage = "") }) {
+                            scope.launch(Dispatchers.IO) { BlockingArtwork.prune(ctx, emptySet()) }
+                            photoStatus = "Photo removed."
+                        }
+                    }, enabled = !importing) { Text("Remove photo") }
+                }
+            }
+            if (photoStatus.isNotEmpty()) Text(photoStatus, style = MaterialTheme.typography.bodySmall)
+            Input("Name", s.name, { value -> Repository.update { it.copy(name = value.take(30)) } })
+            Input("Default intention", s.intention, { value -> Repository.update { it.copy(intention = value.take(120)) } })
+            Input("Daily goal · minutes", goal, { goal = it.filter(Char::isDigit); goal.toIntOrNull()?.takeIf { it in 1..1440 }?.let { minutes -> Repository.update { it.copy(goalMinutes = minutes) } } }, true)
+        }
         Text("Your profiles", style = MaterialTheme.typography.headlineMedium)
         OutlinedButton(add, Modifier.fillMaxWidth().heightIn(min = 52.dp), enabled = canEdit, shape = RoundedCornerShape(18.dp)) {
             Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(10.dp)); Text("Create profile")
@@ -684,11 +715,6 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
                 }
             }
         } }
-        DetailsCard("About you", "", Icons.Outlined.Tune) {
-            Input("Name", s.name, { value -> Repository.update { it.copy(name = value.take(30)) } })
-            Input("Default intention", s.intention, { value -> Repository.update { it.copy(intention = value.take(120)) } })
-            Input("Daily goal · minutes", goal, { goal = it.filter(Char::isDigit); goal.toIntOrNull()?.takeIf { it in 1..1440 }?.let { minutes -> Repository.update { it.copy(goalMinutes = minutes) } } }, true)
-        }
     }
     pendingDelete?.let { profile ->
         val routineCount = s.schedules.count { it.profileId == profile.id }
@@ -696,6 +722,19 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
             text = { Text(if (routineCount > 0) "This also removes $routineCount linked ${if (routineCount == 1) "routine" else "routines"}. Active sessions keep their current settings." else "Active sessions keep their current settings. You can create this profile again later.") },
             confirmButton = { TextButton({ remove(profile); pendingDelete = null }) { Text("Delete profile", color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton({ pendingDelete = null }) { Text("Keep profile") } })
+    }
+}
+
+@Composable private fun ProfileAvatar(name: String, image: String, modifier: Modifier = Modifier) {
+    val ctx = LocalContext.current
+    val bitmap by produceState<android.graphics.Bitmap?>(null, image) {
+        value = withContext(Dispatchers.IO) { BlockingArtwork.bitmap(ctx, image) }
+    }
+    Box(modifier.clip(CircleShape).background(Color.White.copy(alpha = .12f)), contentAlignment = Alignment.Center) {
+        val photo = bitmap
+        if (photo != null) Image(photo.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        else if (name.isNotBlank()) Text(name.trim().first().uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        else Icon(Icons.Outlined.Person, null, Modifier.fillMaxSize().padding(5.dp), tint = MaterialTheme.colorScheme.primary)
     }
 }
 
