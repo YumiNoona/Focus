@@ -1,6 +1,6 @@
 # FocuLY — glass interface
 
-FocuLY v1.0.1 (Android build 128) uses a scenic backdrop, frosted blue-grey chrome, fine light edges, and white text. Matching floating bars and focus actions soften the app content underneath while retaining the logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows.
+FocuLY v1.0.0 (Android build 129) uses a scenic backdrop, frosted blue-grey chrome, fine light edges, and white text. Matching floating bars and focus actions soften the app content underneath while retaining the logo, corrected cat illustrations, three-icon dock, profile/settings placement, and direct blocking flows.
 
 ## Shared material
 
@@ -43,6 +43,6 @@ Only presentation changes: consent, resistance waits, override eligibility, expi
 
 ## Review
 
-Current development captures are in the [dock gallery](screenshots/dock/README.md) and [personalization gallery](screenshots/personalization/README.md). Representative [block setup](screenshots/block-setup.jpg) and [native interruption](screenshots/blocking.jpg) captures show the shared glass material. Superseded galleries remain in Git history.
+The [latest Home, Profile, and block-summary overview](screenshots/flow-refinements.jpg) shows the current refinements. Earlier production captures are in the [dock gallery](screenshots/dock/README.md) and [personalization gallery](screenshots/personalization/README.md). Representative [block setup](screenshots/block-setup.jpg) and [native interruption](screenshots/blocking.jpg) captures show the shared glass material. Superseded galleries remain in Git history.
 
 Use an isolated emulator for `AppTest`, `DirectBlockTest`, `AdminPinTest`, and `ProtectionScenarioTest`: they reset local app data. The opt-in `ScreenshotGalleryTest` requires `-e gallery true` and captures onboarding, editors, settings, native warnings, dark mode, keyboard use, and 130% text scaling. Physical OnePlus testing and manual screen-reader review remain separate.

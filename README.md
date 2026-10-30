@@ -15,7 +15,7 @@ An Android app for focus sessions, everyday boundaries, and intentional screen t
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)](docs/DESIGN.md)
 [![Privacy](https://img.shields.io/badge/Data-on%20device-538565)](.github/SECURITY.md)
 
-**[Download v1.0.1](https://github.com/YumiNoona/Focus/releases/tag/v1.0.1)** · **[What's new](docs/CHANGELOG.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)**
+**[Download v1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0)** · **[What's new](docs/CHANGELOG.md)** · **[Protection setup](docs/TROUBLESHOOTING.md)**
 
 </div>
 
@@ -34,14 +34,7 @@ A misty lake backdrop frames frosted top/bottom bars and floating focus actions.
 
 ## Screenshots
 
-<table>
-  <tr><th>Home</th><th>Rules</th><th>Block setup</th></tr>
-  <tr>
-    <td><img src="docs/screenshots/dock/dock-01-home.jpg" alt="Home with transparent floating dock" width="250" /></td>
-    <td><img src="docs/screenshots/dock/dock-03-rules.jpg" alt="Rules with the selected dock destination" width="250" /></td>
-    <td><img src="docs/screenshots/block-setup.jpg" alt="Block duration and resistance choices" width="250" /></td>
-  </tr>
-</table>
+<img src="docs/screenshots/flow-refinements.jpg" alt="Simplified Home, About you and profile controls, and centered block setup at larger text size" width="1100" />
 
 ## Documentation
 

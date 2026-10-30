@@ -1,12 +1,13 @@
 # Changelog
 
-## Unreleased — clearer Home and profile flow
+## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — fresh production release, 2026-10-30
 
 - Remove Home's greeting, Make room card, and duplicate Start focus button; keep direct block shortcuts and rhythm profiles.
 - Let Setup and Block setup scroll behind lighter, frosted headers. Center the selection/mode and ending on separate wrapping lines.
 - Move About you to the top of Profile without a dropdown, followed by Create profile and saved/default profiles. Add a private photo picker, root-avatar preview, and photo removal; preserve saved blocking artwork during photo changes.
+- Include the frosted dock, larger rhythm illustrations, consolidated Settings permissions, and all prior protection functionality. Replace earlier GitHub releases with this production v1.0.0, using Android version code 129 and the existing official signing identity for in-place updates.
 
-## [1.0.1](https://github.com/YumiNoona/Focus/releases/tag/v1.0.1) — frosted chrome and simpler Settings, 2026-10-30
+## Historical 1.0.1 (Android code 128) — frosted chrome and simpler Settings, 2026-10-30
 
 - Add real in-app background blur to the dock, header, and floating focus actions using Haze, with a frosted fallback on older Android versions. Preserve sharp controls, highlights, safe areas, reduced motion, and disabled/Strict guards.
 - Consolidate permission access into one Settings dropdown; group reminders and device policies/PIN. Remove the welcome replay, Essential access information row, duplicate setup/health cards, and repeated permission shortcuts.
@@ -14,7 +15,7 @@
 - Float the Setup focus action over scrolling content without a rectangular footer; keep final form controls reachable. Correct singular hour/minute labels.
 - Bundle dependency/font licenses in APK assets. Publish an optimized, officially signed, non-debuggable production APK with Android version code 128.
 
-## [1.0.0](https://github.com/YumiNoona/Focus/releases/tag/v1.0.0) — fresh glass-header build, 2026-10-30
+## Historical 1.0.0 (Android code 127) — glass-header build, 2026-10-30
 
 - Replace the appearance chip row with a top-right Settings sun/moon switch. Smoothly blend the existing screen's palette and backdrop over 440 ms; preserve forms and scroll state. Reduce motion snaps instantly.
 - Share translucent chrome between the header and three-icon dock. Root pages and Settings scroll behind the top bar with leading safe space; fixed editor controls keep their top inset. Profile remains top left and Settings top right on main pages.

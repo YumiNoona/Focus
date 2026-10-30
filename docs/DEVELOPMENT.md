@@ -27,7 +27,7 @@ Copy [config/keystore.properties.example](../config/keystore.properties.example)
 
 Release output is `app/build/outputs/apk/release/app-release.apk` when signing is configured. Without configuration, the APK is unsigned. R8 optimization and resource shrinking are enabled. The official key is private and excluded from Git; only the maintainer can sign compatible official updates. A different certificate cannot update an existing installation. Keep a private backup of your key and credentials.
 
-Advance Android `versionCode` for every distributed update even when public numbering changes. The current v1.0.1 uses code 128, higher than the fresh v1.0.0 (127) and earlier builds. Keep package `dev.still.focus`, storage keys, and signing identity stable. Upload signed binaries and checksums to GitHub Releases rather than Git history. Release builds explicitly disable debugging.
+Advance Android `versionCode` for every distributed update even when public numbering changes. The current v1.0.0 uses code 129, higher than the retired v1.0.1 (128) and earlier v1.0.0 (127). Keep package `dev.still.focus`, storage keys, and signing identity stable. Upload signed binaries and checksums to GitHub Releases rather than Git history. Release builds explicitly disable debugging.
 
 ## Production UI checks
 

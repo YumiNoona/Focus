@@ -1,6 +1,12 @@
 # Validation
 
-## Unreleased — Home, editor headers, and Profile, 30 October 2026
+## Fresh v1.0.0 (Android code 129), 30 October 2026
+
+The current release combines the latest Home, editor-header, and Profile refinements with the existing frosted interface and protection features. Public numbering returns to v1.0.0 while Android code 129 increases beyond the retired code 128. Package `dev.still.focus`, saved data keys, and the official signing identity remain stable. Prior GitHub release pages/assets are replaced by this release; source history is retained. Only an optimized, signed, non-debuggable production APK and its checksum are distributed.
+
+Release assembly and all 27 release JVM tests pass; lint reports 0 errors and 66 warnings. The final APK's package/version metadata, disabled debugging, and official certificate are verified before publication.
+
+## Home, editor headers, and Profile checks, 30 October 2026
 
 All 27 release JVM tests pass; release lint reports 0 errors and 66 warnings, and signed production assembly succeeds. Checked the actual production variant on the isolated Android 15 emulator:
 
@@ -10,7 +16,7 @@ All 27 release JVM tests pass; release lint reports 0 errors and 66 warnings, an
 - Saving a different custom blocking image preserves the saved profile photo. Removing the profile photo preserves that blocking image. The tests use bundled logo/cat fixtures, not personal pictures.
 - Create profile remains reachable below the personal controls; a new profile saves and deletes through its actual controls. See the [current Home, Profile, and enlarged-summary captures](screenshots/flow-refinements.jpg).
 
-This is a source refinement after the published v1.0.1; no replacement GitHub release is created for it. Historical enforcement and physical-device coverage below retain their original scope.
+These UI checks used the production variant immediately before the metadata reset (Android code 128); code 129 changes public/version metadata only. Historical enforcement and physical-device coverage below retain their original scope.
 
 ## v1.0.1 — frosted chrome and simpler Settings, 30 October 2026
 
