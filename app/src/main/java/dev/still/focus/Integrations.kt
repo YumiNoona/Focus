@@ -68,7 +68,11 @@ object FocusNotifications {
         val s = Repository.state.session
         if (s == null) { mgr.cancel(1); return }
         if (!permitted(ctx)) return
-        val status = if (!s.timerOnly && Repository.protectionReady(ctx)) "${s.profile.mode.label} · protection connected" else "Blocking unavailable · check protection"
+        val status = when {
+            s.timerOnly -> "Focus timer · no blocking selected"
+            Repository.protectionReady(ctx) -> "${s.profile.mode.label} · protection connected"
+            else -> "Blocking unavailable · check protection"
+        }
         mgr.notify(1, Notification.Builder(ctx, CHANNEL).setSmallIcon(R.drawable.ic_still)
             .setContentTitle("${s.profile.name} · in progress")
             .setContentText(status).setContentIntent(open(ctx)).setOngoing(true)

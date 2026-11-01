@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -197,7 +196,7 @@ class FocusAccessibilityService : AccessibilityService() {
             addView(container)
         }
         fun text(value: String, size: Float, color: Int = ink): TextView = TextView(this).apply {
-            this.text = value; textSize = size; setTextColor(color); typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            this.text = value; textSize = size; setTextColor(color); typeface = mono
             setLineSpacing(dp(5).toFloat(), 1f); layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(20) }
         }.also(container::addView)
         fun button(value: String, primary: Boolean = false, click: () -> Unit): Button = Button(this).apply {

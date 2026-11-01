@@ -174,7 +174,20 @@ object Repository {
     fun deleteAll(): Boolean {
         if (AdminPin.configured() && !AdminPin.authorized()) return fail("Unlock device controls before deleting data.")
         if (RulesEngine.strictActive(state, System.currentTimeMillis())) return fail("Local rules cannot be cleared during Strict mode.")
-        update { FocusState(onboarding = true) }; ManagedProtection.sync()
+        val previous = state
+        if (!update { FocusState(onboarding = true) }) return false
+        if (!ManagedProtection.sync()) {
+            update { previous }
+            ManagedProtection.sync()
+            return fail("Android could not release managed protection. Try again in Device protection.")
+        }
+        if (!AdminPin.remove()) {
+            update { previous }
+            ManagedProtection.sync()
+            return fail("Could not clear the device controls credential.")
+        }
+        unblockRequests.clear()
+        context.getSharedPreferences("reminders", 0).edit().clear().apply()
         BlockingArtwork.prune(context, emptySet())
         BreakReminders.clear(context)
         FocusAccessibilityService.instance?.clearOverlay()

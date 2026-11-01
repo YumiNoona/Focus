@@ -75,9 +75,9 @@ document.querySelector('#app').innerHTML = `
           <h2>Everything you need.<br />Nothing chasing you.</h2>
           <p>Move from intention to action without digging through settings. Every screen is designed to feel quiet, clear, and close at hand.</p>
           <div class="preview-tabs" role="tablist" aria-label="App screens">
-            <button class="preview-tab active" type="button" role="tab" id="preview-tab-home" aria-controls="preview-panel" aria-selected="true" tabindex="0" data-screen="home"><b>Home</b><span>Start a session in one tap</span></button>
-            <button class="preview-tab" type="button" role="tab" id="preview-tab-session" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="session"><b>Focus</b><span>See only what matters now</span></button>
-            <button class="preview-tab" type="button" role="tab" id="preview-tab-blocking" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="blocking"><b>Pause</b><span>Meet distraction with intention</span></button>
+            <button class="preview-tab active" type="button" role="tab" id="preview-tab-home" aria-controls="preview-panel" aria-selected="true" tabindex="0" data-screen="home"><b>Home</b><span>Choose where to begin</span></button>
+            <button class="preview-tab" type="button" role="tab" id="preview-tab-session" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="session"><b>Focus</b><span>Set your next session</span></button>
+            <button class="preview-tab" type="button" role="tab" id="preview-tab-blocking" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="blocking"><b>Block</b><span>Choose an app and duration</span></button>
             <button class="preview-tab" type="button" role="tab" id="preview-tab-insights" aria-controls="preview-panel" aria-selected="false" tabindex="-1" data-screen="insights"><b>Insights</b><span>Notice patterns, not scores</span></button>
           </div>
         </div>
@@ -123,7 +123,7 @@ document.querySelector('#app').innerHTML = `
         <p class="section-kicker">Your next moment is yours</p>
         <h2>Make a little room<br />for what matters.</h2>
         <a class="button primary dark" href="${downloadUrl}">Get FocuLY for Android <span>↗</span></a>
-        <p class="fine-print">Direct APK download from GitHub · Android 9 or newer</p>
+        <p class="fine-print">APK available on GitHub Releases · Android 9 or newer</p>
       </div>
       <img src="/assets/cat-complete.png" alt="Happy cat celebrating a completed focus session" />
     </section>
@@ -132,6 +132,7 @@ document.querySelector('#app').innerHTML = `
   <footer class="footer shell">
     <a class="brand" href="#top"><img src="/assets/logo.png" alt="" /><span>FocuLY</span></a>
     <p>A calmer relationship with your screen.</p>
+    <a href="/privacy">Privacy policy</a>
   </footer>
 `
 
@@ -156,8 +157,8 @@ document.addEventListener('click', (event) => {
 
 const previews = {
   home: ['/assets/screen-home.png', 'FocuLY home screen', '01', 'Your calm starting point'],
-  session: ['/assets/screen-session.png', 'Active FocuLY focus session', '02', 'One thing at a time'],
-  blocking: ['/assets/screen-blocking.png', 'FocuLY intentional pause screen', '03', 'A thoughtful interruption'],
+  session: ['/assets/screen-session.png', 'FocuLY focus session setup', '02', 'One thing at a time'],
+  blocking: ['/assets/screen-blocking.png', 'FocuLY app block setup', '03', 'Choose your boundary'],
   insights: ['/assets/screen-insights.png', 'FocuLY insights screen', '04', 'Patterns without pressure'],
 }
 

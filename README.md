@@ -47,6 +47,7 @@ A misty lake backdrop frames frosted top/bottom bars and floating focus actions.
 | [App controls](docs/APP_CONTROLS.md) / [managed devices](docs/MANAGED_DEVICE.md) | PIN, individual app policies, provisioning, and recovery |
 | [Design](docs/DESIGN.md) | Glass materials, typography, dock, and artwork provenance |
 | [Development](docs/DEVELOPMENT.md) / [validation](docs/VALIDATION.md) | Build, signing, isolated tests, and verified coverage |
+| [Play Store preparation](docs/PLAY_STORE.md) | Bundle, privacy, declarations, and publisher checks |
 
 <p align="center">
   Built With 💙 Made By <a href="https://venusapp.in">Veil</a>

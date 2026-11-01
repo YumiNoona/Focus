@@ -197,7 +197,7 @@ class MainActivity : ComponentActivity() {
         if (root) IconButton(profile, Modifier.size(48.dp)) {
                 ProfileAvatar(name, Repository.state.avatarImage, Modifier.size(28.dp).semantics { contentDescription = "Profile" })
         } else IconButton(back, Modifier.size(48.dp)) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
-        Text(if (root) "FocuLY" else when (route) { "block" -> "Block setup"; "profile" -> "Your space"; "settings" -> "Settings"; "managed" -> "Device protection"; "lifecycle" -> "App boundaries"; "pin" -> "Admin PIN"; "messages" -> "Blocking screen"; "permissions" -> "Permissions"; "setup" -> "Setup"; "profileEdit" -> "Focus profile"; "schedule" -> "Schedule"; "allowlist" -> "Always allowed"; "appRule" -> "App rules"; else -> "Choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium,
+        Text(if (root) "" else when (route) { "block" -> "Block setup"; "profile" -> "Your space"; "settings" -> "Settings"; "managed" -> "Device protection"; "lifecycle" -> "App boundaries"; "pin" -> "Admin PIN"; "messages" -> "Blocking screen"; "permissions" -> "Permissions"; "setup" -> "Setup"; "profileEdit" -> "Focus profile"; "schedule" -> "Schedule"; "allowlist" -> "Always allowed"; "appRule" -> "App rules"; else -> "Choose apps" }, modifier = Modifier.weight(1f), textAlign = TextAlign.Center, style = MaterialTheme.typography.titleMedium,
             maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         when {
             root -> IconButton(settings, Modifier.size(48.dp)) { Icon(Icons.Outlined.Settings, "Settings", Modifier.size(24.dp)) }
@@ -260,7 +260,10 @@ private val LocalPageBottomInset = staticCompositionLocalOf { 0.dp }
 @Composable fun Page(bottomPadding: Dp = 28.dp, content: @Composable ColumnScope.() -> Unit) {
     val frost = LocalFrostState.current
     val source = if (frost != null) Modifier.hazeSource(frost, zIndex = 1f, key = "page") else Modifier
-    Column(Modifier.fillMaxSize().then(source).verticalScroll(rememberScrollState()).padding(horizontal = 22.dp).padding(top = 16.dp + LocalPageTopInset.current, bottom = bottomPadding + LocalPageBottomInset.current), verticalArrangement = Arrangement.spacedBy(18.dp), content = content)
+    Column(Modifier.fillMaxSize().then(source).padding(bottom = LocalPageBottomInset.current)
+        .verticalScroll(rememberScrollState()).padding(horizontal = 22.dp)
+        .padding(top = 16.dp + LocalPageTopInset.current, bottom = bottomPadding),
+        verticalArrangement = Arrangement.spacedBy(18.dp), content = content)
 }
 @Composable fun Caption(text: String) { Text(text, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
 @Composable fun Heading(title: String, subtitle: String? = null) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text(title, style = MaterialTheme.typography.headlineLarge); subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) } } }
@@ -328,8 +331,10 @@ fun profileArt(profile: Profile): CatArt = CatArt.entries.firstOrNull { it.name 
                         .clickable(role = Role.Button) { nav(target) }.semantics { contentDescription = title },
                         shape = RoundedCornerShape(20.dp), color = if (target == "blockApps") FoculyBrand.lilac else FoculyBrand.peach,
                         contentColor = MaterialTheme.colorScheme.onSurface) {
-                        Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
-                            Image(painterResource(art), null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                        Box(Modifier.fillMaxSize().padding(8.dp)) {
+                            Image(painterResource(art), null, Modifier.fillMaxSize().padding(bottom = 24.dp), contentScale = ContentScale.Fit)
+                            Text(title, Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+                                style = MaterialTheme.typography.labelLarge, color = Color.White, textAlign = TextAlign.Center)
                         }
                     }
                 }
@@ -813,6 +818,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         }
         DetailsCard("Privacy & data", "Stored on this device", Icons.Outlined.PrivacyTip) {
             Text("No accounts, ads, analytics, or network access. Screen content is checked in memory and never recorded.", style = MaterialTheme.typography.bodyMedium)
+            LinkRow("Privacy policy", "How FocuLY handles your data", Icons.Outlined.PrivacyTip) { uriHandler.openUri("https://focus.venusapp.in/privacy") }
             LinkRow("Export my data", "Rules, blocks & history", Icons.Outlined.Download) { export.launch("focus-data-${LocalDate.now()}.json") }
             if (exportStatus.isNotEmpty()) Text(exportStatus, style = MaterialTheme.typography.bodyMedium)
             LinkRow("Delete my data", "Available outside Strict", Icons.Outlined.Delete) { delete = true }
@@ -830,7 +836,7 @@ data class InstalledApp(val pkg: String, val label: String, val icon: Drawable)
         Text("This access can expose on-screen text. FocuLY checks it only in memory on your device. It does not store screen content, send it anywhere, or use it for advertising.")
         Text("Access is optional. You can withdraw consent inside FocuLY when Strict is inactive, or turn accessibility protection off in Android settings at any time. Without access, focus timers still work. Managed whole-app suspension is controlled separately by Android device-owner policies.")
     } }, confirmButton = { TextButton({ Repository.update { it.copy(disclosure = true) }; consent = false; Repository.openAccessibility() }) { Text("Agree & open settings") } }, dismissButton = { TextButton({ consent = false }) { Text("Not now") } })
-    if (delete) AlertDialog(onDismissRequest = { delete = false }, title = { Text("Clear your space?", fontFamily = Mono) }, text = { Text("This deletes FocuLY’s rules, profiles, sessions, and override history and ends any active session. It does not delete Android’s system usage history. This cannot be undone.") }, confirmButton = { TextButton({ Repository.deleteAll(); delete = false; nav("home") }) { Text("Delete local data", color = MaterialTheme.colorScheme.error) } }, dismissButton = { TextButton({ delete = false }) { Text("Keep data") } })
+    if (delete) AlertDialog(onDismissRequest = { delete = false }, title = { Text("Clear your space?", fontFamily = Mono) }, text = { Text("This deletes FocuLY’s rules, profiles, sessions, and override history and ends any active session. It does not delete Android’s system usage history. This cannot be undone.") }, confirmButton = { TextButton({ if (Repository.deleteAll()) { delete = false; nav("home") } }) { Text("Delete local data", color = MaterialTheme.colorScheme.error) } }, dismissButton = { TextButton({ delete = false }) { Text("Keep data") } })
 }
 
 @Composable fun Insights(s: FocusState, usage: Map<String, Long>, usageReady: Boolean) {

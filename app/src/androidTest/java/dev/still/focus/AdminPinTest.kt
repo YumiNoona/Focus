@@ -7,7 +7,8 @@ import org.junit.Assert.*
 class AdminPinTest {
     private val ctx = InstrumentationRegistry.getInstrumentation().targetContext
     @Before fun setup() {
-        Assume.assumeTrue(android.os.Build.FINGERPRINT.contains("generic") || android.os.Build.MODEL.contains("sdk"))
+        Assume.assumeTrue(android.os.Build.HARDWARE in setOf("ranchu", "goldfish") ||
+            android.os.Build.FINGERPRINT.contains("generic") || android.os.Build.MODEL.contains("sdk"))
         Repository.init(ctx)
         assertFalse(RulesEngine.strictActive(Repository.state, System.currentTimeMillis()))
         ctx.getSharedPreferences("focus-credential", 0).edit().clear().commit(); AdminPin.lock()
@@ -33,5 +34,11 @@ class AdminPinTest {
         assertTrue(AdminPin.remainingSeconds() > 0)
         AdminPin.lock()
         assertFalse(AdminPin.verify("682491"))
+    }
+    @Test fun deletingLocalDataAlsoRemovesPinCredential() {
+        assertTrue(AdminPin.set("682491"))
+        assertTrue(Repository.deleteAll())
+        assertFalse(AdminPin.configured())
+        assertTrue(ctx.getSharedPreferences("focus-credential", 0).all.isEmpty())
     }
 }

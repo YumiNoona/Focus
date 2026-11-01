@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.sp
             )[step]
             GlassSurface(Modifier.weight(1f).fillMaxWidth().padding(bottom = 94.dp), shape = RoundedCornerShape(32.dp), color = color, contentColor = MaterialTheme.colorScheme.onSurface) {
                 Column(Modifier.fillMaxSize().padding(28.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(title, fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 38.sp)
+                    Text(title, fontFamily = Mono, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 38.sp)
                     Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                         CatDoodle(art, Modifier.fillMaxSize().graphicsLayer(scaleX = 1.18f, scaleY = 1.18f))
                     }

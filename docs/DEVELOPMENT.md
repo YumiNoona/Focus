@@ -5,7 +5,7 @@
 Use JDK 17 or newer and Android SDK 36. The checked-in Gradle wrapper pins the build entry point; Android Studio can create the ignored `local.properties` SDK setting, or use `ANDROID_HOME`.
 
 ```bash
-./gradlew testReleaseUnitTest lintRelease assembleRelease
+./gradlew testReleaseUnitTest lintRelease assembleRelease bundleRelease
 ```
 
 Use `gradlew.bat` on Windows. Configure signing below for an installable official update. Distribute only the optimized, signed production release; do not upload debug or unsigned APKs.
@@ -22,12 +22,12 @@ Copy [config/keystore.properties.example](../config/keystore.properties.example)
 | `keyPassword` | `FOCUS_KEY_PASSWORD` |
 
 ```bash
-./gradlew assembleRelease
+./gradlew assembleRelease bundleRelease
 ```
 
-Release output is `app/build/outputs/apk/release/app-release.apk` when signing is configured. Without configuration, the APK is unsigned. R8 optimization and resource shrinking are enabled. The official key is private and excluded from Git; only the maintainer can sign compatible official updates. A different certificate cannot update an existing installation. Keep a private backup of your key and credentials.
+Release output is `app/build/outputs/apk/release/app-release.apk` and the Play upload bundle is `app/build/outputs/bundle/release/app-release.aab` when signing is configured. Without configuration, both artifacts are unsigned and cannot be uploaded as official releases. R8 optimization and resource shrinking are enabled. The official key is private and excluded from Git; only the maintainer can sign compatible official updates. A different certificate cannot update an existing installation. Keep a private backup of your key and credentials.
 
-Advance Android `versionCode` for every distributed update even when public numbering changes. The current v1.0.0 uses code 129, higher than the retired v1.0.1 (128) and earlier v1.0.0 (127). Keep package `dev.still.focus`, storage keys, and signing identity stable. Upload signed binaries and checksums to GitHub Releases rather than Git history. Release builds explicitly disable debugging.
+Advance Android `versionCode` for every distributed update even when public numbering changes. The Play candidate v1.0.2 uses code 130, higher than v1.0.0 (129), the retired v1.0.1 (128), and earlier builds. Keep package `dev.still.focus`, storage keys, and signing identity stable. Upload signed APKs and checksums to GitHub Releases rather than Git history; upload the signed AAB to Play Console. Release builds explicitly disable debugging. See [Play Store preparation](PLAY_STORE.md) before submission.
 
 ## Production UI checks
 
@@ -72,4 +72,4 @@ Captures are saved in the app's external files `screen-gallery` directory. Revie
 
 Keep release artifacts, logs, exports, emulator disks, and caches out of Git. Locally generated `outputs/` and `local-work/` are ignored; prefer a separate workspace outside the source checkout for large archives. SDK settings and signing credentials are intentionally local and ignored.
 
-[Android CI](../.github/workflows/android.yml) checks release-variant JVM tests, release lint, and optimized release assembly. It uploads reports only, has no private signing secrets, and does not run connected-device checks. Its unsigned verification APK is not published. Final GitHub Releases contain only a verified, officially signed production APK and its checksum. [Contribution expectations](../.github/CONTRIBUTING.md).
+[Android CI](../.github/workflows/android.yml) checks release-variant JVM tests, release lint, optimized release assembly, and AAB creation. It uploads reports only, has no private signing secrets, and does not run connected-device checks. Its unsigned verification artifacts are not published. Final GitHub Releases contain only a verified, officially signed production APK and its checksum. [Contribution expectations](../.github/CONTRIBUTING.md).

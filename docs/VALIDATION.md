@@ -1,5 +1,15 @@
 # Validation
 
+## v1.0.2 Play candidate (Android code 130), 1 November 2026
+
+This candidate fixes local-data deletion so it clears the device-controls PIN and reminder state, rolls back if Android cannot release managed controls, and only closes the Settings dialog on success. Timer-only sessions show an accurate notification. Home shortcuts have visible high-contrast labels, the root header has no center wordmark, and JetBrains Mono is used throughout the Compose and native blocking screens. The shared page scroll viewport now stops above fixed bottom actions so profile targets cannot be tapped through Save.
+
+- Release JVM tests, release lint, optimized APK assembly, and AAB assembly pass. Lint reports no errors. The unsigned release APK passes `zipalign -c -P 16`; no native `.so` files are packaged.
+- On a disposable Android 15 emulator, all 19 `AppTest` navigation/profile/onboarding checks pass after the scroll fix. All three `AdminPinTest` checks now run on this AVD and pass, including deleting the credential. Two opt-in screenshot flows pass and supply current website preview images.
+- The Vite website builds with the new privacy page and current screenshots. Its download link is accurately described as a GitHub Releases page.
+
+The workspace has no publisher signing key, so the local AAB is unsigned and is **not a Play upload artifact**. The intended `https://focus.venusapp.in/privacy` URL returned 404 before deployment. Play Console declarations, listing assets, and internal-track/physical-device review remain publisher steps; see [Play Store preparation](PLAY_STORE.md). A broad connected-suite run was interrupted by the emulator host after its first six completed tests; the focused classes above were rerun to completion and are the current evidence.
+
 ## Fresh v1.0.0 (Android code 129), 30 October 2026
 
 The current release combines the latest Home, editor-header, and Profile refinements with the existing frosted interface and protection features. Public numbering returns to v1.0.0 while Android code 129 increases beyond the retired code 128. Package `dev.still.focus`, saved data keys, and the official signing identity remain stable. Prior GitHub release pages/assets are replaced by this release; source history is retained. Only an optimized, signed, non-debuggable production APK and its checksum are distributed.

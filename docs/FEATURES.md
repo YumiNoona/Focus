@@ -18,7 +18,7 @@ Android may require enabling “Install unknown apps” for the app opening this
 
 Exactly three bottom-dock icons: Home, Rules, Insights. Each has an accessibility label and selected state. Profile is at the top left, Settings at the top right. Nested screens use a back button.
 
-Warm off-white background, near-black text, muted violet accents, neutral rounded surfaces, and minimal elevation. JetBrains Mono is bundled locally for headings, timers, controls, and compact labels. Body copy uses Android’s sans-serif. Both light and dark themes are provided. Primary actions have subtle optional haptics.
+Warm off-white background, near-black text, muted violet accents, neutral rounded surfaces, and minimal elevation. JetBrains Mono is bundled locally and used for all app text. Both light and dark themes are provided. Primary actions have subtle optional haptics.
 
 Type sizes are 44, 28, 24, 20, 18, 16, 14, and 12 sp. Spacing follows a 4 dp grid with 24 dp page margins, 24 dp card padding, 24 dp section gaps, 48 dp minimum interaction targets, and primary buttons at least 56 dp high. Content scrolls; primary buttons grow with text instead of clipping. No decorative motion is used in this version, including when reduced motion is enabled.
 

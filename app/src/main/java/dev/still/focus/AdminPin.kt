@@ -43,11 +43,15 @@ object AdminPin {
     }
     @Synchronized fun remove(): Boolean {
         if (!authorized() || RulesEngine.strictActive(Repository.state, System.currentTimeMillis())) return false
-        lock(); return prefs().edit().clear().commit()
+        val removed = prefs().edit().clear().commit()
+        if (removed) lock()
+        return removed
     }
     /** Only call after Android confirms the device screen-lock credential. */
     fun recoverAfterDeviceCredential(): Boolean {
         if (RulesEngine.strictActive(Repository.state, System.currentTimeMillis())) return false
-        lock(); return prefs().edit().clear().commit()
+        val removed = prefs().edit().clear().commit()
+        if (removed) lock()
+        return removed
     }
 }
